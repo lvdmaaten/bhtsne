@@ -25,3 +25,24 @@ numDims = 2; pcaDims = 50; perplexity = 50; theta = .5;
 map = fast_tsne(digits', numDims, pcaDims, perplexity, theta);
 gscatter(map(:,1), map(:,2), labels');
 ```
+
+=========================
+
+Building on Windows Using Visual C++ from Command Line
+
+1. Find the "vcvars64.bat" file in your Visual C++ installation directory.
+This file may be named "vcvars64.bat", or something else. For example:
+
+  //Visual Studio 12
+  "C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\amd64\vcvars64.bat"
+
+  //Visual Studio 2013 Express:
+  C:\VisualStudioExp2013\VC\bin\x86_amd64\vcvarsx86_amd64.bat
+
+2. From cmd.exe, go to the directory containing that .bat file and run it.
+
+3. Go to bhtsne directory and run:
+
+  nmake -f Makefile.win all
+
+The output EXE file is windows\bh_tsne.exe.
