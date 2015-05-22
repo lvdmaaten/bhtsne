@@ -17,10 +17,10 @@ On Windows using Visual C++, do the following in your command line:
 - Find the `vcvars64.bat` file in your Visual C++ installation directory. This file may be named `vcvars64.bat` or something similar. For example:
 
 ```
-  //Visual Studio 12
+  // Visual Studio 12
   "C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\amd64\vcvars64.bat"
 
-  //Visual Studio 2013 Express:
+  // Visual Studio 2013 Express:
   C:\VisualStudioExp2013\VC\bin\x86_amd64\vcvarsx86_amd64.bat
 ```
 
