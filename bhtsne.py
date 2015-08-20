@@ -44,9 +44,12 @@ from struct import calcsize, pack, unpack
 from subprocess import Popen
 from sys import stderr, stdin, stdout
 from tempfile import mkdtemp
+from platform import system
+from os import devnull
 
 ### Constants
-BH_TSNE_BIN_PATH = path_join(dirname(__file__), 'bh_tsne')
+IS_WINDOWS = True if system() == 'Windows' else False
+BH_TSNE_BIN_PATH = path_join(dirname(__file__), 'windows', 'bh_tsne.exe') if IS_WINDOWS else path_join(dirname(__file__), 'bh_tsne')
 assert isfile(BH_TSNE_BIN_PATH), ('Unable to find the bh_tsne binary in the '
     'same directory as this script, have you forgotten to compile it?: {}'
     ).format(BH_TSNE_BIN_PATH)
@@ -110,7 +113,7 @@ def bh_tsne(samples, no_dims=DEFAULT_NO_DIMS, perplexity=DEFAULT_PERPLEXITY, the
                 data_file.write(pack('i', randseed))
 
         # Call bh_tsne and let it do its thing
-        with open('/dev/null', 'w') as dev_null:
+        with open(devnull, 'w') as dev_null:
             bh_tsne_p = Popen((abspath(BH_TSNE_BIN_PATH), ), cwd=tmp_dir_path,
                     # bh_tsne is very noisy on stdout, tell it to use stderr
                     #   if it is to print any output
