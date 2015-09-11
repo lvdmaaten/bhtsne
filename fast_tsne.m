@@ -54,6 +54,10 @@ function mappedX = fast_tsne(X, no_dims, initial_dims, perplexity, theta)
 % with the following changes:
 % this function now is internally cached using cache.m to speed up subsequent runs. 
 
+    % rotate the input so that it makes sense
+    if size(X,1) < size(X,2)
+        X = X';
+    end
 
     % modify environment to get paths for non-matlab code right
     path1 = getenv('PATH');
