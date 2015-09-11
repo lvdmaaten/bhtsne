@@ -46,6 +46,14 @@ function mappedX = fast_tsne(X, no_dims, initial_dims, perplexity, theta)
 % CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING 
 % IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY 
 % OF SUCH DAMAGE.
+% 
+%
+% 
+% 
+% modified by Srinivas Gorur-Shandilya at 9:18 , 11 September 2015. Contact me at http://srinivas.gs/contact/ 
+% with the following changes:
+% this function now is internally cached using cache.m to speed up subsequent runs. 
+
 
 
     if ~exist('no_dims', 'var') || isempty(no_dims)
@@ -59,6 +67,21 @@ function mappedX = fast_tsne(X, no_dims, initial_dims, perplexity, theta)
     end
     if ~exist('theta', 'var') || isempty(theta)
         theta = 0.5;
+    end
+
+    temp = struct;
+    temp.X = X;
+    temp.no_dims = no_dims;
+    temp.initial_dims = initial_dims;
+    temp.perplexity = perplexity;
+    temp.theta = theta;
+    hash = dataHash(temp);
+    disp(hash)
+    mappedX = cache(hash);
+    if ~isempty(mappedX)
+        disp('using cached data...')
+        return
+    else
     end
     
     % Perform the initial dimensionality reduction using PCA
@@ -81,6 +104,9 @@ function mappedX = fast_tsne(X, no_dims, initial_dims, perplexity, theta)
     landmarks = landmarks + 1;              % correct for Matlab indexing
     delete('data.dat');
     delete('result.dat');
+
+    % write to cache
+    cache(hash,mappedX);
 end
 
 
