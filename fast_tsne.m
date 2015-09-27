@@ -47,11 +47,6 @@ function mappedX = fast_tsne(X, no_dims, initial_dims, perplexity, theta)
 % IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY 
 % OF SUCH DAMAGE.
 
-    % rotate the input so that it makes sense
-    if size(X,1) < size(X,2)
-        X = X';
-    end
-
     % modify environment to get paths for non-matlab code right
     path1 = getenv('PATH');
     if isempty(strfind(path1,[':' fileparts(which('fast_tsne'))]))
