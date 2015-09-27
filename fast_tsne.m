@@ -47,6 +47,12 @@ function mappedX = fast_tsne(X, no_dims, initial_dims, perplexity, theta)
 % IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY 
 % OF SUCH DAMAGE.
 
+    % modify environment to get paths for non-matlab code right
+    path1 = getenv('PATH');
+    if isempty(strfind(path1,[':' fileparts(which('fast_tsne'))]))
+        path1 = [path1 ':' fileparts(which('fast_tsne'))];
+    end
+    setenv('PATH', path1);
 
     if ~exist('no_dims', 'var') || isempty(no_dims)
         no_dims = 2;
@@ -60,7 +66,7 @@ function mappedX = fast_tsne(X, no_dims, initial_dims, perplexity, theta)
     if ~exist('theta', 'var') || isempty(theta)
         theta = 0.5;
     end
-    
+
     % Perform the initial dimensionality reduction using PCA
     X = double(X);
     X = bsxfun(@minus, X, mean(X, 1));
@@ -76,11 +82,12 @@ function mappedX = fast_tsne(X, no_dims, initial_dims, perplexity, theta)
     
     % Run the fast diffusion SNE implementation
     write_data(X, no_dims, theta, perplexity);
-    tic, system('./bh_tsne'); toc
+    tic, system('bh_tsne'); toc
     [mappedX, landmarks, costs] = read_data;   
     landmarks = landmarks + 1;              % correct for Matlab indexing
     delete('data.dat');
     delete('result.dat');
+
 end
 
 
