@@ -454,7 +454,7 @@ void TSNE::computeGaussianPerplexity(double* X, int N, int D, unsigned int** _ro
             sum_P = DBL_MIN;
             for(int m = 0; m < K; m++) sum_P += cur_P[m];
             double H = .0;
-            for(int m = 0; m < K; m++) H += beta * (distances[m + 1] * cur_P[m]);
+            for(int m = 0; m < K; m++) H += beta * (distances[m + 1] * distances[m + 1] * cur_P[m]);
             H = (H / sum_P) + log(sum_P);
             
             // Evaluate whether the entropy is within the tolerance level
