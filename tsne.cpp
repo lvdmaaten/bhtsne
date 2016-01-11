@@ -448,7 +448,7 @@ void TSNE::computeGaussianPerplexity(double* X, int N, int D, unsigned int** _ro
         while(!found && iter < 200) {
             
             // Compute Gaussian kernel row
-            for(int m = 0; m < K; m++) cur_P[m] = exp(-beta * distances[m + 1]);
+            for(int m = 0; m < K; m++) cur_P[m] = exp(-beta * distances[m + 1] * distances[m + 1]);
             
             // Compute entropy of current row
             sum_P = DBL_MIN;
