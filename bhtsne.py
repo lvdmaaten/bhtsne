@@ -19,8 +19,9 @@ The output will not be normalised, maybe the below one-liner is of interest?:
         d = numpy.loadtxt(stdin); d -= d.min(axis=0); d /= d.max(axis=0);
         numpy.savetxt(stdout, d, fmt="%.8f", delimiter="\t")'
 
-Author:     Pontus Stenetorp    <pontus stenetorp se>
-Version:    2013-01-22
+Authors:     Pontus Stenetorp    <pontus stenetorp se>
+             Philippe Remy       <github: philipperemy>
+Version:    2016-03-08
 '''
 
 # Copyright (c) 2013, Pontus Stenetorp <pontus stenetorp se>
@@ -46,6 +47,7 @@ from sys import stderr, stdin, stdout
 from tempfile import mkdtemp
 from platform import system
 from os import devnull
+import numpy as np
 
 ### Constants
 IS_WINDOWS = True if system() == 'Windows' else False
@@ -53,9 +55,11 @@ BH_TSNE_BIN_PATH = path_join(dirname(__file__), 'windows', 'bh_tsne.exe') if IS_
 assert isfile(BH_TSNE_BIN_PATH), ('Unable to find the bh_tsne binary in the '
     'same directory as this script, have you forgotten to compile it?: {}'
     ).format(BH_TSNE_BIN_PATH)
-# Default hyper-parameter values from van der Maaten (2013)
+# Default hyper-parameter values from van der Maaten (2014)
+# https://lvdmaaten.github.io/publications/papers/JMLR_2014.pdf (Experimental Setup, page 13)
 DEFAULT_NO_DIMS = 2
-DEFAULT_PERPLEXITY = 30.0
+INITIAL_DIMENSIONS = 50
+DEFAULT_PERPLEXITY = 50
 DEFAULT_THETA = 0.5
 EMPTY_SEED = -1
 
@@ -70,7 +74,7 @@ def _argparse():
     # 0.0 for theta is equivalent to vanilla t-SNE
     argparse.add_argument('-t', '--theta', type=float, default=DEFAULT_THETA)
     argparse.add_argument('-r', '--randseed', type=int, default=EMPTY_SEED)
-    
+    argparse.add_argument('-n', '--initial_dims', type=int, default=INITIAL_DIMENSIONS)
     argparse.add_argument('-v', '--verbose', action='store_true')
     argparse.add_argument('-i', '--input', type=FileType('r'), default=stdin)
     argparse.add_argument('-o', '--output', type=FileType('w'),
@@ -90,8 +94,23 @@ class TmpDir:
 def _read_unpack(fmt, fh):
     return unpack(fmt, fh.read(calcsize(fmt)))
 
-def bh_tsne(samples, no_dims=DEFAULT_NO_DIMS, perplexity=DEFAULT_PERPLEXITY, theta=DEFAULT_THETA, randseed=EMPTY_SEED,
-        verbose=False):
+def bh_tsne(samples, no_dims=DEFAULT_NO_DIMS, initial_dims=INITIAL_DIMENSIONS, perplexity=DEFAULT_PERPLEXITY,
+            theta=DEFAULT_THETA, randseed=EMPTY_SEED, verbose=False):
+
+    samples -= np.mean(samples, axis=0)
+    cov_x = np.dot(np.transpose(samples), samples)
+    [eig_val, eig_vec] = np.linalg.eig(cov_x)
+
+    # sorting the eigen-values in the descending order
+    eig_vec = eig_vec[:, eig_val.argsort()[::-1]]
+
+    if initial_dims > len(eig_vec):
+        initial_dims = len(eig_vec)
+
+    # truncating the eigen-vectors matrix to keep the most important vectors
+    eig_vec = eig_vec[:, :initial_dims]
+    samples = np.dot(samples, eig_vec)
+
     # Assume that the dimensionality of the first sample is representative for
     #   the whole batch
     sample_dim = len(samples[0])
@@ -162,7 +181,7 @@ def main(args):
         data.append([float(e) for e in sample_data])
 
     for result in bh_tsne(data, no_dims=argp.no_dims, perplexity=argp.perplexity, theta=argp.theta, randseed=argp.randseed,
-            verbose=argp.verbose):
+            verbose=argp.verbose, initial_dims=argp.initial_dims):
         fmt = ''
         for i in range(1, len(result)):
             fmt = fmt + '{}\t'
