@@ -1,7 +1,7 @@
-function mappedX = fast_tsne(X, no_dims, initial_dims, perplexity, theta)
+function mappedX = fast_tsne(X, no_dims, initial_dims, perplexity, theta, alg)
 %FAST_TSNE Runs the C++ implementation of Barnes-Hut t-SNE
 %
-%   mappedX = fast_tsne(X, no_dims, initial_dims, perplexity, theta)
+%   mappedX = fast_tsne(X, no_dims, initial_dims, perplexity, theta, alg)
 %
 % Runs the C++ implementation of Barnes-Hut-SNE. The high-dimensional 
 % datapoints are specified in the NxD matrix X. The dimensionality of the 
@@ -12,6 +12,8 @@ function mappedX = fast_tsne(X, no_dims, initial_dims, perplexity, theta)
 % the trade-off parameter between speed and accuracy: theta = 0 corresponds
 % to standard, slow t-SNE, while theta = 1 makes very crude approximations.
 % Appropriate values for theta are between 0.1 and 0.7 (default = 0.5).
+% The variable alg determines the algorithm used for PCA. The default is set 
+% to 'svd'. Other options are 'eig' or 'als' (see 'doc pca' for more details).
 % The function returns the two-dimensional data points in mappedX.
 %
 % NOTE: The function is designed to run on large (N > 5000) data sets. It
@@ -47,12 +49,6 @@ function mappedX = fast_tsne(X, no_dims, initial_dims, perplexity, theta)
 % IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY 
 % OF SUCH DAMAGE.
 
-    % modify environment to get paths for non-matlab code right
-    path1 = getenv('PATH');
-    if isempty(strfind(path1,[':' fileparts(which('fast_tsne'))]))
-        path1 = [path1 ':' fileparts(which('fast_tsne'))];
-    end
-    setenv('PATH', path1);
 
     if ~exist('no_dims', 'var') || isempty(no_dims)
         no_dims = 2;
@@ -66,28 +62,25 @@ function mappedX = fast_tsne(X, no_dims, initial_dims, perplexity, theta)
     if ~exist('theta', 'var') || isempty(theta)
         theta = 0.5;
     end
-
+    if ~exist('alg', 'var') || isempty(alg)
+        alg = 'svd';
+    end
+    
     % Perform the initial dimensionality reduction using PCA
     X = double(X);
     X = bsxfun(@minus, X, mean(X, 1));
-    covX = X' * X;
-    [M, lambda] = eig(covX);
-    [~, ind] = sort(diag(lambda), 'descend');
-    if initial_dims > size(M, 2)
-        initial_dims = size(M, 2);
-    end
-	M = M(:,ind(1:initial_dims));
+    M = pca(X,'NumComponents',initial_dims,'Algorithm',alg);
     X = X * M;
-    clear covX M lambda
     
     % Run the fast diffusion SNE implementation
+    tsne_path = which('fast_tsne');
+    tsne_path = fileparts(tsne_path);
     write_data(X, no_dims, theta, perplexity);
-    tic, system('bh_tsne'); toc
+    tic, system(fullfile(tsne_path,'./bh_tsne')); toc
     [mappedX, landmarks, costs] = read_data;   
     landmarks = landmarks + 1;              % correct for Matlab indexing
     delete('data.dat');
     delete('result.dat');
-
 end
 
 
@@ -112,7 +105,6 @@ function [X, landmarks, costs] = read_data
 	d = fread(h, 1, 'integer*4');
 	X = fread(h, n * d, 'double');
     landmarks = fread(h, n, 'integer*4');
-    landmarks = landmarks + 1;
     costs = fread(h, n, 'double');      % this vector contains only zeros
     X = reshape(X, [d n])';
 	fclose(h);
