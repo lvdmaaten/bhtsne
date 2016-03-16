@@ -39,14 +39,14 @@ static inline double sign(double x) { return (x == .0 ? .0 : (x < .0 ? -1.0 : 1.
 
 
 class TSNE
-{    
+{
 public:
-    void run(double* X, int N, int D, double* Y, int no_dims, double perplexity, double theta);
+    void run(double* X, int N, int D, double* Y, int no_dims, double perplexity, double theta, int rand_seed, double* SX, int SN);
     bool load_data(double** data, int* n, int* d, int* no_dims, double* theta, double* perplexity, int* rand_seed);
     void save_data(double* data, int* landmarks, double* costs, int n, int d);
     void symmetrizeMatrix(unsigned int** row_P, unsigned int** col_P, double** val_P, int N); // should be static!
 
-    
+
 private:
     void computeGradient(double* P, unsigned int* inp_row_P, unsigned int* inp_col_P, double* inp_val_P, double* Y, int N, int D, double* dC, double theta);
     void computeExactGradient(double* P, double* Y, int N, int D, double* dC);
@@ -60,4 +60,3 @@ private:
 };
 
 #endif
-
