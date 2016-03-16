@@ -1,7 +1,7 @@
 function mappedX = fast_tsne(X, no_dims, initial_dims, perplexity, theta, alg)
 %FAST_TSNE Runs the C++ implementation of Barnes-Hut t-SNE
 %
-%   mappedX = fast_tsne(X, no_dims, initial_dims, perplexity, theta)
+%   mappedX = fast_tsne(X, no_dims, initial_dims, perplexity, theta, alg)
 %
 % Runs the C++ implementation of Barnes-Hut-SNE. The high-dimensional 
 % datapoints are specified in the NxD matrix X. The dimensionality of the 
