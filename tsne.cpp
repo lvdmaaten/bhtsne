@@ -46,15 +46,17 @@
 using namespace std;
 
 // Perform t-SNE
-void TSNE::run(double* X, int N, int D, double* Y, int no_dims, double perplexity, double theta, int rand_seed) {
+void TSNE::run(double* X, int N, int D, double* Y, int no_dims, double perplexity, double theta, int rand_seed, bool skip_random_init) {
 
     // Set random seed
-    if(rand_seed >= 0) {
-        printf("Using random seed: %d\n", rand_seed);
-        srand((unsigned int) rand_seed);
-    } else {
-        printf("Using current time as random seed...\n");
-        srand(time(NULL));
+    if (skip_random_init != true) {
+      if(rand_seed >= 0) {
+          printf("Using random seed: %d\n", rand_seed);
+          srand((unsigned int) rand_seed);
+      } else {
+          printf("Using current time as random seed...\n");
+          srand(time(NULL));
+      }
     }
 
     // Determine whether we are using an exact algorithm
@@ -133,7 +135,9 @@ void TSNE::run(double* X, int N, int D, double* Y, int no_dims, double perplexit
     else {      for(int i = 0; i < row_P[N]; i++) val_P[i] *= 12.0; }
 
 	// Initialize solution (randomly)
-	for(int i = 0; i < N * no_dims; i++) Y[i] = randn() * .0001;
+  if (skip_random_init != true) {
+  	for(int i = 0; i < N * no_dims; i++) Y[i] = randn() * .0001;
+  }
 
 	// Perform main training loop
     if(exact) printf("Input similarities computed in %4.2f seconds!\nLearning embedding...\n", (float) (end - start) / CLOCKS_PER_SEC);
@@ -741,7 +745,7 @@ int main() {
 		double* Y = (double*) malloc(N * no_dims * sizeof(double));
 		double* costs = (double*) calloc(N, sizeof(double));
         if(Y == NULL || costs == NULL) { printf("Memory allocation failed!\n"); exit(1); }
-		tsne->run(data, N, D, Y, no_dims, perplexity, theta, rand_seed);
+		tsne->run(data, N, D, Y, no_dims, perplexity, theta, rand_seed, false);
 
 		// Save the results
 		tsne->save_data(Y, landmarks, costs, N, no_dims);
