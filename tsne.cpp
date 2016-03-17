@@ -165,7 +165,6 @@ void TSNE::run(double* X, int N, int D, double* Y, int no_dims, double perplexit
         if(iter == mom_switch_iter) momentum = final_momentum;
 
         // Print out progress
-        //if(iter > 0 && (iter % 50 == 0 || iter == max_iter - 1)) {
         if (iter > 0 && (iter % 50 == 0 || iter == max_iter - 1)) {
             end = clock();
             double C = .0;
@@ -750,7 +749,6 @@ int main() {
         // Clean up the memory
 		free(data); data = NULL;
 		free(Y); Y = NULL;
-		free(SX); SX = NULL;
 		free(costs); costs = NULL;
 		free(landmarks); landmarks = NULL;
     }
