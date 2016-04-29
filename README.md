@@ -36,7 +36,7 @@ The executable will be called `windows\bh_tsne.exe`.
 
 # Usage #
 
-The code comes with wrappers for Matlab and Python. These wrappers write your data to a file called `data.dat`, run the `bh_tsne` binary, and read the result file `result.dat` that the binary produces. There are also external wrappers available for [Torch](https://github.com/clementfarabet/manifold) and [R](https://github.com/jkrijthe/Rtsne). Writing your own wrapper should be straightforward; please refer to one of the existing wrappers for the format of the data and result files.
+The code comes with wrappers for Matlab and Python. These wrappers write your data to a file called `data.dat`, run the `bh_tsne` binary, and read the result file `result.dat` that the binary produces. There are also external wrappers available for [Torch](https://github.com/clementfarabet/manifold), [R](https://github.com/jkrijthe/Rtsne), and [Julia](https://github.com/zhmz90/BHTsne.jl). Writing your own wrapper should be straightforward; please refer to one of the existing wrappers for the format of the data and result files.
 
 Demonstration of usage in Matlab:
 
