@@ -85,7 +85,7 @@ void TSNE::run(double* X, int N, int D, double* Y, int no_dims, double perplexit
     zeroMean(X, N, D);
     double max_X = .0;
     for(int i = 0; i < N * D; i++) {
-        if(X[i] > max_X) max_X = X[i];
+        if(fabs(X[i]) > max_X) max_X = fabs(X[i]);
     }
     for(int i = 0; i < N * D; i++) X[i] /= max_X;
 
