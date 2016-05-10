@@ -600,39 +600,22 @@ void TSNE::symmetrizeMatrix(unsigned int** _row_P, unsigned int** _col_P, double
     free(row_counts); row_counts  = NULL;
 }
 
-// Compute squared Euclidean distance matrix (using BLAS)
+// Compute squared Euclidean distance matrix
 void TSNE::computeSquaredEuclideanDistance(double* X, int N, int D, double* DD) {
-    double* dataSums = (double*) calloc(N, sizeof(double));
-    if(dataSums == NULL) { printf("Memory allocation failed!\n"); exit(1); }
-    int nD = 0;
-    for(int n = 0; n < N; n++) {
-        for(int d = 0; d < D; d++) {
-            dataSums[n] += (X[nD + d] * X[nD + d]);
-        }
-        nD += D;
-    }
-    int nN = 0;
-    for(int n = 0; n < N; n++) {
-        for(int m = 0; m < N; m++) {
-            DD[nN + m] = dataSums[n] + dataSums[m];
-        }
-        nN += N;
-    }
-    nN = 0; nD = 0;
-    for(int n = 0; n < N; n++) {
-        int mD = 0;
-        DD[nN + n] = 0.0;
-        for(int m = n + 1; m < N; m++) {
-            DD[nN + m] = 0.0;
-            for(int d = 0; d < D; d++) {
-                DD[nN + m] += (X[nD + d] - X[mD + d]) * (X[nD + d] - X[mD + d]);
+    const double* XnD = X;
+    for(int n = 0; n < N; ++n, XnD += D) {
+        const double* XmD = XnD + D;
+        double* curr_elem = &DD[n*N + n];
+        *curr_elem = 0.0;
+        double* curr_elem_sym = curr_elem + N;
+        for(int m = n + 1; m < N; ++m, XmD+=D, curr_elem_sym+=N) {
+            *(++curr_elem) = 0.0;
+            for(int d = 0; d < D; ++d) {
+                *curr_elem += (XnD[d] - XmD[d]) * (XnD[d] - XmD[d]);
             }
-            DD[m * N + n] = DD[nN + m];
-            mD += D;
+            *curr_elem_sym = *curr_elem;
         }
-        nN += N; nD += D;
     }
-    free(dataSums); dataSums = NULL;
 }
 
 
