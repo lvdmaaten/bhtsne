@@ -43,7 +43,7 @@ class TSNE
 public:
     void run(double* X, int N, int D, double* Y, int no_dims, double perplexity, double theta, int rand_seed,
              bool skip_random_init, int max_iter=1000, int stop_lying_iter=250, int mom_switch_iter=250);
-    bool load_data(double** data, int* n, int* d, int* no_dims, double* theta, double* perplexity, int* rand_seed);
+    bool load_data(double** data, int* n, int* d, int* no_dims, double* theta, double* perplexity, int* rand_seed, int* max_iter);
     void save_data(double* data, int* landmarks, double* costs, int n, int d);
     void symmetrizeMatrix(unsigned int** row_P, unsigned int** col_P, double** val_P, int N); // should be static!
 
