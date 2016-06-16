@@ -15,7 +15,7 @@ Example:
 
 The output will not be normalised, maybe the below one-liner is of interest?:
 
-    python -c 'import numpy;  from sys import stdin, stdout; 
+    python -c 'import numpy;  from sys import stdin, stdout;
         d = numpy.loadtxt(stdin); d -= d.min(axis=0); d /= d.max(axis=0);
         numpy.savetxt(stdout, d, fmt="%.8f", delimiter="\t")'
 
@@ -97,7 +97,7 @@ def _read_unpack(fmt, fh):
 def bh_tsne(samples, no_dims=DEFAULT_NO_DIMS, initial_dims=INITIAL_DIMENSIONS, perplexity=DEFAULT_PERPLEXITY,
             theta=DEFAULT_THETA, randseed=EMPTY_SEED, verbose=False):
 
-    samples -= np.mean(samples, axis=0)
+    samples = samples - np.mean(samples, axis=0)
     cov_x = np.dot(np.transpose(samples), samples)
     [eig_val, eig_vec] = np.linalg.eig(cov_x)
 
@@ -150,7 +150,7 @@ def bh_tsne(samples, no_dims=DEFAULT_NO_DIMS, initial_dims=INITIAL_DIMENSIONS, p
             result_samples, result_dims = _read_unpack('ii', output_file)
             # Collect the results, but they may be out of order
             results = [_read_unpack('{}d'.format(result_dims), output_file)
-                for _ in xrange(result_samples)]
+                for _ in range(result_samples)]
             # Now collect the landmark data so that we can return the data in
             #   the order it arrived
             results = [(_read_unpack('i', output_file), e) for e in results]
@@ -160,6 +160,31 @@ def bh_tsne(samples, no_dims=DEFAULT_NO_DIMS, initial_dims=INITIAL_DIMENSIONS, p
                 yield result
             # The last piece of data is the cost for each sample, we ignore it
             #read_unpack('{}d'.format(sample_count), output_file)
+
+def run_bh_tsne(data, no_dims=2, perplexity=50, theta=0.5, randseed=-1, verbose=False,initial_dims=50):
+    '''
+    Run TSNE based on the Barnes-HT algorithm
+
+    Parameters:
+    ----------
+    data: numpy.array
+        The data used to run TSNE, one sample per row
+    no_dims: int
+    perplexity: int
+    randseed: int
+    theta: float
+    initial_dims: int
+    verbose: boolean
+    '''
+    data = np.asarray(data, dtype='float64')
+    res = []
+    for result in bh_tsne(data, no_dims=no_dims, perplexity=perplexity, theta=theta, randseed=randseed,verbose=verbose, initial_dims=initial_dims):
+        sample_res = []
+        for r in result:
+            sample_res.append(r)
+        res.append(sample_res)
+    return np.asarray(res, dtype='float64')
+
 
 def main(args):
     argp = _argparse().parse_args(args[1:])
