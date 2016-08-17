@@ -103,7 +103,7 @@ void TSNE::run(double* X, int N, int D, double* Y, int no_dims, double perplexit
         printf("Symmetrizing...\n");
         int nN = 0;
         for(int n = 0; n < N; n++) {
-            int mN = 0;
+            int mN = (n + 1) * N;
             for(int m = n + 1; m < N; m++) {
                 P[nN + m] += P[mN + n];
                 P[mN + n]  = P[nN + m];
