@@ -676,8 +676,8 @@ bool TSNE::load_data(double** data, int* n, int* d, int* no_dims, double* theta,
 	fread(d, sizeof(int), 1, h);											// original dimensionality
     fread(theta, sizeof(double), 1, h);										// gradient accuracy
 	fread(perplexity, sizeof(double), 1, h);								// perplexity
-	fread(no_dims, sizeof(int), 1, h);
-    fread(max_iter, sizeof(int),1,h);                                      // output dimensionality
+	fread(no_dims, sizeof(int), 1, h);                                      // output dimensionality
+    fread(max_iter, sizeof(int),1,h);                                       // maximum number of iterations
 	*data = (double*) malloc(*d * *n * sizeof(double));
     if(*data == NULL) { printf("Memory allocation failed!\n"); exit(1); }
     fread(*data, sizeof(double), *n * *d, h);                               // the data
