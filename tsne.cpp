@@ -664,7 +664,7 @@ double TSNE::randn() {
 
 // Function that loads data from a t-SNE file
 // Note: this function does a malloc that should be freed elsewhere
-bool TSNE::load_data(double** data, int* n, int* d, int* no_dims, double* theta, double* perplexity, int* rand_seed) {
+bool TSNE::load_data(double** data, int* n, int* d, int* no_dims, double* theta, double* perplexity, int* rand_seed, int* max_iter) {
 
 	// Open file, read first 2 integers, allocate memory, and read the data
     FILE *h;
@@ -676,7 +676,8 @@ bool TSNE::load_data(double** data, int* n, int* d, int* no_dims, double* theta,
 	fread(d, sizeof(int), 1, h);											// original dimensionality
     fread(theta, sizeof(double), 1, h);										// gradient accuracy
 	fread(perplexity, sizeof(double), 1, h);								// perplexity
-	fread(no_dims, sizeof(int), 1, h);                                      // output dimensionality
+	fread(no_dims, sizeof(int), 1, h);
+    fread(max_iter, sizeof(int),1,h);                                      // output dimensionality
 	*data = (double*) malloc(*d * *n * sizeof(double));
     if(*data == NULL) { printf("Memory allocation failed!\n"); exit(1); }
     fread(*data, sizeof(double), *n * *d, h);                               // the data
@@ -709,14 +710,14 @@ void TSNE::save_data(double* data, int* landmarks, double* costs, int n, int d) 
 int main() {
 
     // Define some variables
-	int origN, N, D, no_dims, *landmarks;
+	int origN, N, D, no_dims, max_iter, *landmarks;
 	double perc_landmarks;
 	double perplexity, theta, *data;
     int rand_seed = -1;
     TSNE* tsne = new TSNE();
 
     // Read the parameters and the dataset
-	if(tsne->load_data(&data, &origN, &D, &no_dims, &theta, &perplexity, &rand_seed)) {
+	if(tsne->load_data(&data, &origN, &D, &no_dims, &theta, &perplexity, &rand_seed, &max_iter)) {
 
 		// Make dummy landmarks
         N = origN;
@@ -728,7 +729,7 @@ int main() {
 		double* Y = (double*) malloc(N * no_dims * sizeof(double));
 		double* costs = (double*) calloc(N, sizeof(double));
         if(Y == NULL || costs == NULL) { printf("Memory allocation failed!\n"); exit(1); }
-		tsne->run(data, N, D, Y, no_dims, perplexity, theta, rand_seed, false);
+		tsne->run(data, N, D, Y, no_dims, perplexity, theta, rand_seed, false, max_iter);
 
 		// Save the results
 		tsne->save_data(Y, landmarks, costs, N, no_dims);
