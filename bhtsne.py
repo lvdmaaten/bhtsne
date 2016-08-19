@@ -48,6 +48,7 @@ from tempfile import mkdtemp
 from platform import system
 from os import devnull
 import numpy as np
+import os, sys
 
 ### Constants
 IS_WINDOWS = True if system() == 'Windows' else False
@@ -88,20 +89,29 @@ def _argparse():
     return argparse
 
 
-class TmpDir:
-    def __enter__(self):
-        self._tmp_dir_path = mkdtemp()
-        return self._tmp_dir_path
-
-    def __exit__(self, type, value, traceback):
-        rmtree(self._tmp_dir_path)
-
-
 def _read_unpack(fmt, fh):
     return unpack(fmt, fh.read(calcsize(fmt)))
 
-def bh_tsne(samples, no_dims=DEFAULT_NO_DIMS, initial_dims=INITIAL_DIMENSIONS, perplexity=DEFAULT_PERPLEXITY,
+def init_bh_tsne(input_file, workdir, no_dims=DEFAULT_NO_DIMS, initial_dims=INITIAL_DIMENSIONS, perplexity=DEFAULT_PERPLEXITY,
             theta=DEFAULT_THETA, randseed=EMPTY_SEED, verbose=False, use_pca=DEFAULT_USE_PCA, max_iter=DEFAULT_MAX_ITERATIONS):
+
+    # Read the data, with some sanity checking
+    samples = []
+    for sample_line_num, sample_line in enumerate((l.rstrip('\n')
+            for l in input_file), start=1):
+        sample_data = sample_line.split('\t')
+        try:
+            assert len(sample_data) == dims, ('Input line #{} of '
+                    'dimensionality {} although we have previously observed '
+                    'lines with dimensionality {}, possible data error or is '
+                    'the data sparsely encoded?'
+                    ).format(sample_line_num, len(sample_data), dims)
+        except NameError:
+            # First line, record the dimensionality
+            dims = len(sample_data)
+        samples.append([float(e) for e in sample_data])
+
+    samples = np.asarray(samples, dtype='float64')
 
     if use_pca:
         samples = samples - np.mean(samples, axis=0)
@@ -123,52 +133,52 @@ def bh_tsne(samples, no_dims=DEFAULT_NO_DIMS, initial_dims=INITIAL_DIMENSIONS, p
     sample_dim = len(samples[0])
     sample_count = len(samples)
 
-    # bh_tsne works with fixed input and output paths, give it a temporary
-    #   directory to work in so we don't clutter the filesystem
-    with TmpDir() as tmp_dir_path:
-        # Note: The binary format used by bh_tsne is roughly the same as for
-        #   vanilla tsne
-        with open(path_join(tmp_dir_path, 'data.dat'), 'wb') as data_file:
-            # Write the bh_tsne header
-            data_file.write(pack('iiddii', sample_count, sample_dim, theta, perplexity, no_dims, max_iter))
-            # Then write the data
-            for sample in samples:
-                data_file.write(pack('{}d'.format(len(sample)), *sample))
-            # Write random seed if specified
-            if randseed != EMPTY_SEED:
-                data_file.write(pack('i', randseed))
+    # Note: The binary format used by bh_tsne is roughly the same as for
+    #   vanilla tsne
+    with open(path_join(workdir, 'data.dat'), 'wb') as data_file:
+        # Write the bh_tsne header
+        data_file.write(pack('iiddii', sample_count, sample_dim, theta, perplexity, no_dims, max_iter))
+        # Then write the data
+        for sample in samples:
+            data_file.write(pack('{}d'.format(len(sample)), *sample))
+        # Write random seed if specified
+        if randseed != EMPTY_SEED:
+            data_file.write(pack('i', randseed))
 
-        # Call bh_tsne and let it do its thing
-        with open(devnull, 'w') as dev_null:
-            bh_tsne_p = Popen((abspath(BH_TSNE_BIN_PATH), ), cwd=tmp_dir_path,
-                    # bh_tsne is very noisy on stdout, tell it to use stderr
-                    #   if it is to print any output
-                    stdout=stderr if verbose else dev_null)
-            bh_tsne_p.wait()
-            assert not bh_tsne_p.returncode, ('ERROR: Call to bh_tsne exited '
-                    'with a non-zero return code exit status, please ' +
-                    ('enable verbose mode and ' if not verbose else '') +
-                    'refer to the bh_tsne output for further details')
 
-        # Read and pass on the results
-        with open(path_join(tmp_dir_path, 'result.dat'), 'rb') as output_file:
-            # The first two integers are just the number of samples and the
-            #   dimensionality
-            result_samples, result_dims = _read_unpack('ii', output_file)
-            # Collect the results, but they may be out of order
-            results = [_read_unpack('{}d'.format(result_dims), output_file)
-                for _ in range(result_samples)]
-            # Now collect the landmark data so that we can return the data in
-            #   the order it arrived
-            results = [(_read_unpack('i', output_file), e) for e in results]
-            # Put the results in order and yield it
-            results.sort()
-            for _, result in results:
-                yield result
-            # The last piece of data is the cost for each sample, we ignore it
-            #read_unpack('{}d'.format(sample_count), output_file)
+def bh_tsne(workdir, verbose=False):
 
-def run_bh_tsne(data, no_dims=2, perplexity=50, theta=0.5, randseed=-1, verbose=False,initial_dims=50, use_pca=True, max_iter=1000):
+    # Call bh_tsne and let it do its thing
+    with open(devnull, 'w') as dev_null:
+        bh_tsne_p = Popen((abspath(BH_TSNE_BIN_PATH), ), cwd=workdir,
+                # bh_tsne is very noisy on stdout, tell it to use stderr
+                #   if it is to print any output
+                stdout=stderr if verbose else dev_null)
+        bh_tsne_p.wait()
+        assert not bh_tsne_p.returncode, ('ERROR: Call to bh_tsne exited '
+                'with a non-zero return code exit status, please ' +
+                ('enable verbose mode and ' if not verbose else '') +
+                'refer to the bh_tsne output for further details')
+
+    # Read and pass on the results
+    with open(path_join(workdir, 'result.dat'), 'rb') as output_file:
+        # The first two integers are just the number of samples and the
+        #   dimensionality
+        result_samples, result_dims = _read_unpack('ii', output_file)
+        # Collect the results, but they may be out of order
+        results = [_read_unpack('{}d'.format(result_dims), output_file)
+            for _ in range(result_samples)]
+        # Now collect the landmark data so that we can return the data in
+        #   the order it arrived
+        results = [(_read_unpack('i', output_file), e) for e in results]
+        # Put the results in order and yield it
+        results.sort()
+        for _, result in results:
+            yield result
+        # The last piece of data is the cost for each sample, we ignore it
+        #read_unpack('{}d'.format(sample_count), output_file)
+
+def run_bh_tsne(input_file, no_dims=2, perplexity=50, theta=0.5, randseed=-1, verbose=False,initial_dims=50, use_pca=True, max_iter=1000):
     '''
     Run TSNE based on the Barnes-HT algorithm
 
@@ -185,36 +195,32 @@ def run_bh_tsne(data, no_dims=2, perplexity=50, theta=0.5, randseed=-1, verbose=
     use_pca: boolean
     max_iter: int
     '''
-    data = np.asarray(data, dtype='float64')
-    res = []
-    for result in bh_tsne(data, no_dims=no_dims, perplexity=perplexity, theta=theta, randseed=randseed,verbose=verbose, initial_dims=initial_dims, use_pca=use_pca, max_iter=max_iter):
-        sample_res = []
-        for r in result:
-            sample_res.append(r)
-        res.append(sample_res)
-    return np.asarray(res, dtype='float64')
+
+    # bh_tsne works with fixed input and output paths, give it a temporary
+    #   directory to work in so we don't clutter the filesystem
+    tmp_dir_path = mkdtemp()
+
+    # Load data in forked process to free memory for actual bh_tsne calculation
+    child_pid = os.fork()
+    if child_pid == 0:
+        init_bh_tsne(input_file, tmp_dir_path, no_dims=no_dims, perplexity=perplexity, theta=theta, randseed=randseed,verbose=verbose, initial_dims=initial_dims, use_pca=use_pca, max_iter=max_iter)
+        sys.exit(0)
+    else:
+        os.waitpid(child_pid, 0)
+        res = []
+        for result in bh_tsne(tmp_dir_path, verbose):
+            sample_res = []
+            for r in result:
+                sample_res.append(r)
+            res.append(sample_res)
+        rmtree(tmp_dir_path)
+        return np.asarray(res, dtype='float64')
 
 
 def main(args):
     argp = _argparse().parse_args(args[1:])
-
-    # Read the data, with some sanity checking
-    data = []
-    for sample_line_num, sample_line in enumerate((l.rstrip('\n')
-            for l in argp.input), start=1):
-        sample_data = sample_line.split('\t')
-        try:
-            assert len(sample_data) == dims, ('Input line #{} of '
-                    'dimensionality {} although we have previously observed '
-                    'lines with dimensionality {}, possible data error or is '
-                    'the data sparsely encoded?'
-                    ).format(sample_line_num, len(sample_data), dims)
-        except NameError:
-            # First line, record the dimensionality
-            dims = len(sample_data)
-        data.append([float(e) for e in sample_data])
-
-    for result in bh_tsne(data, no_dims=argp.no_dims, perplexity=argp.perplexity, theta=argp.theta, randseed=argp.randseed,
+    
+    for result in run_bh_tsne(argp.input, no_dims=argp.no_dims, perplexity=argp.perplexity, theta=argp.theta, randseed=argp.randseed,
             verbose=argp.verbose, initial_dims=argp.initial_dims, use_pca=argp.use_pca, max_iter=argp.max_iter):
         fmt = ''
         for i in range(1, len(result)):
