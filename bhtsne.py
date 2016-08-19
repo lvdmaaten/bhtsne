@@ -62,6 +62,8 @@ INITIAL_DIMENSIONS = 50
 DEFAULT_PERPLEXITY = 50
 DEFAULT_THETA = 0.5
 EMPTY_SEED = -1
+DEFAULT_USE_PCA = True
+DEFAULT_MAX_ITERATIONS = 1000
 
 ###
 
@@ -79,6 +81,10 @@ def _argparse():
     argparse.add_argument('-i', '--input', type=FileType('r'), default=stdin)
     argparse.add_argument('-o', '--output', type=FileType('w'),
             default=stdout)
+    argparse.add_argument('--use_pca', action='store_true')
+    argparse.add_argument('--no_pca', dest='use_pca', action='store_false')
+    argparse.set_defaults(use_pca=DEFAULT_USE_PCA)
+    argparse.add_argument('-m', '--max_iter', type=int, default=DEFAULT_MAX_ITERATIONS)
     return argparse
 
 
@@ -95,21 +101,22 @@ def _read_unpack(fmt, fh):
     return unpack(fmt, fh.read(calcsize(fmt)))
 
 def bh_tsne(samples, no_dims=DEFAULT_NO_DIMS, initial_dims=INITIAL_DIMENSIONS, perplexity=DEFAULT_PERPLEXITY,
-            theta=DEFAULT_THETA, randseed=EMPTY_SEED, verbose=False):
+            theta=DEFAULT_THETA, randseed=EMPTY_SEED, verbose=False, use_pca=DEFAULT_USE_PCA, max_iter=DEFAULT_MAX_ITERATIONS):
 
-    samples = samples - np.mean(samples, axis=0)
-    cov_x = np.dot(np.transpose(samples), samples)
-    [eig_val, eig_vec] = np.linalg.eig(cov_x)
+    if use_pca:
+        samples = samples - np.mean(samples, axis=0)
+        cov_x = np.dot(np.transpose(samples), samples)
+        [eig_val, eig_vec] = np.linalg.eig(cov_x)
 
-    # sorting the eigen-values in the descending order
-    eig_vec = eig_vec[:, eig_val.argsort()[::-1]]
+        # sorting the eigen-values in the descending order
+        eig_vec = eig_vec[:, eig_val.argsort()[::-1]]
 
-    if initial_dims > len(eig_vec):
-        initial_dims = len(eig_vec)
+        if initial_dims > len(eig_vec):
+            initial_dims = len(eig_vec)
 
-    # truncating the eigen-vectors matrix to keep the most important vectors
-    eig_vec = eig_vec[:, :initial_dims]
-    samples = np.dot(samples, eig_vec)
+        # truncating the eigen-vectors matrix to keep the most important vectors
+        eig_vec = eig_vec[:, :initial_dims]
+        samples = np.dot(samples, eig_vec)
 
     # Assume that the dimensionality of the first sample is representative for
     #   the whole batch
@@ -123,7 +130,7 @@ def bh_tsne(samples, no_dims=DEFAULT_NO_DIMS, initial_dims=INITIAL_DIMENSIONS, p
         #   vanilla tsne
         with open(path_join(tmp_dir_path, 'data.dat'), 'wb') as data_file:
             # Write the bh_tsne header
-            data_file.write(pack('iiddi', sample_count, sample_dim, theta, perplexity, no_dims))
+            data_file.write(pack('iiddii', sample_count, sample_dim, theta, perplexity, no_dims, max_iter))
             # Then write the data
             for sample in samples:
                 data_file.write(pack('{}d'.format(len(sample)), *sample))
@@ -161,7 +168,7 @@ def bh_tsne(samples, no_dims=DEFAULT_NO_DIMS, initial_dims=INITIAL_DIMENSIONS, p
             # The last piece of data is the cost for each sample, we ignore it
             #read_unpack('{}d'.format(sample_count), output_file)
 
-def run_bh_tsne(data, no_dims=2, perplexity=50, theta=0.5, randseed=-1, verbose=False,initial_dims=50):
+def run_bh_tsne(data, no_dims=2, perplexity=50, theta=0.5, randseed=-1, verbose=False,initial_dims=50, use_pca=True, max_iter=1000):
     '''
     Run TSNE based on the Barnes-HT algorithm
 
@@ -175,10 +182,12 @@ def run_bh_tsne(data, no_dims=2, perplexity=50, theta=0.5, randseed=-1, verbose=
     theta: float
     initial_dims: int
     verbose: boolean
+    use_pca: boolean
+    max_iter: int
     '''
     data = np.asarray(data, dtype='float64')
     res = []
-    for result in bh_tsne(data, no_dims=no_dims, perplexity=perplexity, theta=theta, randseed=randseed,verbose=verbose, initial_dims=initial_dims):
+    for result in bh_tsne(data, no_dims=no_dims, perplexity=perplexity, theta=theta, randseed=randseed,verbose=verbose, initial_dims=initial_dims, use_pca=use_pca, max_iter=max_iter):
         sample_res = []
         for r in result:
             sample_res.append(r)
@@ -206,7 +215,7 @@ def main(args):
         data.append([float(e) for e in sample_data])
 
     for result in bh_tsne(data, no_dims=argp.no_dims, perplexity=argp.perplexity, theta=argp.theta, randseed=argp.randseed,
-            verbose=argp.verbose, initial_dims=argp.initial_dims):
+            verbose=argp.verbose, initial_dims=argp.initial_dims, use_pca=argp.use_pca, max_iter=argp.max_iter):
         fmt = ''
         for i in range(1, len(result)):
             fmt = fmt + '{}\t'
