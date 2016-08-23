@@ -92,26 +92,8 @@ def _argparse():
 def _read_unpack(fmt, fh):
     return unpack(fmt, fh.read(calcsize(fmt)))
 
-def init_bh_tsne(input_file, workdir, no_dims=DEFAULT_NO_DIMS, initial_dims=INITIAL_DIMENSIONS, perplexity=DEFAULT_PERPLEXITY,
+def init_bh_tsne(samples, workdir, no_dims=DEFAULT_NO_DIMS, initial_dims=INITIAL_DIMENSIONS, perplexity=DEFAULT_PERPLEXITY,
             theta=DEFAULT_THETA, randseed=EMPTY_SEED, verbose=False, use_pca=DEFAULT_USE_PCA, max_iter=DEFAULT_MAX_ITERATIONS):
-
-    # Read the data, with some sanity checking
-    samples = []
-    for sample_line_num, sample_line in enumerate((l.rstrip('\n')
-            for l in input_file), start=1):
-        sample_data = sample_line.split('\t')
-        try:
-            assert len(sample_data) == dims, ('Input line #{} of '
-                    'dimensionality {} although we have previously observed '
-                    'lines with dimensionality {}, possible data error or is '
-                    'the data sparsely encoded?'
-                    ).format(sample_line_num, len(sample_data), dims)
-        except NameError:
-            # First line, record the dimensionality
-            dims = len(sample_data)
-        samples.append([float(e) for e in sample_data])
-
-    samples = np.asarray(samples, dtype='float64')
 
     if use_pca:
         samples = samples - np.mean(samples, axis=0)
@@ -144,6 +126,25 @@ def init_bh_tsne(input_file, workdir, no_dims=DEFAULT_NO_DIMS, initial_dims=INIT
         # Write random seed if specified
         if randseed != EMPTY_SEED:
             data_file.write(pack('i', randseed))
+
+def load_data(input_file):
+    # Read the data, with some sanity checking
+    samples = []
+    for sample_line_num, sample_line in enumerate((l.rstrip('\n')
+            for l in input_file), start=1):
+        sample_data = sample_line.split('\t')
+        try:
+            assert len(sample_data) == dims, ('Input line #{} of '
+                    'dimensionality {} although we have previously observed '
+                    'lines with dimensionality {}, possible data error or is '
+                    'the data sparsely encoded?'
+                    ).format(sample_line_num, len(sample_data), dims)
+        except NameError:
+            # First line, record the dimensionality
+            dims = len(sample_data)
+        samples.append([float(e) for e in sample_data])
+
+    return np.asarray(samples, dtype='float64')
 
 
 def bh_tsne(workdir, verbose=False):
@@ -178,13 +179,13 @@ def bh_tsne(workdir, verbose=False):
         # The last piece of data is the cost for each sample, we ignore it
         #read_unpack('{}d'.format(sample_count), output_file)
 
-def run_bh_tsne(input_file, no_dims=2, perplexity=50, theta=0.5, randseed=-1, verbose=False,initial_dims=50, use_pca=True, max_iter=1000):
+def run_bh_tsne(data, no_dims=2, perplexity=50, theta=0.5, randseed=-1, verbose=False,initial_dims=50, use_pca=True, max_iter=1000):
     '''
     Run TSNE based on the Barnes-HT algorithm
 
     Parameters:
     ----------
-    data: numpy.array
+    data: file or numpy.array
         The data used to run TSNE, one sample per row
     no_dims: int
     perplexity: int
@@ -203,7 +204,9 @@ def run_bh_tsne(input_file, no_dims=2, perplexity=50, theta=0.5, randseed=-1, ve
     # Load data in forked process to free memory for actual bh_tsne calculation
     child_pid = os.fork()
     if child_pid == 0:
-        init_bh_tsne(input_file, tmp_dir_path, no_dims=no_dims, perplexity=perplexity, theta=theta, randseed=randseed,verbose=verbose, initial_dims=initial_dims, use_pca=use_pca, max_iter=max_iter)
+        if isinstance(data, file):
+            data = load_data(data)
+        init_bh_tsne(data, tmp_dir_path, no_dims=no_dims, perplexity=perplexity, theta=theta, randseed=randseed,verbose=verbose, initial_dims=initial_dims, use_pca=use_pca, max_iter=max_iter)
         sys.exit(0)
     else:
         os.waitpid(child_pid, 0)
