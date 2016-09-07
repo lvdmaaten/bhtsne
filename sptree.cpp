@@ -338,7 +338,7 @@ unsigned int SPTree::getDepth() {
 
 
 // Compute non-edge forces using Barnes-Hut algorithm
-void SPTree::computeNonEdgeForces(unsigned int point_index, double theta, double neg_f[], double* sum_Q)
+void SPTree::computeNonEdgeForces(unsigned int point_index, double squared_inv_theta, double neg_f[], double* sum_Q)
 {
     
     // Make sure that we spend no time on empty nodes or self-interactions
@@ -357,7 +357,7 @@ void SPTree::computeNonEdgeForces(unsigned int point_index, double theta, double
         cur_width = boundary->getWidth(d);
         max_width = (max_width > cur_width) ? max_width : cur_width;
     }
-    if(is_leaf || max_width / sqrt(D) < theta) {
+    if(is_leaf || D > max_width * max_width * squared_inv_theta) {
     
         // Compute and add t-SNE force between point and current node
         D = 1.0 / (1.0 + D);
@@ -369,7 +369,7 @@ void SPTree::computeNonEdgeForces(unsigned int point_index, double theta, double
     else {
 
         // Recursively apply Barnes-Hut to children
-        for(unsigned int i = 0; i < no_children; i++) children[i]->computeNonEdgeForces(point_index, theta, neg_f, sum_Q);
+        for(unsigned int i = 0; i < no_children; i++) children[i]->computeNonEdgeForces(point_index, squared_inv_theta, neg_f, sum_Q);
     }
 }
 
