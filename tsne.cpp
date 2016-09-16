@@ -147,13 +147,15 @@ void TSNE::run(double* X, int N, int D, double* Y, int no_dims, double perplexit
 
 	for(int iter = 0; iter < max_iter; iter++) {
 
-        // Approximate sptree by rebuilding it on each fifth iter only
-        if(iter < 10 || iter % 5 == 0)
-            tree = new SPTree(no_dims, Y, N);
 
         // Compute (approximate) gradient
         if(exact) computeExactGradient(P, Y, N, no_dims, dY);
-        else computeGradient(P, row_P, col_P, val_P, Y, N, no_dims, dY, theta, tree);
+        else {
+            // Approximate sptree by rebuilding it on each fifth iter only
+            if(iter < 10 || iter % 5 == 0)
+                tree = new SPTree(no_dims, Y, N);
+            computeGradient(P, row_P, col_P, val_P, Y, N, no_dims, dY, theta, tree);
+        }
 
         // Update gains
         for(int i = 0; i < N * no_dims; i++) gains[i] = (sign(dY[i]) != sign(uY[i])) ? (gains[i] + .2) : (gains[i] * .8);
