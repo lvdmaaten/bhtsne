@@ -87,7 +87,7 @@ public:
     double x(int d) const { return _x[d]; }
 };
 
-double euclidean_distance(const DataPoint &t1, const DataPoint &t2) {
+double squared_euclidean_distance(const DataPoint &t1, const DataPoint &t2) {
     double dd = .0;
     double* x1 = t1._x;
     double* x2 = t2._x;
@@ -96,7 +96,7 @@ double euclidean_distance(const DataPoint &t1, const DataPoint &t2) {
         diff = (x1[d] - x2[d]);
         dd += diff * diff;
     }
-    return sqrt(dd);
+    return dd;
 }
 
 

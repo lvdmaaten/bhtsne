@@ -432,7 +432,7 @@ void TSNE::computeGaussianPerplexity(double* X, int N, int D, unsigned int** _ro
     for(int n = 0; n < N; n++) row_P[n + 1] = row_P[n] + (unsigned int) K;
 
     // Build ball tree on data set
-    VpTree<DataPoint, euclidean_distance>* tree = new VpTree<DataPoint, euclidean_distance>();
+    VpTree<DataPoint, squared_euclidean_distance>* tree = new VpTree<DataPoint, squared_euclidean_distance>();
     vector<DataPoint> obj_X(N, DataPoint(D, -1, X));
     for(int n = 0; n < N; n++) obj_X[n] = DataPoint(D, n, X + n * D);
     tree->create(obj_X);
@@ -462,13 +462,13 @@ void TSNE::computeGaussianPerplexity(double* X, int N, int D, unsigned int** _ro
         while(!found && iter < 200) {
 
             // Compute Gaussian kernel row
-            for(int m = 0; m < K; m++) cur_P[m] = exp(-beta * distances[m + 1] * distances[m + 1]);
+            for(int m = 0; m < K; m++) cur_P[m] = exp(-beta * distances[m + 1]);
 
             // Compute entropy of current row
             sum_P = DBL_MIN;
             for(int m = 0; m < K; m++) sum_P += cur_P[m];
             double H = .0;
-            for(int m = 0; m < K; m++) H += beta * (distances[m + 1] * distances[m + 1] * cur_P[m]);
+            for(int m = 0; m < K; m++) H += beta * (distances[m + 1] * cur_P[m]);
             H = (H / sum_P) + log(sum_P);
 
             // Evaluate whether the entropy is within the tolerance level
