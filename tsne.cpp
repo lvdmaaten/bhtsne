@@ -152,8 +152,11 @@ void TSNE::run(double* X, int N, int D, double* Y, int no_dims, double perplexit
         if(exact) computeExactGradient(P, Y, N, no_dims, dY);
         else {
             // Approximate sptree by rebuilding it on each fifth iter only
-            if(iter < 10 || iter % 5 == 0)
+            if(iter < 10 || iter % 5 == 0) {
+                if(iter > 0)
+                    delete tree;
                 tree = new SPTree(no_dims, Y, N);
+            }
             computeGradient(P, row_P, col_P, val_P, Y, N, no_dims, dY, theta, tree);
         }
 
