@@ -75,9 +75,18 @@ function mappedX = fast_tsne(X, no_dims, initial_dims, perplexity, theta, alg, m
     M = pca(X,'NumComponents',initial_dims,'Algorithm',alg);
     X = X * M;
     
-    % Run the fast diffusion SNE implementation
     tsne_path = which('fast_tsne');
     tsne_path = fileparts(tsne_path);
+    
+    % Compile t-SNE C code
+    if(~exist(fullfile(tsne_path,'./bh_tsne','file') && isunix)
+        system(sprintf('g++ %s %s -o %s -O2',...
+            fullfile(tsne_path,'./sptree.cpp'),...
+            fullfile(tsne_path,'./tsne.cpp',...
+            fullfile(tsne_path,'./bh_tsne')));
+    end
+
+    % Run the fast diffusion SNE implementation
     write_data(X, no_dims, theta, perplexity, max_iter);
     tic
     [flag, cmdout] = system(fullfile(tsne_path,'./bh_tsne'));
