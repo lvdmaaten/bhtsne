@@ -79,7 +79,12 @@ function mappedX = fast_tsne(X, no_dims, initial_dims, perplexity, theta, alg, m
     tsne_path = which('fast_tsne');
     tsne_path = fileparts(tsne_path);
     write_data(X, no_dims, theta, perplexity, max_iter);
-    tic, system(fullfile(tsne_path,'./bh_tsne')); toc
+    tic
+    [flag, cmdout] = system(fullfile(tsne_path,'./bh_tsne'));
+    if(flag~=0)
+        error(cmdout);
+    end
+    toc
     [mappedX, landmarks, costs] = read_data;   
     landmarks = landmarks + 1;              % correct for Matlab indexing
     delete('data.dat');
