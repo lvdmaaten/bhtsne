@@ -49,6 +49,7 @@ from platform import system
 from os import devnull
 import numpy as np
 import os, sys
+import io
 
 ### Constants
 IS_WINDOWS = True if system() == 'Windows' else False
@@ -91,6 +92,15 @@ def _argparse():
 
 def _read_unpack(fmt, fh):
     return unpack(fmt, fh.read(calcsize(fmt)))
+
+
+def _is_filelike_object(f):
+    try:
+        return isinstance(f, (file, io.IOBase))
+    except NameError:
+        # 'file' is not a class in python3
+        return isinstance(f, io.IOBase)
+
 
 def init_bh_tsne(samples, workdir, no_dims=DEFAULT_NO_DIMS, initial_dims=INITIAL_DIMENSIONS, perplexity=DEFAULT_PERPLEXITY,
             theta=DEFAULT_THETA, randseed=EMPTY_SEED, verbose=False, use_pca=DEFAULT_USE_PCA, max_iter=DEFAULT_MAX_ITERATIONS):
@@ -204,7 +214,7 @@ def run_bh_tsne(data, no_dims=2, perplexity=50, theta=0.5, randseed=-1, verbose=
     # Load data in forked process to free memory for actual bh_tsne calculation
     child_pid = os.fork()
     if child_pid == 0:
-        if isinstance(data, file):
+        if _is_filelike_object(data):
             data = load_data(data)
         init_bh_tsne(data, tmp_dir_path, no_dims=no_dims, perplexity=perplexity, theta=theta, randseed=randseed,verbose=verbose, initial_dims=initial_dims, use_pca=use_pca, max_iter=max_iter)
         sys.exit(0)
