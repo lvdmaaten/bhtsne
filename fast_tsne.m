@@ -89,7 +89,7 @@ function mappedX = fast_tsne(X, no_dims, initial_dims, perplexity, theta, alg, m
     % Run the fast diffusion SNE implementation
     write_data(X, no_dims, theta, perplexity, max_iter);
     tic
-    [flag, cmdout] = system(['"' fullfile(tsne_path,'./bh_tsne') '"']);s
+    [flag, cmdout] = system(['"' fullfile(tsne_path,'./bh_tsne') '"']);
     if(flag~=0)
         error(cmdout);
     end
