@@ -216,10 +216,16 @@ def run_bh_tsne(data, no_dims=2, perplexity=50, theta=0.5, randseed=-1, verbose=
     if child_pid == 0:
         if _is_filelike_object(data):
             data = load_data(data)
+
         init_bh_tsne(data, tmp_dir_path, no_dims=no_dims, perplexity=perplexity, theta=theta, randseed=randseed,verbose=verbose, initial_dims=initial_dims, use_pca=use_pca, max_iter=max_iter)
         sys.exit(0)
     else:
-        os.waitpid(child_pid, 0)
+        try:
+            os.waitpid(child_pid, 0)
+        except KeyboardInterrupt:
+            print("Please run this program directly from python and not from ipython or jupyter.")
+            print("This is an issue due to asynchronous error handling.")
+
         res = []
         for result in bh_tsne(tmp_dir_path, verbose):
             sample_res = []
@@ -231,7 +237,13 @@ def run_bh_tsne(data, no_dims=2, perplexity=50, theta=0.5, randseed=-1, verbose=
 
 
 def main(args):
-    argp = _argparse().parse_args(args[1:])
+    parser = _argparse()
+
+    if len(args) <= 1:
+        print(parser.print_help())
+        return 
+
+    argp = parser.parse_args(args[1:])
     
     for result in run_bh_tsne(argp.input, no_dims=argp.no_dims, perplexity=argp.perplexity, theta=argp.theta, randseed=argp.randseed,
             verbose=argp.verbose, initial_dims=argp.initial_dims, use_pca=argp.use_pca, max_iter=argp.max_iter):
