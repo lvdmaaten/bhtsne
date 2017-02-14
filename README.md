@@ -47,3 +47,14 @@ numDims = 2; pcaDims = 50; perplexity = 50; theta = .5; alg = 'svd';
 map = fast_tsne(digits', numDims, pcaDims, perplexity, theta, alg);
 gscatter(map(:,1), map(:,2), labels');
 ```
+
+Demonstration of usage in Python:
+
+```python
+import numpy as np
+import bhtsne
+
+data = np.loadtxt("mnist2500_X.txt")
+
+bhtsne.run_bh_tsne(data, initial_dims=data.shape[0])
+```
