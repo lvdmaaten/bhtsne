@@ -56,5 +56,5 @@ import bhtsne
 
 data = np.loadtxt("mnist2500_X.txt")
 
-bhtsne.run_bh_tsne(data, initial_dims=data.shape[0])
+bhtsne.run_bh_tsne(data, initial_dims=data.shape[1])
 ```

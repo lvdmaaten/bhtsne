@@ -138,24 +138,8 @@ def init_bh_tsne(samples, workdir, no_dims=DEFAULT_NO_DIMS, initial_dims=INITIAL
             data_file.write(pack('i', randseed))
 
 def load_data(input_file):
-    # Read the data, with some sanity checking
-    samples = []
-    for sample_line_num, sample_line in enumerate((l.rstrip('\n')
-            for l in input_file), start=1):
-        sample_data = sample_line.split('\t')
-        try:
-            assert len(sample_data) == dims, ('Input line #{} of '
-                    'dimensionality {} although we have previously observed '
-                    'lines with dimensionality {}, possible data error or is '
-                    'the data sparsely encoded?'
-                    ).format(sample_line_num, len(sample_data), dims)
-        except NameError:
-            # First line, record the dimensionality
-            dims = len(sample_data)
-        samples.append([float(e) for e in sample_data])
-
-    return np.asarray(samples, dtype='float64')
-
+    # Read the data, using numpy's good judgement
+    return np.loadtxt(input_file)
 
 def bh_tsne(workdir, verbose=False):
 
