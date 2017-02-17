@@ -54,7 +54,33 @@ Demonstration of usage in Python:
 import numpy as np
 import bhtsne
 
-data = np.loadtxt("mnist2500_X.txt")
+data = np.loadtxt("mnist2500_X.txt", skiprows=1)
 
-bhtsne.run_bh_tsne(data, initial_dims=data.shape[1])
+embedding_array = bhtsne.run_bh_tsne(data, initial_dims=data.shape[1])
 ```
+
+### Python Wrapper
+
+Usage:
+
+```bash
+python bh_tsne.py [-h] [-d NO_DIMS] [-p PERPLEXITY] [-t THETA]
+                  [-r RANDSEED] [-n INITIAL_DIMS] [-v] [-i INPUT]
+                  [-o OUTPUT] [--use_pca] [--no_pca] [-m MAX_ITER]
+```
+
+Below are the various options the wrapper program `bhtsne.py` expects:
+
+- `-h, --help`                      show this help message and exit
+- `-d NO_DIMS, --no_dims`           NO_DIMS
+- `-p PERPLEXITY, --perplexity`     PERPLEXITY
+- `-t THETA, --theta`               THETA
+- `-r RANDSEED, --randseed`         RANDSEED
+- `-n INITIAL_DIMS, --initial_dims` INITIAL_DIMS
+- `-v, --verbose`
+- `-i INPUT, --input`               INPUT: the input file, expects a TSV with the first row as the header.
+- `-o OUTPUT, --output`             OUTPUT: A TSV file having each row as the `d` dimensional embedding.
+- `--use_pca`
+- `--no_pca`
+- `-m MAX_ITER, --max_iter`         MAX_ITER
+
