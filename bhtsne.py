@@ -138,24 +138,8 @@ def init_bh_tsne(samples, workdir, no_dims=DEFAULT_NO_DIMS, initial_dims=INITIAL
             data_file.write(pack('i', randseed))
 
 def load_data(input_file):
-    # Read the data, with some sanity checking
-    samples = []
-    for sample_line_num, sample_line in enumerate((l.rstrip('\n')
-            for l in input_file), start=1):
-        sample_data = sample_line.split('\t')
-        try:
-            assert len(sample_data) == dims, ('Input line #{} of '
-                    'dimensionality {} although we have previously observed '
-                    'lines with dimensionality {}, possible data error or is '
-                    'the data sparsely encoded?'
-                    ).format(sample_line_num, len(sample_data), dims)
-        except NameError:
-            # First line, record the dimensionality
-            dims = len(sample_data)
-        samples.append([float(e) for e in sample_data])
-
-    return np.asarray(samples, dtype='float64')
-
+    # Read the data, using numpy's good judgement
+    return np.loadtxt(input_file)
 
 def bh_tsne(workdir, verbose=False):
 
@@ -189,7 +173,7 @@ def bh_tsne(workdir, verbose=False):
         # The last piece of data is the cost for each sample, we ignore it
         #read_unpack('{}d'.format(sample_count), output_file)
 
-def run_bh_tsne(data, no_dims=2, perplexity=50, theta=0.5, randseed=-1, verbose=False,initial_dims=50, use_pca=True, max_iter=1000):
+def run_bh_tsne(data, no_dims=2, perplexity=50, theta=0.5, randseed=-1, verbose=False, initial_dims=50, use_pca=True, max_iter=1000):
     '''
     Run TSNE based on the Barnes-HT algorithm
 
@@ -216,10 +200,16 @@ def run_bh_tsne(data, no_dims=2, perplexity=50, theta=0.5, randseed=-1, verbose=
     if child_pid == 0:
         if _is_filelike_object(data):
             data = load_data(data)
+
         init_bh_tsne(data, tmp_dir_path, no_dims=no_dims, perplexity=perplexity, theta=theta, randseed=randseed,verbose=verbose, initial_dims=initial_dims, use_pca=use_pca, max_iter=max_iter)
         sys.exit(0)
     else:
-        os.waitpid(child_pid, 0)
+        try:
+            os.waitpid(child_pid, 0)
+        except KeyboardInterrupt:
+            print("Please run this program directly from python and not from ipython or jupyter.")
+            print("This is an issue due to asynchronous error handling.")
+
         res = []
         for result in bh_tsne(tmp_dir_path, verbose):
             sample_res = []
@@ -231,7 +221,13 @@ def run_bh_tsne(data, no_dims=2, perplexity=50, theta=0.5, randseed=-1, verbose=
 
 
 def main(args):
-    argp = _argparse().parse_args(args[1:])
+    parser = _argparse()
+
+    if len(args) <= 1:
+        print(parser.print_help())
+        return 
+
+    argp = parser.parse_args(args[1:])
     
     for result in run_bh_tsne(argp.input, no_dims=argp.no_dims, perplexity=argp.perplexity, theta=argp.theta, randseed=argp.randseed,
             verbose=argp.verbose, initial_dims=argp.initial_dims, use_pca=argp.use_pca, max_iter=argp.max_iter):

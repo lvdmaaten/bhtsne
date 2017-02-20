@@ -1,0 +1,10 @@
+.idea
+*.ipynb
+*.py[oc]
+
+# ignore the C++ binary
+bh_tsne
+
+# ignore data files
+*.txt
+*.tsv
