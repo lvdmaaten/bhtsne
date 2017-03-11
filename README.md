@@ -64,7 +64,7 @@ embedding_array = bhtsne.run_bh_tsne(data, initial_dims=data.shape[1])
 Usage:
 
 ```bash
-python bh_tsne.py [-h] [-d NO_DIMS] [-p PERPLEXITY] [-t THETA]
+python bhtsne.py [-h] [-d NO_DIMS] [-p PERPLEXITY] [-t THETA]
                   [-r RANDSEED] [-n INITIAL_DIMS] [-v] [-i INPUT]
                   [-o OUTPUT] [--use_pca] [--no_pca] [-m MAX_ITER]
 ```
