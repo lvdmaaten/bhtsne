@@ -7,7 +7,7 @@ This software package contains a Barnes-Hut implementation of the t-SNE algorith
 On Linux or OS X, compile the source using the following command:
 
 ```
-g++ sptree.cpp tsne.cpp -o bh_tsne -O2
+g++ sptree.cpp tsne.cpp tsne_main.cpp -o bh_tsne -O2
 ```
 
 The executable will be called `bh_tsne`.
