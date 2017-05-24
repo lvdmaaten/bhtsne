@@ -117,7 +117,7 @@ def init_bh_tsne(samples, workdir, no_dims=DEFAULT_NO_DIMS, initial_dims=INITIAL
             initial_dims = len(eig_vec)
 
         # truncating the eigen-vectors matrix to keep the most important vectors
-        eig_vec = eig_vec[:, :initial_dims]
+        eig_vec = np.real(eig_vec[:, :initial_dims])
         samples = np.dot(samples, eig_vec)
 
     # Assume that the dimensionality of the first sample is representative for
