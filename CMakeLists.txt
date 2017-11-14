@@ -49,7 +49,7 @@ if(NOT GIT_SHA1)
 endif()
 
 # Meta information about the project
-set(META_PROJECT_NAME        "bhtnse")
+set(META_PROJECT_NAME        "bhtsne")
 set(META_PROJECT_DESCRIPTION "Barnes-Hut implementation of the t-SNE algorithm")
 set(META_AUTHOR_ORGANIZATION "HPI")
 set(META_AUTHOR_DOMAIN       "https://github.com/hpicgs/bhtsne")
