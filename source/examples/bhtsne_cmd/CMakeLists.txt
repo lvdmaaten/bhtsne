@@ -11,7 +11,7 @@
 #
 
 # Target name
-set(target cli)
+set(target bhtsne_cmd)
 
 # Exit here if required dependencies are not met
 message(STATUS "Example ${target}")
