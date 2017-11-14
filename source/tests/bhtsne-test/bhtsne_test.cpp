@@ -2,7 +2,6 @@
 #include <gmock/gmock.h>
 
 
-#include <bhtsne/bhtsne.h>
 
 class bhtsne_test: public testing::Test
 {

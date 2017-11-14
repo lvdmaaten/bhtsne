@@ -4,7 +4,7 @@
 #include <cstdio>
 #include <cstring>
 #include <ctime>
-#include "tsne.h"
+#include "bhtsne/tsne.h"
 
 // Function that runs the Barnes-Hut implementation of t-SNE
 int main() {
