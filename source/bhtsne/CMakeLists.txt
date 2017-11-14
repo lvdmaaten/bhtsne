@@ -11,7 +11,7 @@
 #
 
 # Target name
-set(target baselib)
+set(target bhtsne)
 
 # Exit here if required dependencies are not met
 message(STATUS "Lib ${target}")

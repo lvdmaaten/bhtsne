@@ -10,7 +10,7 @@ find_package(${META_PROJECT_NAME} REQUIRED HINTS "${CMAKE_CURRENT_SOURCE_DIR}/..
 # 
 
 # Target name
-set(target fiblib-test)
+set(target bhtsne-test)
 message(STATUS "Test ${target}")
 
 
@@ -20,7 +20,7 @@ message(STATUS "Test ${target}")
 
 set(sources
     main.cpp
-    fibonacci_test.cpp
+    bhtsne_test.cpp
 )
 
 
@@ -66,7 +66,7 @@ target_include_directories(${target}
 target_link_libraries(${target}
     PRIVATE
     ${DEFAULT_LIBRARIES}
-    ${META_PROJECT_NAME}::fiblib
+    ${META_PROJECT_NAME}::bhtsne
     gmock-dev
 )
 
