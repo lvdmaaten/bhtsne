@@ -6,3 +6,4 @@ endif()
 
 # Example applications
 add_subdirectory(bhtsne_cmd)
+add_subdirectory(result2svg)
