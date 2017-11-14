@@ -2,7 +2,7 @@ version: '{build}'
 branches:
   only:
   - master
-clone_folder: c:\projects\cmake-init
+clone_folder: c:\projects\bhtsne
 image:
 - Visual Studio 2013
 - Visual Studio 2015
@@ -33,17 +33,17 @@ init:
 before_build:
 - cmd: >-
     mkdir build
-    
+
     cd build
-    
+
     cmake --version
 
     cmake .. -G %generator%
-    
+
 build:
-  project: c:\projects\cmake-init\build\template.sln
+  project: c:\projects\bhtsne\build\bhtsne.sln
   verbosity: minimal
-  parallel: true 
+  parallel: true
 only_commits:
   files:
     - CMakeLists.txt
