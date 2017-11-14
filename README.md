@@ -1,5 +1,7 @@
 
 [![Build Status](https://travis-ci.org/hpicgs/bhtsne.svg)](https://travis-ci.org/hpicgs/bhtsne)
+[![Build Status](https://ci.appveyor.com/api/projects/status/1d4q1pd8d3h6rpoe?svg=true)](https://ci.appveyor.com/project/chistopher/bhtsne)
+
 
 This software package contains a Barnes-Hut implementation of the t-SNE algorithm. The implementation is described in [this paper](http://lvdmaaten.github.io/publications/papers/JMLR_2014.pdf).
 
