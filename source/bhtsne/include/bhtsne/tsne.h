@@ -30,15 +30,16 @@
  *
  */
 
+#pragma once
 
-#ifndef TSNE_H
-#define TSNE_H
+#include <bhtsne/bhtsne_api.h> // generated header for export macros
+
 
 
 static inline double sign(double x) { return (x == .0 ? .0 : (x < .0 ? -1.0 : 1.0)); }
 
 
-class TSNE
+class BHTSNE_API TSNE
 {
 public:
     void run(double* X, int N, int D, double* Y, int no_dims, double perplexity, double theta, int rand_seed,
@@ -59,5 +60,3 @@ private:
     void computeSquaredEuclideanDistance(double* X, int N, int D, double* DD);
     double randn();
 };
-
-#endif
