@@ -36,9 +36,12 @@
 #include <cstdio>
 #include <cstring>
 #include <ctime>
-#include "vptree.h"
-#include "sptree.h"
-#include "tsne.h"
+
+#include <bhtsne/sptree.h>
+#include <bhtsne/vptree.h>
+#include <bhtsne/tsne.h>
+
+#include <bhtsne/bhtsne-version.h> // includes BHTSNE_VERSION macro
 
 
 using namespace std;

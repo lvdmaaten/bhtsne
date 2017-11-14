@@ -37,8 +37,8 @@ deploy/packages/pack-<project>.cmake:
 In subdirectory "./source/fibcmd" do:
 
 source/fibcmd/main.cpp:
-[ ] Substitute template-version.h -> <project>-version.h
-[ ] Substitute TEMPLATE_VERSION -> <PROJECT>_VERSION
+[x] Substitute template-version.h -> <project>-version.h
+[x] Substitute TEMPLATE_VERSION -> <PROJECT>_VERSION
 --------------------------------------------------------------------
 
 
@@ -46,7 +46,7 @@ source/fibcmd/main.cpp:
 In subdirectory "./docs/api-docs/" do:
 
 docs/api-docs/doxyfile.in:
-[ ] Adjust INPUT tag (list of doxygen annotated sources)
+[x] Adjust INPUT tag (list of doxygen annotated sources)
 --------------------------------------------------------------------
 
 
@@ -61,9 +61,9 @@ source/tests/CMakeLists.txt:
 --------------------------------------------------------------------
 General stuff left to do:
 
-[ ] Rename and adjust projects in source/
-[ ] Add new projects to source/CMakeLists.txt
-[ ] Add new projects to ./{project}-config.cmake
+[x] Rename and adjust projects in source/
+[x] Add new projects to source/CMakeLists.txt
+[x] Add new projects to ./{project}-config.cmake
 [ ] Add new projects to docs/api-docs/doxyfile.in
 [ ] Remove data/DATA_FOLDER.txt
 [ ] Populate data/

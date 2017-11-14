@@ -35,7 +35,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <cmath>
-#include "sptree.h"
+
+#include <bhtsne/sptree.h>
 
 
 
@@ -90,7 +91,7 @@ bool Cell::containsPoint(double point[])
 // Default constructor for SPTree -- build tree, too!
 SPTree::SPTree(unsigned int D, double* inp_data, unsigned int N)
 {
-    
+
     // Compute mean, width, and height of current map (boundaries of SPTree)
     int nD = 0;
     double* mean_Y = (double*) calloc(D,  sizeof(double));
@@ -105,13 +106,13 @@ SPTree::SPTree(unsigned int D, double* inp_data, unsigned int N)
         nD += D;
     }
     for(int d = 0; d < D; d++) mean_Y[d] /= (double) N;
-    
+
     // Construct SPTree
     double* width = (double*) malloc(D * sizeof(double));
     for(int d = 0; d < D; d++) width[d] = fmax(max_Y[d] - mean_Y[d], mean_Y[d] - min_Y[d]) + 1e-5;
     init(NULL, D, inp_data, mean_Y, width);
     fill(N);
-    
+
     // Clean up memory
     free(mean_Y);
     free(max_Y);
@@ -160,17 +161,17 @@ void SPTree::init(SPTree* inp_parent, unsigned int D, double* inp_data, double* 
     is_leaf = true;
     size = 0;
     cum_size = 0;
-    
+
     boundary = new Cell(dimension);
     for(unsigned int d = 0; d < D; d++) boundary->setCorner(d, inp_corner[d]);
     for(unsigned int d = 0; d < D; d++) boundary->setWidth( d, inp_width[d]);
-    
+
     children = (SPTree**) malloc(no_children * sizeof(SPTree*));
     for(unsigned int i = 0; i < no_children; i++) children[i] = NULL;
 
     center_of_mass = (double*) malloc(D * sizeof(double));
     for(unsigned int d = 0; d < D; d++) center_of_mass[d] = .0;
-    
+
     buff = (double*) malloc(D * sizeof(double));
 }
 
@@ -209,21 +210,21 @@ bool SPTree::insert(unsigned int new_index)
     double* point = data + new_index * dimension;
     if(!boundary->containsPoint(point))
         return false;
-    
+
     // Online update of cumulative size and center-of-mass
     cum_size++;
     double mult1 = (double) (cum_size - 1) / (double) cum_size;
     double mult2 = 1.0 / (double) cum_size;
     for(unsigned int d = 0; d < dimension; d++) center_of_mass[d] *= mult1;
     for(unsigned int d = 0; d < dimension; d++) center_of_mass[d] += mult2 * point[d];
-    
+
     // If there is space in this quad tree and it is a leaf, add the object here
     if(is_leaf && size < QT_NODE_CAPACITY) {
         index[size] = new_index;
         size++;
         return true;
     }
-    
+
     // Don't add duplicates for now (this is not very nice)
     bool any_duplicate = false;
     for(unsigned int n = 0; n < size; n++) {
@@ -234,23 +235,23 @@ bool SPTree::insert(unsigned int new_index)
         any_duplicate = any_duplicate | duplicate;
     }
     if(any_duplicate) return true;
-    
+
     // Otherwise, we need to subdivide the current cell
     if(is_leaf) subdivide();
-    
+
     // Find out where the point can be inserted
     for(unsigned int i = 0; i < no_children; i++) {
         if(children[i]->insert(new_index)) return true;
     }
-    
+
     // Otherwise, the point cannot be inserted (this should never happen)
     return false;
 }
 
-    
+
 // Create four children which fully divide this cell into four quads of equal area
 void SPTree::subdivide() {
-    
+
     // Create new children
     double* new_corner = (double*) malloc(dimension * sizeof(double));
     double* new_width  = (double*) malloc(dimension * sizeof(double));
@@ -266,7 +267,7 @@ void SPTree::subdivide() {
     }
     free(new_corner);
     free(new_width);
-    
+
     // Move existing points to correct children
     for(unsigned int i = 0; i < size; i++) {
         bool success = false;
@@ -275,7 +276,7 @@ void SPTree::subdivide() {
         }
         index[i] = -1;
     }
-    
+
     // Empty parent node
     size = 0;
     is_leaf = false;
@@ -316,11 +317,11 @@ void SPTree::getAllIndices(unsigned int* indices)
 // Build a list of all indices in SPTree
 unsigned int SPTree::getAllIndices(unsigned int* indices, unsigned int loc)
 {
-    
+
     // Gather indices in current quadrant
     for(unsigned int i = 0; i < size; i++) indices[loc + i] = index[i];
     loc += size;
-    
+
     // Gather indices in children
     if(!is_leaf) {
         for(int i = 0; i < no_children; i++) loc = children[i]->getAllIndices(indices, loc);
@@ -340,16 +341,16 @@ unsigned int SPTree::getDepth() {
 // Compute non-edge forces using Barnes-Hut algorithm
 void SPTree::computeNonEdgeForces(unsigned int point_index, double theta, double neg_f[], double* sum_Q)
 {
-    
+
     // Make sure that we spend no time on empty nodes or self-interactions
     if(cum_size == 0 || (is_leaf && size == 1 && index[0] == point_index)) return;
-    
+
     // Compute distance between point and center-of-mass
     double D = .0;
     unsigned int ind = point_index * dimension;
     for(unsigned int d = 0; d < dimension; d++) buff[d] = data[ind + d] - center_of_mass[d];
     for(unsigned int d = 0; d < dimension; d++) D += buff[d] * buff[d];
-    
+
     // Check whether we can use this node as a "summary"
     double max_width = 0.0;
     double cur_width;
@@ -358,7 +359,7 @@ void SPTree::computeNonEdgeForces(unsigned int point_index, double theta, double
         max_width = (max_width > cur_width) ? max_width : cur_width;
     }
     if(is_leaf || max_width / sqrt(D) < theta) {
-    
+
         // Compute and add t-SNE force between point and current node
         D = 1.0 / (1.0 + D);
         double mult = cum_size * D;
@@ -377,21 +378,21 @@ void SPTree::computeNonEdgeForces(unsigned int point_index, double theta, double
 // Computes edge forces
 void SPTree::computeEdgeForces(unsigned int* row_P, unsigned int* col_P, double* val_P, int N, double* pos_f)
 {
-    
+
     // Loop over all edges in the graph
     unsigned int ind1 = 0;
     unsigned int ind2 = 0;
     double D;
     for(unsigned int n = 0; n < N; n++) {
         for(unsigned int i = row_P[n]; i < row_P[n + 1]; i++) {
-        
+
             // Compute pairwise distance and Q-value
             D = 1.0;
             ind2 = col_P[i] * dimension;
             for(unsigned int d = 0; d < dimension; d++) buff[d] = data[ind1 + d] - data[ind2 + d];
             for(unsigned int d = 0; d < dimension; d++) D += buff[d] * buff[d];
             D = val_P[i] / D;
-            
+
             // Sum positive force
             for(unsigned int d = 0; d < dimension; d++) pos_f[ind1 + d] += D * buff[d];
         }
@@ -401,7 +402,7 @@ void SPTree::computeEdgeForces(unsigned int* row_P, unsigned int* col_P, double*
 
 
 // Print out tree
-void SPTree::print() 
+void SPTree::print()
 {
     if(cum_size == 0) {
         printf("Empty node\n");
@@ -416,7 +417,7 @@ void SPTree::print()
             printf(" (index = %d)", index[i]);
             if(i < size - 1) printf("\n");
             else printf("]\n");
-        }        
+        }
     }
     else {
         printf("Intersection node with center-of-mass = [");
@@ -425,4 +426,3 @@ void SPTree::print()
         for(int i = 0; i < no_children; i++) children[i]->print();
     }
 }
-
