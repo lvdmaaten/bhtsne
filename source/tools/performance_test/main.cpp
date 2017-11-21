@@ -58,7 +58,7 @@ int main(int argc, char* argv[])
             }
             int temp;
             double temp2;
-            tsne.load_data(&data, &temp, &temp, &temp, &temp2, &temp2, &temp, &temp);
+            tsne.load_data(&data, &temp, &temp, &temp2, &temp2, &temp, &temp);
             int* landmarks = (int*)malloc(testSize * sizeof(int));
             if (landmarks == NULL) { printf("Memory allocation failed!\n"); exit(1); }
             for (int n = 0; n < testSize; n++) landmarks[n] = n;
@@ -68,14 +68,14 @@ int main(int argc, char* argv[])
 
             auto start_execute = std::chrono::high_resolution_clock::now();
 
-            tsne.run(data, testSize, input_dimension, result, output_dimension, perplexity, gradient_accuracy, rand_seed, false, iterations);
+            tsne.run(data, input_dimension, result, output_dimension, perplexity, gradient_accuracy, rand_seed, false, iterations);
 
             auto end_execute = std::chrono::high_resolution_clock::now();
 
             tsne.save_data(result, landmarks, costs, testSize, output_dimension);
             free(data);
             free(result);
-            free(costs); 
+            free(costs);
             free(landmarks);
 
             auto end_save = std::chrono::high_resolution_clock::now();
@@ -86,7 +86,7 @@ int main(int argc, char* argv[])
             current_result.save_time = (end_save - end_execute).count();
         }
     }
-    
+
     // write header
     std::cout << "testsize;iterations;preparation_time;execution_time;save_time" << std::endl;
 
