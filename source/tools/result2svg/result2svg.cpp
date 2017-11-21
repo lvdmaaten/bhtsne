@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <vector>
 
 using namespace std;
 
@@ -12,7 +13,7 @@ void fail(string reason)
 
 int main(int argc, char* argv[])
 {
-	string file = argc >= 2 ? argv[1] : "result.dat";
+    string file = argc >= 2 ? argv[1] : "result.dat";
     ifstream input;
     input.open(file, ios::in | ios::binary);
     if(!input.is_open()) fail("Could not open input.");
@@ -48,6 +49,29 @@ int main(int argc, char* argv[])
     double radius = 0.1;
     string viewBox = to_string(-max-radius) + " " + to_string(-max-radius) + " " + to_string(2*max+2*radius) + " " + to_string(2*max+2*radius);
 
+    uint8_t* labels;
+    bool useLabels = false;
+    if (argc > 2)
+    {
+        useLabels = true;
+        ifstream input_l;
+        input_l.open(argv[2], ios::in | ios::binary);
+        if (!input_l.is_open()) fail("Could not open labels.");
+
+        uint32_t N_l;
+        input_l.read((char*)&N_l, 4);
+        cout << "Labels file contains " << to_string(N_l) << " labels." << endl;
+        if (N_l < N) fail("Not enough labels for result.");
+
+        labels = new uint8_t[N_l];
+        input_l.read((char*)labels, N_l);
+
+        input_l.close();
+        cout << "Read labels." << endl;
+    }
+
+    auto colors = vector<string>{ "red", "blue", "green", "yellow", "magenta", "brown", "orange", "lime", "lightblue", "pink" };
+
     ofstream output;
     output.open("result.svg", ios::out | ios::trunc);
     cout << "Opened output." << endl;
@@ -56,11 +80,14 @@ int main(int argc, char* argv[])
     output << "<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\" width=\"600\" height=\"600\" viewBox=\"" << viewBox << "\">" << endl;
     cout << "Wrote header." << endl;
     
-    for(int i = 0; i < N * no_dims; i+=2)
+    string color = "black";
+    for(int i = 0; i < N; i++)
     {
-        double d0 = ((double*)data)[i];
-        double d1 = ((double*)data)[i+1];
-        output << "<circle cx=\"" << d0 << "\" cy=\"" << d1 << "\" r=\"0.1\" fill=\"black\" />" << endl;
+        double d0 = ((double*)data)[i*2];
+        double d1 = ((double*)data)[i*2+1];
+        if (useLabels)
+            color = labels[i] < colors.size() ? colors[labels[i]] : "black";
+        output << "<circle cx=\"" << d0 << "\" cy=\"" << d1 << "\" r=\"0.1\" fill=\"" << color << "\" stroke=\"" << color << "\"/>" << endl;
     }
     output << "</svg>" << endl;
     cout << "Wrote data." << endl;
