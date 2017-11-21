@@ -14,7 +14,7 @@
 set(target result2svg)
 
 # Exit here if required dependencies are not met
-message(STATUS "Example ${target}")
+message(STATUS "Tool ${target}")
 
 
 #

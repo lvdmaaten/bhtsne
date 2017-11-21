@@ -44,6 +44,9 @@
 #include <bhtsne/bhtsne-version.h> // includes BHTSNE_VERSION macro
 
 
+//remove spam
+#define printf(...) (0)
+
 using namespace std;
 
 // Perform t-SNE
