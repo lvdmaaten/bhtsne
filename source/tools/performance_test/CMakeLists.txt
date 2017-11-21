@@ -11,7 +11,7 @@
 #
 
 # Target name
-set(target bhtsne_cmd)
+set(target performance_test)
 
 # Exit here if required dependencies are not met
 message(STATUS "Tool ${target}")
@@ -22,7 +22,7 @@ message(STATUS "Tool ${target}")
 #
 
 set(sources
-    tsne_main.cpp
+    main.cpp
 )
 
 
