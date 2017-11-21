@@ -16,8 +16,8 @@ set(IDE_FOLDER "")
 add_subdirectory(bhtsne)
 
 # Examples
-set(IDE_FOLDER "Examples")
-add_subdirectory(examples)
+set(IDE_FOLDER "Tools")
+add_subdirectory(tools)
 
 # Tests
 if(OPTION_BUILD_TESTS)
