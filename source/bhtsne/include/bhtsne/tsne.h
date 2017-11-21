@@ -32,8 +32,8 @@
 
 #pragma once
 
-#include <bhtsne/bhtsne_api.h> // generated header for export macros
 
+#include <bhtsne/bhtsne_api.h> // generated header for export macros
 
 
 static inline double sign(double x) { return (x == .0 ? .0 : (x < .0 ? -1.0 : 1.0)); }
@@ -49,6 +49,9 @@ public:
     static void symmetrizeMatrix(unsigned int** row_P, unsigned int** col_P, double** val_P, int N); // should be static!
 
     unsigned int getNumberOfSamples() const;
+
+    //for testing
+    void setNumberOfSamples(unsigned int value);
 
 private:
     void computeGradient(unsigned int* inp_row_P, unsigned int* inp_col_P, double* inp_val_P, double* Y, int D, double* dC, double theta);

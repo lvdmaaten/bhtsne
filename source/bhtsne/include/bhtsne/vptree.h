@@ -33,7 +33,7 @@
 
 /* This code was adopted with minor modifications from Steve Hanov's great tutorial at http://stevehanov.ca/blog/index.php?id=130 */
 
-#include <stdlib.h>
+#include <cstdlib>
 #include <algorithm>
 #include <vector>
 #include <stdio.h>

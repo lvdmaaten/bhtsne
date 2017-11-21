@@ -32,7 +32,7 @@
 
 #include <math.h>
 #include <float.h>
-#include <stdlib.h>
+#include <cstdlib>
 #include <stdio.h>
 #include <cmath>
 

@@ -59,6 +59,7 @@ int main(int argc, char* argv[])
             int temp;
             double temp2;
             tsne.load_data(&data, &temp, &temp, &temp2, &temp2, &temp, &temp);
+            tsne.setNumberOfSamples(testSize);
             int* landmarks = (int*)malloc(testSize * sizeof(int));
             if (landmarks == NULL) { printf("Memory allocation failed!\n"); exit(1); }
             for (int n = 0; n < testSize; n++) landmarks[n] = n;
