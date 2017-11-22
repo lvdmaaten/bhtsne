@@ -7,7 +7,7 @@
 
 using namespace std;
 
-void fail(string reason)
+void fail(const string& reason)
 {
     cout << "Error: " << reason << endl;
     exit(-1);
@@ -27,7 +27,7 @@ int main(int argc, char* argv[])
 
     cout << "Set includes " << sampleCount << " samples with " << dimensionCount << " values each." << endl;
     cout << "Total number of values is " << (sampleCount * dimensionCount) << "." << endl;
-    
+
     auto data = vector<double>(sampleCount * dimensionCount);
     input.read(reinterpret_cast<char*>(data.data()), data.size() * sizeof(double));
     cout << "Loaded data." << endl;
@@ -36,7 +36,7 @@ int main(int argc, char* argv[])
     cout << "Closed input." << endl;
 
     double extreme = 0;
-    for(int i = 0; i < sampleCount * dimensionCount; i++)
+    for(unsigned int i = 0; i < sampleCount * dimensionCount; i++)
         extreme = max(extreme, abs(data[i]));
     double radius = 0.5;
     double halfwidth = extreme + radius;
@@ -78,9 +78,9 @@ int main(int argc, char* argv[])
     output << "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>" << endl;
     output << "<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\" width=\"600\" height=\"600\" viewBox=\"" << viewBox << "\">" << endl;
     cout << "Wrote header." << endl;
-    
+
     string color = "black";
-    for(int i = 0; i < sampleCount; i++)
+    for(unsigned int i = 0; i < sampleCount; i++)
     {
         if (useLabels)
             color = labels[i] < colors.size() ? colors[labels[i]] : "black";
