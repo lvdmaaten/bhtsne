@@ -1,5 +1,8 @@
 #include <bhtsne/tsne.h>
 #include <gtest/gtest.h>
+#include <string>
+#include <cstdio>
+#include <fstream>
 
 class TsneTest : public testing::Test
 {
@@ -13,14 +16,30 @@ protected:
     m_tnse = bhtsne::TSNE();
     }*/
 
+    void createTempfile()
+    {
+        std::string tempfile = std::tmpnam(nullptr);
+        std::cout << tempfile << std::endl;
+        std::ofstream filestream;
+        filestream.open(tempfile, std::ios::out | std::ios::binary | std::ios::trunc);
+    }
+
+    void removeTempfile()
+    {
+        filestream.close();
+        remove(tempfile.c_str());
+    }
+
     bhtsne::TSNE m_tnse;
+    std::string tempfile;
+    std::ofstream filestream;
 };
 
 TEST(SanityChecks, Equality)
 {
     EXPECT_EQ((unsigned int) 0, 0);
     EXPECT_EQ((unsigned int) 1, 1);
-}
+}   
 
 TEST_F(TsneTest, DefaultValues)
 {
@@ -86,4 +105,43 @@ TEST_F(TsneTest, OutputFile)
     EXPECT_EQ(m_tnse.outputFile(), "foo.dat");
     m_tnse.setOutputFile("bar.dat");
     EXPECT_EQ(m_tnse.outputFile(), "bar.dat");
+}
+
+TEST_F(TsneTest, LoadLegacy)
+{
+    //createTempfile();
+    //filestream << "text in tempfile";
+    // run load and chceck if read data is correct
+    //removeTempfile();
+    FAIL();
+}
+
+TEST_F(TsneTest, LoadCSV)
+{
+    FAIL();
+}
+
+TEST_F(TsneTest, LoadTSNE)
+{
+    FAIL();
+}
+
+TEST_F(TsneTest, Run)
+{
+    FAIL();
+}
+
+TEST_F(TsneTest, SaveLegacy)
+{
+    FAIL();
+}
+
+TEST_F(TsneTest, SaveCSV)
+{
+    FAIL();
+}
+
+TEST_F(TsneTest, SaveSVG)
+{
+    FAIL();
 }
