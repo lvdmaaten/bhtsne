@@ -897,6 +897,10 @@ void TSNE::run()
 
 	std::cout << "Using random seed: " << m_randomSeed << std::endl;
 
+	bool skip_random_init = false;
+	int stop_lying_iter = 250;
+	int mom_switch_iter = 250;
+
 
 	// Determine whether we are using an exact algorithm
 	if (m_numberOfSamples - 1 < 3 * m_perplexity) {
@@ -914,41 +918,54 @@ void TSNE::run()
 	double momentum = .5, final_momentum = .8;
 	double eta = 200.0;
 
-	//=========================================================================
-	/*// Allocate some memory
-	double* dY = (double*)malloc(m_numberOfSamples * no_dims * sizeof(double));
-	auto uY = vector<double>(m_numberOfSamples * no_dims, 0.0);
-	auto gains = vector<double>(m_numberOfSamples * no_dims, 1.0);
+	// Allocate some memory
+	double* dY = (double*)malloc(m_numberOfSamples * m_outputDimensions * sizeof(double));
+	auto uY = vector<double>(m_numberOfSamples * m_outputDimensions, 0.0);
+	auto gains = vector<double>(m_numberOfSamples * m_outputDimensions, 1.0);
 	if (dY == nullptr) {
-		printf("Memory allocation failed!\n");
+		std::cout << "Memory allocation failed!" << std::endl;
 		exit(1);
 	}
 
 	// Normalize input data (to prevent numerical problems)
-	printf("Computing input similarities...\n");
+	std::cout << "Computing input similarities..." << std::endl;
 	start = clock();
-	zeroMean(X, m_numberOfSamples, D);
+	zeroMean(m_data, m_inputDimensions);
 	// TODO: extract normalization function for vector
 	double max_X = .0;
-	for (unsigned int i = 0; i < m_numberOfSamples * D; i++) {
-		if (fabs(X[i]) > max_X)
-			max_X = fabs(X[i]);
+	for (auto& point : m_data)
+	{
+		for (auto& val : point)
+		{
+			if (fabs(val) > max_X) {
+				max_X = fabs(val);
+			}
+		}
 	}
-	for (int i = 0; i < m_numberOfSamples * D; i++)
-		X[i] /= max_X;
+	for (auto& point : m_data)
+	{
+		for (auto& val : point)
+		{
+			val /= max_X;
+		}
+	}
 
 	// Compute input similarities for exact t-SNE
 	double* P; unsigned int* row_P; unsigned int* col_P; double* val_P;
 	if (exact) {
 
 		// Compute similarities
-		printf("Exact?");
+		std::cout << "Exact?";
 		P = (double*)malloc(m_numberOfSamples * m_numberOfSamples * sizeof(double));
-		if (P == nullptr) { printf("Memory allocation failed!\n"); exit(1); }
-		computeGaussianPerplexity(X, m_numberOfSamples, D, P, perplexity);
+		if (P == nullptr)
+		{ 
+			std:cout << "Memory allocation failed!" << std::endl;
+			exit(1);
+		}
+		computeGaussianPerplexity(P);
 
 		// Symmetrize input similarities
-		printf("Symmetrizing...\n");
+		std::cout << "Symmetrizing..." << std::endl;
 		int nN = 0;
 		for (int n = 0; n < m_numberOfSamples; n++) {
 			int mN = (n + 1) * m_numberOfSamples;
@@ -968,8 +985,7 @@ void TSNE::run()
 	else {
 
 		// Compute asymmetric pairwise input similarities
-		computeGaussianPerplexity(X, m_numberOfSamples, D, &row_P, &col_P, &val_P, perplexity,
-			(int)(3 * perplexity));
+		computeGaussianPerplexity(&row_P, &col_P, &val_P);
 
 		// Symmetrize input similarities
 		symmetrizeMatrix(&row_P, &col_P, &val_P, m_numberOfSamples);
@@ -990,49 +1006,49 @@ void TSNE::run()
 			val_P[i] *= 12.0;
 	}
 
+	double* Y = (double*)malloc(m_numberOfSamples * m_outputDimensions * sizeof(double));
 	// Initialize solution (randomly)
 	if (skip_random_init != true) {
-		for (int i = 0; i < m_numberOfSamples * no_dims; i++)
+		for (int i = 0; i < m_numberOfSamples * m_outputDimensions; i++)
 			Y[i] = randn() * .0001;
 	}
 
 	// Perform main training loop
 	if (exact) {
-		printf("Input similarities computed in %4.2f seconds!\nLearning embedding...\n",
-			(float)(end - start) / CLOCKS_PER_SEC);
+		std::cout << "Input similarities computed in " << ((float)(end - start) / CLOCKS_PER_SEC) << " seconds!\nLearning embedding..." << std::endl;
 	}
 	else {
-		printf("Input similarities computed in %4.2f seconds (sparsity = %f)!\n",
-			(float)(end - start) / CLOCKS_PER_SEC,
-			(double)row_P[m_numberOfSamples] / (double)(m_numberOfSamples * m_numberOfSamples));
-		printf("Learning embedding...\n");
+		std::cout << " Input similarities computed in "
+			<< ((float)(end - start) / CLOCKS_PER_SEC) << "seconds (sparsity = "
+			<< ((double)row_P[m_numberOfSamples] / (double)(m_numberOfSamples * m_numberOfSamples)) << ")!" << std::endl;
+		std::cout << "Learning embedding..." << std::endl;
 	}
 	start = clock();
 
-	for (int iter = 0; iter < max_iter; iter++) {
+	for (int iter = 0; iter < m_iterations; iter++) {
 
 		// Compute (approximate) gradient
 		if (exact) {
-			computeExactGradient(P, Y, no_dims, dY);
+			computeExactGradient(P, Y, m_outputDimensions, dY);
 		}
 		else {
-			computeGradient(row_P, col_P, val_P, Y, no_dims, dY, theta);
+			computeGradient(row_P, col_P, val_P, Y, m_outputDimensions, dY, m_gradientAccuracy);
 		}
 
 		// Update gains
-		for (int i = 0; i < m_numberOfSamples * no_dims; i++)
+		for (int i = 0; i < m_numberOfSamples * m_outputDimensions; i++)
 			gains[i] = (sign(dY[i]) != sign(uY[i])) ? (gains[i] + .2) : (gains[i] * .8);
-		for (int i = 0; i < m_numberOfSamples * no_dims; i++)
+		for (int i = 0; i < m_numberOfSamples * m_outputDimensions; i++)
 			gains[i] = max(gains[i], 0.1);
 
 		// Perform gradient update (with momentum and gains)
-		for (int i = 0; i < m_numberOfSamples * no_dims; i++)
+		for (int i = 0; i < m_numberOfSamples * m_outputDimensions; i++)
 			uY[i] = momentum * uY[i] - eta * gains[i] * dY[i];
-		for (int i = 0; i < m_numberOfSamples * no_dims; i++)
+		for (int i = 0; i < m_numberOfSamples * m_outputDimensions; i++)
 			Y[i] = Y[i] + uY[i];
 
 		// Make solution zero-mean
-		zeroMean(Y, m_numberOfSamples, no_dims);
+		zeroMean(Y, m_numberOfSamples, m_outputDimensions);
 
 		// Stop lying about the P-values after a while, and switch momentum
 		if (iter == stop_lying_iter) {
@@ -1048,23 +1064,22 @@ void TSNE::run()
 		if (iter == mom_switch_iter) momentum = final_momentum;
 
 		// Print out progress
-		if (iter > 0 && (iter % 50 == 0 || iter == max_iter - 1)) {
+		if (iter > 0 && (iter % 50 == 0 || iter == m_iterations - 1)) {
 			end = clock();
 			double C = .0;
 			if (exact) {
-				C = evaluateError(P, Y, no_dims);
+				C = evaluateError(P, Y, m_outputDimensions);
 			}
 			else {
 				// doing approximate computation here!
-				C = evaluateError(row_P, col_P, val_P, Y, no_dims, theta);
+				C = evaluateError(row_P, col_P, val_P, Y, m_outputDimensions, m_gradientAccuracy);
 			}
 
 			if (iter == 0)
-				printf("Iteration %d: error is %f\n", iter + 1, C);
+				std::cout << "Iteration " << (iter + 1) << ": error is " << C << std::endl;
 			else {
 				total_time += (float)(end - start) / CLOCKS_PER_SEC;
-				printf("Iteration %d: error is %f (50 iterations in %4.2f seconds)\n", iter, C,
-					(float)(end - start) / CLOCKS_PER_SEC);
+				std::cout << "Iteration " << iter << ": error is " << C << " (50 iterations in " << ((float)(end - start) / CLOCKS_PER_SEC) << " seconds)" << std::endl;
 			}
 			start = clock();
 		}
@@ -1079,7 +1094,7 @@ void TSNE::run()
 		free(col_P); col_P = nullptr;
 		free(val_P); val_P = nullptr;
 	}
-	printf("Fitting performed in %4.2f seconds.\n", total_time);*/
+	std::cout << "Fitting performed in " << total_time << " seconds." << std::endl;
 }
 
 void TSNE::saveLegacy()
@@ -1095,4 +1110,252 @@ void TSNE::saveCSV()
 void TSNE::saveSVG()
 {
 
+}
+
+void TSNE::zeroMean(std::vector<std::vector<double>>& data, unsigned int dimensions)
+{
+	// Compute data mean
+	auto mean = vector<double>(dimensions, 0.0);
+	int nD = 0;
+	for (int n = 0; n < m_numberOfSamples; n++) {
+		for (int d = 0; d < dimensions; d++) {
+			mean[d] += data[n][d];//X[nD + d];
+		}
+		nD += dimensions;
+	}
+	for (int d = 0; d < dimensions; d++) {
+		mean[d] /= (double)m_numberOfSamples;
+	}
+
+	// Subtract data mean
+	nD = 0;
+	for (int n = 0; n < m_numberOfSamples; n++) {
+		for (int d = 0; d < dimensions; d++) {
+			data[n][d] -= mean[d];
+		}
+		nD += dimensions;
+	}
+}
+
+void TSNE::computeGaussianPerplexity(double* P)
+{
+	//m_data, m_numberOfSamples, m_inputDimensions, P, m_perplexity
+	//double* X, int N, int D, double* P, double perplexity) {
+
+	// Compute the squared Euclidean distance matrix
+	double* DD = (double*)malloc(m_numberOfSamples * m_numberOfSamples * sizeof(double));
+	if (DD == nullptr) { printf("Memory allocation failed!\n"); exit(1); }
+	computeSquaredEuclideanDistance(m_data, DD);
+
+	// Compute the Gaussian kernel row by row
+	int nN = 0;
+	for (int n = 0; n < m_numberOfSamples; n++) {
+
+		// Initialize some variables
+		bool found = false;
+		double beta = 1.0;
+		double min_beta = -DBL_MAX;
+		double max_beta = DBL_MAX;
+		double tol = 1e-5;
+		double sum_P;
+
+		// Iterate until we found a good perplexity
+		int iter = 0;
+		while (!found && iter < 200) {
+
+			// Compute Gaussian kernel row
+			for (int m = 0; m < m_numberOfSamples; m++)
+				P[nN + m] = exp(-beta * DD[nN + m]);
+			P[nN + n] = DBL_MIN;
+
+			// Compute entropy of current row
+			sum_P = DBL_MIN;
+			for (int m = 0; m < m_numberOfSamples; m++)
+				sum_P += P[nN + m];
+			double H = 0.0;
+			for (int m = 0; m < m_numberOfSamples; m++)
+				H += beta * (DD[nN + m] * P[nN + m]);
+			H = (H / sum_P) + log(sum_P);
+
+			// Evaluate whether the entropy is within the tolerance level
+			double Hdiff = H - log(m_perplexity);
+			if (Hdiff < tol && -Hdiff < tol) {
+				found = true;
+			}
+			else {
+				if (Hdiff > 0) {
+					min_beta = beta;
+					if (max_beta == DBL_MAX || max_beta == -DBL_MAX)
+						beta *= 2.0;
+					else
+						beta = (beta + max_beta) / 2.0;
+				}
+				else {
+					max_beta = beta;
+					if (min_beta == -DBL_MAX || min_beta == DBL_MAX)
+						beta /= 2.0;
+					else
+						beta = (beta + min_beta) / 2.0;
+				}
+			}
+
+			// Update iteration counter
+			iter++;
+		}
+
+		// Row normalize P
+		for (int m = 0; m < m_numberOfSamples; m++)
+			P[nN + m] /= sum_P;
+		nN += m_numberOfSamples;
+	}
+
+	// Clean up memory
+	free(DD); DD = nullptr;
+}
+
+// Compute squared Euclidean distance matrix
+void TSNE::computeSquaredEuclideanDistance(std::vector<std::vector<double>> data, double* DD) 
+{
+	int dimensions = data[0].size();
+	double* XnD = (double*)malloc(data.size() * data[0].size() * sizeof(double));// = data;
+	int offset = 0;
+	for (auto& point : data)
+	{
+		for (auto& val : point)
+		{
+			*(XnD + offset) = val;
+		}
+	}
+
+	for (int n = 0; n < m_numberOfSamples; ++n, XnD += dimensions) {
+		const double* XmD = XnD + dimensions;
+		double* curr_elem = &DD[n*m_numberOfSamples + n];
+		*curr_elem = 0.0;
+		double* curr_elem_sym = curr_elem + m_numberOfSamples;
+		for (int m = n + 1; m < m_numberOfSamples; ++m, XmD += dimensions, curr_elem_sym += m_numberOfSamples) {
+			*(++curr_elem) = 0.0;
+			for (int d = 0; d < dimensions; ++d) {
+				*curr_elem += (XnD[d] - XmD[d]) * (XnD[d] - XmD[d]);
+			}
+			*curr_elem_sym = *curr_elem;
+		}
+	}
+}
+
+void TSNE::computeGaussianPerplexity(unsigned int** _row_P,	unsigned int** _col_P, double** _val_P) {
+
+	int dimensions = m_data[0].size();
+	double* X = (double*)malloc(m_data.size() * m_data[0].size() * sizeof(double));// = data;
+	int offset = 0;
+	for (auto& point : m_data)
+	{
+		for (auto& val : point)
+		{
+			*(X + offset) = val;
+		}
+	}
+
+	int K = (int)(3 * m_perplexity);
+
+	if (m_perplexity > K)
+		printf("Perplexity should be lower than K!\n");
+
+	// Allocate the memory we need
+	*_row_P = (unsigned int*)malloc((m_numberOfSamples + 1) * sizeof(unsigned int));
+	*_col_P = (unsigned int*)calloc(m_numberOfSamples * K, sizeof(unsigned int));
+	*_val_P = (double*)calloc(m_numberOfSamples * K, sizeof(double));
+	if (*_row_P == nullptr || *_col_P == nullptr || *_val_P == nullptr) {
+		printf("Memory allocation failed!\n");
+		exit(1);
+	}
+	unsigned int* row_P = *_row_P;
+	unsigned int* col_P = *_col_P;
+	double* val_P = *_val_P;
+	auto cur_P = vector<double>(m_numberOfSamples - 1);
+	row_P[0] = 0;
+	for (int n = 0; n < m_numberOfSamples; n++)
+		row_P[n + 1] = row_P[n] + (unsigned int)K;
+
+	// Build ball tree on data set
+	auto tree = VpTree<DataPoint, euclidean_distance>();
+	auto obj_X = vector<DataPoint>(m_numberOfSamples, DataPoint(m_inputDimensions, -1, X));
+	for (int n = 0; n < m_numberOfSamples; n++)
+		obj_X[n] = DataPoint(m_inputDimensions, n, X + n * m_inputDimensions);
+	tree.create(obj_X);
+
+	// Loop over all points to find nearest neighbors
+	printf("Building tree...\n");
+	vector<DataPoint> indices;
+	vector<double> distances;
+	for (int n = 0; n < m_numberOfSamples; n++) {
+
+		if (n % 10000 == 0)
+			printf(" - point %d of %d\n", n, m_numberOfSamples);
+
+		// Find nearest neighbors
+		indices.clear();
+		distances.clear();
+		tree.search(obj_X[n], K + 1, &indices, &distances);
+
+		// Initialize some variables for binary search
+		bool found = false;
+		double beta = 1.0;
+		double min_beta = -DBL_MAX;
+		double max_beta = DBL_MAX;
+		double tol = 1e-5;
+
+		// Iterate until we found a good perplexity
+		int iter = 0; double sum_P;
+		while (!found && iter < 200) {
+
+			// Compute Gaussian kernel row
+			for (int m = 0; m < K; m++)
+				cur_P[m] = exp(-beta * distances[m + 1] * distances[m + 1]);
+
+			// Compute entropy of current row
+			sum_P = DBL_MIN;
+			for (int m = 0; m < K; m++)
+				sum_P += cur_P[m];
+			double H = .0;
+			for (int m = 0; m < K; m++)
+				H += beta * (distances[m + 1] * distances[m + 1] * cur_P[m]);
+			H = (H / sum_P) + log(sum_P);
+
+			// Evaluate whether the entropy is within the tolerance level
+			double Hdiff = H - log(m_perplexity);
+			if (Hdiff < tol && -Hdiff < tol) {
+				found = true;
+			}
+			else {
+				if (Hdiff > 0) {
+					min_beta = beta;
+					if (max_beta == DBL_MAX || max_beta == -DBL_MAX)
+						beta *= 2.0;
+					else
+						beta = (beta + max_beta) / 2.0;
+				}
+				else {
+					max_beta = beta;
+					if (min_beta == -DBL_MAX || min_beta == DBL_MAX)
+						beta /= 2.0;
+					else
+						beta = (beta + min_beta) / 2.0;
+				}
+			}
+
+			// Update iteration counter
+			iter++;
+		}
+
+		// Row-normalize current row of P and store in matrix
+		for (unsigned int m = 0; m < K; m++)
+			cur_P[m] /= sum_P;
+		for (unsigned int m = 0; m < K; m++) {
+			col_P[row_P[n] + m] = (unsigned int)indices[m + 1].index();
+			val_P[row_P[n] + m] = cur_P[m];
+		}
+	}
+
+	// Clean up memory
+	obj_X.clear();
 }

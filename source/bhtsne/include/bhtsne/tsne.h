@@ -51,12 +51,12 @@ namespace bhtsne
 *    the t-distributed stochastic neighbor embedding algorithm
 *
 *    Default parameters are: 
-*       randomSeed          0
-*       perplexity          42
-*       gradientAccuracy    0.5
-*       iterations          1000
-*       outputDimensions    2
-*       outputFile          "result"
+*    - randomSeed          0
+*    - perplexity          50
+*    - gradientAccuracy    0.2
+*    - iterations          1000
+*    - outputDimensions    2
+*    - outputFile          "./result"
 *
 *    This class follows the method object pattern (SmalltalkBestPracticePatterns, page 34-37).
 */
@@ -379,6 +379,12 @@ protected:
 
     // output
     std::string  m_outputFile;          ///< path and basename used to create output files
+	std::vector<std::vector<double>> m_result;
+
+	void zeroMean(std::vector<std::vector<double>>& data, unsigned int dimensions);
+	void computeGaussianPerplexity(double* P);
+	void computeGaussianPerplexity(unsigned int** _row_P, unsigned int** _col_P, double** _val_P);
+	void computeSquaredEuclideanDistance(std::vector<std::vector<double>> X, double* DD);
 };
 
 
