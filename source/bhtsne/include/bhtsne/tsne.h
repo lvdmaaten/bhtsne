@@ -51,12 +51,12 @@ namespace bhtsne
 *    the t-distributed stochastic neighbor embedding algorithm
 *
 *    Default parameters are: 
-*       randomSeed          0
-*       perplexity          42
-*       gradientAccuracy    0.5
-*       iterations          1000
-*       outputDimensions    2
-*       outputFile          "result"
+*    - randomSeed          0
+*    - perplexity          50
+*    - gradientAccuracy    0.2
+*    - iterations          1000
+*    - outputDimensions    2
+*    - outputFile          "./result"
 *
 *    This class follows the method object pattern (SmalltalkBestPracticePatterns, page 34-37).
 */
