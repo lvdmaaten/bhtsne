@@ -20,7 +20,7 @@ message(STATUS "Test ${target}")
 
 set(sources
     main.cpp
-    bhtsne_test.cpp
+    tsneTest.cpp
 )
 
 
