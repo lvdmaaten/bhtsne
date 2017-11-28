@@ -7,6 +7,9 @@
 
 #include <bhtsne/tsne.h>
 
+
+using namespace bhtsne;
+
 // Function that runs the Barnes-Hut implementation of t-SNE
 int main() {
 

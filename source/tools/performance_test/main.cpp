@@ -51,7 +51,7 @@ int main(int argc, char* argv[])
             double gradient_accuracy = 0.5;
             double* data;
             int rand_seed = 0;
-            TSNE tsne;
+            bhtsne::TSNE tsne;
             if (!fileIsPresent())
             {
                 std::cout << "data.dat not found" << std::endl;

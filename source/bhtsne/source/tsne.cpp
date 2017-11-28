@@ -46,6 +46,8 @@
 
 
 using namespace std;
+using namespace bhtsne;
+
 
 // Perform t-SNE
 void TSNE::run(double* X, int D, double* Y, int no_dims, double perplexity, double theta,
@@ -134,6 +136,7 @@ void TSNE::run(double* X, int D, double* Y, int no_dims, double perplexity, doub
 
         // Symmetrize input similarities
         symmetrizeMatrix(&row_P, &col_P, &val_P, m_numberOfSamples);
+        //normalize val_P so that sum of all val = 1
         double sum_P = .0;
         for(int i = 0; i < row_P[m_numberOfSamples]; i++) sum_P += val_P[i];
         for(int i = 0; i < row_P[m_numberOfSamples]; i++) val_P[i] /= sum_P;
@@ -766,3 +769,6 @@ void TSNE::setNumberOfSamples(unsigned int value)
     m_numberOfSamples = value;
 }
 
+TSNE::TSNE()
+{
+}

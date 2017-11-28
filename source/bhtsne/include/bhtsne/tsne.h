@@ -33,25 +33,102 @@
 #pragma once
 
 
+#include <string>
+
 #include <bhtsne/bhtsne_api.h> // generated header for export macros
 
 
 static inline double sign(double x) { return (x == .0 ? .0 : (x < .0 ? -1.0 : 1.0)); }
 
 
+namespace bhtsne
+{
+
+
 class BHTSNE_API TSNE
 {
 public:
+
+    /**
+    *  @brief
+    *    Constructor. Sets resonable defaults.
+    *    TODO: mention default values.
+    */
+    TSNE();
+
+    /**
+    *  @brief
+    *    Get seed for random generator
+    *
+    *  @return
+    *    Currently used random seed.
+    */
+    int randomSeed() const;
+
+    /**
+    *  @brief
+    *    Set option value
+    *
+    *  @param[in] seed
+    *    an int
+    */
+    void setRandomSeed(int seed);
+
+    double perplexity() const;
+    void setPerplexity(double perplexity);
+
+    /**
+    *  @brief
+    *    Get gradient accuracy
+    *
+    *  @remarks
+    *    Called theta in other implementations
+    */
+    double gradientAccuracy() const;
+
+    /**
+    *  @brief
+    *    Set gradient accuracy
+    *
+    *  @remarks
+    *    Called theta in other implementations
+    */
+    void setGradientAccuracy(double accuracy);
+
+    unsigned int iterations() const;
+    void setIterations(unsigned int iterations);
+
+    unsigned int outputDimensions() const;
+    void setOutputDimensions(unsigned int dimensions);
+
+    //no setter coz from dataset deduced
+    unsigned int inputDimensions() const;
+
+    unsigned int getNumberOfSamples() const; //TODO: rename (w/o get)
+    void setNumberOfSamples(unsigned int value);
+
+    std::string outputFile() const;
+    void setOutputFile(const std::string& file);
+
+
+    bool loadLegacy(std::string file);
+    bool loadCSV(std::string file);
+    bool loadTSNE(std::string file);
+
+    void run();
+
+    void saveLegacy();
+    void saveCSV();
+    void saveSVG();
+
+    //TODO: remove legacy stuff
     void run(double* X, int D, double* Y, int no_dims, double perplexity, double theta, int rand_seed,
              bool skip_random_init, int max_iter=1000, int stop_lying_iter=250, int mom_switch_iter=250);
     bool load_data(double** data, int* d, int* no_dims, double* theta, double* perplexity, int* rand_seed, int* max_iter);
     void save_data(double* data, int* landmarks, double* costs, int n, int d);
     static void symmetrizeMatrix(unsigned int** row_P, unsigned int** col_P, double** val_P, int N); // should be static!
 
-    unsigned int getNumberOfSamples() const;
 
-    //for testing
-    void setNumberOfSamples(unsigned int value);
 
 private:
     void computeGradient(unsigned int* inp_row_P, unsigned int* inp_col_P, double* inp_val_P, double* Y, int D, double* dC, double theta);
@@ -64,5 +141,20 @@ private:
     void computeSquaredEuclideanDistance(double* X, int N, int D, double* DD); //static?
     double randn();
 
-    unsigned int m_numberOfSamples;
+
+    //params
+    int          m_randomSeed;      ///< TODO comment
+    double       m_perplexity;      ///< TODO comment
+    double       m_gradientAccuracy;///< TODO comment
+    unsigned int m_iterations;      ///< TODO comment
+
+    //dataset
+    unsigned int m_outputDimensions;    ///< TODO comment
+    unsigned int m_inputDimensions;     ///< TODO comment
+    unsigned int m_numberOfSamples;     ///< TODO comment and rename
+
+    std::string  m_outputFile;          ///< TODO comment
 };
+
+
+}; //bhtsne
