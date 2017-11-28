@@ -156,6 +156,12 @@ private:
 	std::vector<std::vector<double>> m_data;
 
     std::string  m_outputFile;          ///< TODO comment
+	std::vector<std::vector<double>> m_result;
+
+	void zeroMean(std::vector<std::vector<double>>& data, unsigned int dimensions);
+	void computeGaussianPerplexity(double* P);
+	void computeGaussianPerplexity(unsigned int** _row_P, unsigned int** _col_P, double** _val_P);
+	void computeSquaredEuclideanDistance(std::vector<std::vector<double>> X, double* DD);
 };
 
 
