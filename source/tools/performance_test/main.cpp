@@ -2,6 +2,7 @@
 #include <vector>
 #include <chrono>
 #include <iostream>
+#include <fstream>
 #include <stdio.h>
 
 #include <bhtsne/tsne.h>
@@ -19,11 +20,8 @@ struct MeasurementResult
 
 bool fileIsPresent()
 {
-    FILE *h;
-    h = fopen("data.dat", "r+b");
-    bool res = !(h == NULL);
-    fclose(h);
-    return res;
+    auto file = std::ifstream("data.dat");
+    return file.good();
 }
 
 int main(int argc, char* argv[])
