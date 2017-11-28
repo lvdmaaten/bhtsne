@@ -11,10 +11,6 @@ protected:
     {
         m_tnse = bhtsne::TSNE();
     }
-    /*virtual void SetUp()
-    {
-    m_tnse = bhtsne::TSNE();
-    }*/
 
     void createTempfile()
     {
