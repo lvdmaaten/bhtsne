@@ -207,23 +207,22 @@ public:
 
     /**
     *  @brief
-    *    Get output file basname
+    *    Get output file 
     *
     *  @return
-    *    Output file basname
+    *    Output file
     *
     *  @remarks
-    *    The basename that is used to create all outputfiles. 
-    *    Final output files are "./<outputFile>.<extension>".
+    *    This is the path and basename that is used to create all output files. 
     */
     std::string outputFile() const;
 
     /**
     *  @brief
-    *    Set output file basname
+    *    Set output file 
     *
     *  @param[in] name
-    *    Output file basname
+    *    Output file 
     *
     *  @see outputFile()
     */
@@ -234,30 +233,114 @@ public:
     *    Loads a dataset from a ".dat" file
     *
     *  @param[in] file
-    *    Input file of legacy format
+    *    Input file path
+    *
+    *  @post
+    *    If this fuction returns true, the dataset was loaded and run() can be called. 
     *
     *  @remarks
-    *    Loads files with the extension ".dat" used in the original implementation (https://github.com/lvdmaaten/bhtsne).
-    *    In addition to the dataset parameters (see loadTSNE()) also 
+    *    Loads files with the extension ".dat" as used in the original implementation (https://github.com/lvdmaaten/bhtsne).
+    *    In addition to the dataset parameters also 
     *    sets (and overrides) gradient accuracy, perplexity, output dimensionality, iterations, and possibly the seed.
     *    The file must contain the following binary information:
-    *       int         number of datapoints
-    *       int         input dimensionality
-    *       double      gradient accuracy
-    *       double      perplexity
-    *       int         output dimensionality
-    *       int         number of iterations
-    *       double...   the data as an interleaved buffer (number of datapoints * input dimensionality)
-    *       int         random seed (optional)
+    *    - int         number of datapoints
+    *    - int         input dimensionality
+    *    - double      gradient accuracy
+    *    - double      perplexity
+    *    - int         output dimensionality
+    *    - int         number of iterations
+    *    - double...   the data as an interleaved buffer (number of datapoints * input dimensionality)
+    *    - int         random seed (optional)
     */
     bool loadLegacy(std::string file);
+
+    /**
+    *  @brief
+    *    Loads a dataset from a ".csv" file
+    *
+    *  @param[in] file
+    *    Input file path
+    *
+    *  @post
+    *    If this fuction returns true, the dataset was loaded and run() can be called.
+    *
+    *  @remarks
+    *    Loads files with the extension ".csv".
+    *    The file should contain x lines with y numerical values each. 
+    *    The number of samples is set to x and the input dimensionality to y.
+    */
     bool loadCSV(std::string file);
+
+    /**
+    *  @brief
+    *    Loads a dataset from a ".tsne" file
+    *
+    *  @param[in] file
+    *    Input file path
+    *
+    *  @post
+    *    If this fuction returns true, the dataset was loaded and run() can be called.
+    *
+    *  @remarks
+    *    Loads files with the extension ".tsne".
+    *    The file must contain the following binary information:
+    *    - int         number of datapoints
+    *    - int         input dimensionality
+    *    - double...   the data as an interleaved buffer (number of datapoints * input dimensionality)
+    */
     bool loadTSNE(std::string file);
 
+    /**
+    *  @brief
+    *    Runs the algorithm
+    *
+    *  @pre
+    *    A dataset must be loaded by any of the "load" functions.
+    *
+    *  @post
+    *    The result is computed and ready to be saved by any of the "save" functions.
+    *
+    *  @remarks
+    *    This function runs the barnes hut implementation of the T-SNE algorithm. 
+    */
     void run();
 
+    /**
+    *  @brief
+    *    Saves the result in a ".dat" file
+    *
+    *  @pre
+    *    The algorithm must have ran (i.e. run() was called). 
+    *
+    *  @remarks
+    *    Saves the result of the computation to "<outputFile>.dat".
+    *    This format was used in the original implementation (https://github.com/lvdmaaten/bhtsne).
+    */
     void saveLegacy();
+
+    /**
+    *  @brief
+    *    Saves the result in a ".csv" file
+    *
+    *  @pre
+    *    The algorithm must have ran (i.e. run() was called).
+    *
+    *  @remarks
+    *    Saves the result of the computation to "<outputFile>.csv".
+    */
     void saveCSV();
+
+    /**
+    *  @brief
+    *    Saves the result in a ".svg" file
+    *
+    *  @pre
+    *    - the algorithm must have ran (i.e. run() was called)
+    *    - output dimensionality = 2
+    *
+    *  @remarks
+    *    Saves the result of the computation to "<outputFile>.svg".
+    */
     void saveSVG();
 
     //TODO: remove legacy stuff
@@ -281,20 +364,22 @@ private:
     double randn();
 
 
-    //params
-    int          m_randomSeed;      ///< TODO comment
+protected:
+    // params
+    int          m_randomSeed;      ///< used to initialize the internal random generator
     double       m_perplexity;      ///< TODO comment
-    double       m_gradientAccuracy;///< TODO comment
-    unsigned int m_iterations;      ///< TODO comment
+    double       m_gradientAccuracy;///< used as the width for the gauss sampling kernel
+    unsigned int m_iterations;      ///< defines how many iterations the algorithm does in run()
 
-    //dataset
-    unsigned int m_outputDimensions;    ///< TODO comment
-    unsigned int m_inputDimensions;     ///< TODO comment
-    unsigned int m_numberOfSamples;     ///< TODO comment and rename
-	std::vector<std::vector<double>> m_data;
+    // dataset
+    unsigned int m_outputDimensions;         ///< dimensionality of the result
+    unsigned int m_inputDimensions;          ///< dimensionality of the input; set during load
+    unsigned int m_numberOfSamples;          ///< size of data; set during load
+	std::vector<std::vector<double>> m_data; ///< loaded data 
 
-    std::string  m_outputFile;          ///< TODO comment
+    // output
+    std::string  m_outputFile;          ///< path and basename used to create output files
 };
 
 
-}; //bhtsne
+}; // bhtsne
