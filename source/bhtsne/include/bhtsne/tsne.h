@@ -34,6 +34,7 @@
 
 
 #include <string>
+#include <vector>
 
 #include <bhtsne/bhtsne_api.h> // generated header for export macros
 
@@ -152,6 +153,7 @@ private:
     unsigned int m_outputDimensions;    ///< TODO comment
     unsigned int m_inputDimensions;     ///< TODO comment
     unsigned int m_numberOfSamples;     ///< TODO comment and rename
+	std::vector<std::vector<double>> m_data;
 
     std::string  m_outputFile;          ///< TODO comment
 };
