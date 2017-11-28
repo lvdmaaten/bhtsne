@@ -36,7 +36,10 @@
 #include <cstdio>
 #include <cstring>
 #include <ctime>
+
 #include <vector>
+#include <iostream>
+#include <fstream>
 
 #include <bhtsne/sptree.h>
 #include <bhtsne/vptree.h>
@@ -760,15 +763,336 @@ void TSNE::save_data(double* data, int* landmarks, double* costs, int n, int d) 
 	printf("Wrote the %i x %i data matrix successfully!\n", n, d);
 }
 
-unsigned int TSNE::getNumberOfSamples() const {
-    return m_numberOfSamples;
+TSNE::TSNE()
+{
+	m_randomSeed = 0;
+	m_perplexity = 50.0;
+	m_gradientAccuracy = 0.2;
+	m_iterations = 1000;
+
+	m_outputDimensions = 2;
+	m_numberOfSamples = 0;
+	m_outputFile = "./result";
+}
+
+
+int TSNE::randomSeed() const
+{
+	return m_randomSeed;
+}
+
+void TSNE::setRandomSeed(int seed)
+{
+	m_randomSeed = seed;
+}
+
+double TSNE::perplexity() const
+{
+	return m_perplexity;
+}
+
+void TSNE::setPerplexity(double perplexity)
+{
+	m_perplexity = perplexity;
+}
+
+double TSNE::gradientAccuracy() const
+{
+	return m_gradientAccuracy;
+}
+
+void TSNE::setGradientAccuracy(double accuracy)
+{
+	m_gradientAccuracy = accuracy;
+}
+
+unsigned int TSNE::iterations() const
+{
+	return m_iterations;
+}
+
+void TSNE::setIterations(unsigned int iterations)
+{
+	m_iterations = iterations;
+}
+
+unsigned int TSNE::outputDimensions() const
+{
+	return m_outputDimensions;
+}
+
+void TSNE::setOutputDimensions(unsigned int dimensions)
+{
+	m_outputDimensions = dimensions;
+}
+
+unsigned int TSNE::inputDimensions() const
+{
+	return m_inputDimensions;
+}
+
+unsigned int TSNE::getNumberOfSamples() const
+{
+	return m_numberOfSamples;
 }
 
 void TSNE::setNumberOfSamples(unsigned int value)
 {
-    m_numberOfSamples = value;
+	m_numberOfSamples = value;
 }
 
-TSNE::TSNE()
+std::string TSNE::outputFile() const
 {
+	return m_outputFile;
+}
+
+void TSNE::setOutputFile(const std::string& file)
+{
+	m_outputFile = file;
+}
+
+bool TSNE::loadLegacy(std::string file)
+{
+
+	std::ifstream f;
+	f.open(file, std::ios::binary);
+	if (!f.is_open()) {
+		std::cout << "failed to open " << file << std::endl;
+		return false;
+	}
+	else {
+		f.read(reinterpret_cast<char*>(&m_numberOfSamples), sizeof(m_numberOfSamples));
+		f.read(reinterpret_cast<char*>(&m_inputDimensions), sizeof(m_inputDimensions));
+		f.read(reinterpret_cast<char*>(&m_gradientAccuracy), sizeof(m_gradientAccuracy));
+		f.read(reinterpret_cast<char*>(&m_perplexity), sizeof(m_perplexity));
+		f.read(reinterpret_cast<char*>(&m_outputDimensions), sizeof(m_outputDimensions));
+		f.read(reinterpret_cast<char*>(&m_iterations), sizeof(m_iterations));
+
+		for (size_t i = 0; i < m_numberOfSamples; ++i) {
+			auto point = std::vector<double>(m_inputDimensions);
+			f.read(reinterpret_cast<char*>(point.data()), sizeof(double) * m_inputDimensions);
+			m_data.push_back(point);
+		}
+		if (!f.eof()) {
+			f.read(reinterpret_cast<char*>(&m_randomSeed), sizeof(m_randomSeed));
+		}
+
+		f.close();
+	}
+	return true;
+}
+
+bool TSNE::loadCSV(std::string file)
+{
+	return false;
+}
+
+bool TSNE::loadTSNE(std::string file)
+{
+	return false;
+}
+
+void TSNE::run()
+{
+
+	std::cout << "Using random seed: " << m_randomSeed << std::endl;
+
+
+	// Determine whether we are using an exact algorithm
+	if (m_numberOfSamples - 1 < 3 * m_perplexity) {
+		std::cout << "Perplexity too large for the number of data points!\n" << std::endl;
+		exit(1);
+	}
+	std::cout << "Using m_outputDimensions = " << m_outputDimensions
+		<< ", m_perplexity = " << m_perplexity
+		<< ", and m_gradientAccuracy = " << m_gradientAccuracy << std::endl;
+	bool exact = (m_gradientAccuracy == .0);
+
+	// Set learning parameters
+	float total_time = .0;
+	clock_t start, end;
+	double momentum = .5, final_momentum = .8;
+	double eta = 200.0;
+
+	//=========================================================================
+	/*// Allocate some memory
+	double* dY = (double*)malloc(m_numberOfSamples * no_dims * sizeof(double));
+	auto uY = vector<double>(m_numberOfSamples * no_dims, 0.0);
+	auto gains = vector<double>(m_numberOfSamples * no_dims, 1.0);
+	if (dY == nullptr) {
+		printf("Memory allocation failed!\n");
+		exit(1);
+	}
+
+	// Normalize input data (to prevent numerical problems)
+	printf("Computing input similarities...\n");
+	start = clock();
+	zeroMean(X, m_numberOfSamples, D);
+	// TODO: extract normalization function for vector
+	double max_X = .0;
+	for (unsigned int i = 0; i < m_numberOfSamples * D; i++) {
+		if (fabs(X[i]) > max_X)
+			max_X = fabs(X[i]);
+	}
+	for (int i = 0; i < m_numberOfSamples * D; i++)
+		X[i] /= max_X;
+
+	// Compute input similarities for exact t-SNE
+	double* P; unsigned int* row_P; unsigned int* col_P; double* val_P;
+	if (exact) {
+
+		// Compute similarities
+		printf("Exact?");
+		P = (double*)malloc(m_numberOfSamples * m_numberOfSamples * sizeof(double));
+		if (P == nullptr) { printf("Memory allocation failed!\n"); exit(1); }
+		computeGaussianPerplexity(X, m_numberOfSamples, D, P, perplexity);
+
+		// Symmetrize input similarities
+		printf("Symmetrizing...\n");
+		int nN = 0;
+		for (int n = 0; n < m_numberOfSamples; n++) {
+			int mN = (n + 1) * m_numberOfSamples;
+			for (int m = n + 1; m < m_numberOfSamples; m++) {
+				P[nN + m] += P[mN + n];
+				P[mN + n] = P[nN + m];
+				mN += m_numberOfSamples;
+			}
+			nN += m_numberOfSamples;
+		}
+		double sum_P = .0;
+		for (int i = 0; i < m_numberOfSamples * m_numberOfSamples; i++) sum_P += P[i];
+		for (int i = 0; i < m_numberOfSamples * m_numberOfSamples; i++) P[i] /= sum_P;
+	}
+
+	// Compute input similarities for approximate t-SNE
+	else {
+
+		// Compute asymmetric pairwise input similarities
+		computeGaussianPerplexity(X, m_numberOfSamples, D, &row_P, &col_P, &val_P, perplexity,
+			(int)(3 * perplexity));
+
+		// Symmetrize input similarities
+		symmetrizeMatrix(&row_P, &col_P, &val_P, m_numberOfSamples);
+		//normalize val_P so that sum of all val = 1
+		double sum_P = .0;
+		for (int i = 0; i < row_P[m_numberOfSamples]; i++) sum_P += val_P[i];
+		for (int i = 0; i < row_P[m_numberOfSamples]; i++) val_P[i] /= sum_P;
+	}
+	end = clock();
+
+	// Lie about the P-values
+	if (exact) {
+		for (int i = 0; i < m_numberOfSamples * m_numberOfSamples; i++)
+			P[i] *= 12.0;
+	}
+	else {
+		for (int i = 0; i < row_P[m_numberOfSamples]; i++)
+			val_P[i] *= 12.0;
+	}
+
+	// Initialize solution (randomly)
+	if (skip_random_init != true) {
+		for (int i = 0; i < m_numberOfSamples * no_dims; i++)
+			Y[i] = randn() * .0001;
+	}
+
+	// Perform main training loop
+	if (exact) {
+		printf("Input similarities computed in %4.2f seconds!\nLearning embedding...\n",
+			(float)(end - start) / CLOCKS_PER_SEC);
+	}
+	else {
+		printf("Input similarities computed in %4.2f seconds (sparsity = %f)!\n",
+			(float)(end - start) / CLOCKS_PER_SEC,
+			(double)row_P[m_numberOfSamples] / (double)(m_numberOfSamples * m_numberOfSamples));
+		printf("Learning embedding...\n");
+	}
+	start = clock();
+
+	for (int iter = 0; iter < max_iter; iter++) {
+
+		// Compute (approximate) gradient
+		if (exact) {
+			computeExactGradient(P, Y, no_dims, dY);
+		}
+		else {
+			computeGradient(row_P, col_P, val_P, Y, no_dims, dY, theta);
+		}
+
+		// Update gains
+		for (int i = 0; i < m_numberOfSamples * no_dims; i++)
+			gains[i] = (sign(dY[i]) != sign(uY[i])) ? (gains[i] + .2) : (gains[i] * .8);
+		for (int i = 0; i < m_numberOfSamples * no_dims; i++)
+			gains[i] = max(gains[i], 0.1);
+
+		// Perform gradient update (with momentum and gains)
+		for (int i = 0; i < m_numberOfSamples * no_dims; i++)
+			uY[i] = momentum * uY[i] - eta * gains[i] * dY[i];
+		for (int i = 0; i < m_numberOfSamples * no_dims; i++)
+			Y[i] = Y[i] + uY[i];
+
+		// Make solution zero-mean
+		zeroMean(Y, m_numberOfSamples, no_dims);
+
+		// Stop lying about the P-values after a while, and switch momentum
+		if (iter == stop_lying_iter) {
+			if (exact) {
+				for (int i = 0; i < m_numberOfSamples * m_numberOfSamples; i++)
+					P[i] /= 12.0;
+			}
+			else {
+				for (int i = 0; i < row_P[m_numberOfSamples]; i++)
+					val_P[i] /= 12.0;
+			}
+		}
+		if (iter == mom_switch_iter) momentum = final_momentum;
+
+		// Print out progress
+		if (iter > 0 && (iter % 50 == 0 || iter == max_iter - 1)) {
+			end = clock();
+			double C = .0;
+			if (exact) {
+				C = evaluateError(P, Y, no_dims);
+			}
+			else {
+				// doing approximate computation here!
+				C = evaluateError(row_P, col_P, val_P, Y, no_dims, theta);
+			}
+
+			if (iter == 0)
+				printf("Iteration %d: error is %f\n", iter + 1, C);
+			else {
+				total_time += (float)(end - start) / CLOCKS_PER_SEC;
+				printf("Iteration %d: error is %f (50 iterations in %4.2f seconds)\n", iter, C,
+					(float)(end - start) / CLOCKS_PER_SEC);
+			}
+			start = clock();
+		}
+	}
+	end = clock(); total_time += (float)(end - start) / CLOCKS_PER_SEC;
+
+	// Clean up memory
+	free(dY);
+	if (exact) free(P);
+	else {
+		free(row_P); row_P = nullptr;
+		free(col_P); col_P = nullptr;
+		free(val_P); val_P = nullptr;
+	}
+	printf("Fitting performed in %4.2f seconds.\n", total_time);*/
+}
+
+void TSNE::saveLegacy()
+{
+
+}
+
+void TSNE::saveCSV()
+{
+
+}
+
+void TSNE::saveSVG()
+{
+
 }
