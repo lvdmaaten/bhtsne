@@ -34,6 +34,7 @@
 
 
 #include <string>
+#include <vector>
 
 #include <bhtsne/bhtsne_api.h> // generated header for export macros
 
@@ -44,45 +45,88 @@ static inline double sign(double x) { return (x == .0 ? .0 : (x < .0 ? -1.0 : 1.
 namespace bhtsne
 {
 
-
+/**
+*  @brief
+*    Representation of the Barnes-Hut approximation for 
+*    the t-distributed stochastic neighbor embedding algorithm
+*
+*    Default parameters are: 
+*       randomSeed          0
+*       perplexity          42
+*       gradientAccuracy    0.5
+*       iterations          1000
+*       outputDimensions    2
+*       outputFile          "result"
+*
+*    This class follows the method object pattern (SmalltalkBestPracticePatterns, page 34-37).
+*/
 class BHTSNE_API TSNE
 {
 public:
-
     /**
     *  @brief
-    *    Constructor. Sets resonable defaults.
-    *    TODO: mention default values.
+    *    Constructor with resonable defaults
+    *
+    *  @see TSNE
     */
     TSNE();
 
     /**
     *  @brief
-    *    Get seed for random generator
+    *    Get random seed
     *
     *  @return
-    *    Currently used random seed.
+    *    Random seed
+    *
+    *  @remarks
+    *    This seed is used to initialize the internal random generator.
     */
     int randomSeed() const;
 
     /**
     *  @brief
-    *    Set option value
+    *    Set random seed
     *
     *  @param[in] seed
-    *    an int
+    *    Random seed
+    *
+    *  @see randomSeed()
     */
     void setRandomSeed(int seed);
 
+    /**
+    *  @brief
+    *    Get perplexity
+    *
+    *  @return
+    *    Perplexity (0..inputDimensions)
+    *
+    *  @remarks
+    *    TODO: explain perplexity
+    */
     double perplexity() const;
+
+    /**
+    *  @brief
+    *    Set perplexity
+    *
+    *  @param[in] perplexity
+    *    Perplexity (0..inputDimensions)
+    *
+    *  @see perplexity()
+    */
     void setPerplexity(double perplexity);
 
     /**
     *  @brief
     *    Get gradient accuracy
     *
+    *  @return
+    *    Gradient accuracy (0..1)
+    *
     *  @remarks
-    *    Called theta in other implementations
+    *    Called theta in other implementations. This value
+    *    is used as the width for the gauss sampling kernel.
     */
     double gradientAccuracy() const;
 
@@ -90,27 +134,122 @@ public:
     *  @brief
     *    Set gradient accuracy
     *
-    *  @remarks
-    *    Called theta in other implementations
+    *  @param[in] accuracy
+    *    Gradient accuracy (0..1)
+    *
+    *  @see gradientAccuracy()
     */
     void setGradientAccuracy(double accuracy);
 
+    /**
+    *  @brief
+    *    Get number of iterations
+    *
+    *  @return
+    *    Number of iterations
+    *
+    *  @remarks
+    *    This defines how many times the algorithm adjusts the result to minimize the error. 
+    *    A higher value can improve the result but also increases computation times.
+    */
     unsigned int iterations() const;
+
+    /**
+    *  @brief
+    *    Set number of iterations
+    *
+    *  @param[in] iterations
+    *    Number of iterations (usually larger than 250)
+    *
+    *  @see iterations()
+    */
     void setIterations(unsigned int iterations);
 
+    /**
+    *  @brief
+    *    Get output dimensionality
+    *
+    *  @return
+    *    Output dimensionality (1 <= outDim < inDim)
+    *
+    *  @remarks
+    *    This defines the dimensionality of the result. Therefore, it should be smaller than the input dimensionality.
+    */
     unsigned int outputDimensions() const;
-    void setOutputDimensions(unsigned int dimensions);
 
-    //no setter coz from dataset deduced
+    /**
+    *  @brief
+    *    Set output dimensionality
+    *
+    *  @param[in] dimensions
+    *    Output dimensionality (1 <= outDim < inDim)
+    *
+    *  @see outputDimensions()
+    */
+    void setOutputDimensions(unsigned int dimensions); //2 or 3
+
+    /**
+    *  @brief
+    *    Get input dimensionality
+    *
+    *  @return
+    *    Input dimensionality (1 <= outDim < inDim)
+    *
+    *  @remarks
+    *    This is the dimensionality of the loaded dataset. 
+    *    The loading method (e.g. loadCSV()) deduces this value from the given dataset file.
+    */
     unsigned int inputDimensions() const;
 
-    unsigned int getNumberOfSamples() const; //TODO: rename (w/o get)
+    //TODO: rename (w/o get) and rename NumberOfSamples to samples or datasize
+    unsigned int getNumberOfSamples() const; 
     void setNumberOfSamples(unsigned int value);
 
+    /**
+    *  @brief
+    *    Get output file basname
+    *
+    *  @return
+    *    Output file basname
+    *
+    *  @remarks
+    *    The basename that is used to create all outputfiles. 
+    *    Final output files are "./<outputFile>.<extension>".
+    */
     std::string outputFile() const;
-    void setOutputFile(const std::string& file);
 
+    /**
+    *  @brief
+    *    Set output file basname
+    *
+    *  @param[in] name
+    *    Output file basname
+    *
+    *  @see outputFile()
+    */
+    void setOutputFile(const std::string & name);
 
+    /**
+    *  @brief
+    *    Loads a dataset from a ".dat" file
+    *
+    *  @param[in] file
+    *    Input file of legacy format
+    *
+    *  @remarks
+    *    Loads files with the extension ".dat" used in the original implementation (https://github.com/lvdmaaten/bhtsne).
+    *    In addition to the dataset parameters (see loadTSNE()) also 
+    *    sets (and overrides) gradient accuracy, perplexity, output dimensionality, iterations, and possibly the seed.
+    *    The file must contain the following binary information:
+    *       int         number of datapoints
+    *       int         input dimensionality
+    *       double      gradient accuracy
+    *       double      perplexity
+    *       int         output dimensionality
+    *       int         number of iterations
+    *       double...   the data as an interleaved buffer (number of datapoints * input dimensionality)
+    *       int         random seed (optional)
+    */
     bool loadLegacy(std::string file);
     bool loadCSV(std::string file);
     bool loadTSNE(std::string file);
@@ -152,6 +291,7 @@ private:
     unsigned int m_outputDimensions;    ///< TODO comment
     unsigned int m_inputDimensions;     ///< TODO comment
     unsigned int m_numberOfSamples;     ///< TODO comment and rename
+    std::vector<std::vector<double>> m_data;
 
     std::string  m_outputFile;          ///< TODO comment
 };
