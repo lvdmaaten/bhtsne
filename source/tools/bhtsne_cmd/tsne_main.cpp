@@ -6,18 +6,20 @@
 #include <ctime>
 
 #include <bhtsne/tsne.h>
-
+#include "CommandlineOptions.h"
 
 using namespace bhtsne;
 
 // Function that runs the Barnes-Hut implementation of t-SNE
-int main() {
+int main(int argc, char * argv[]) {
 
     // Define some variables
 	int D, no_dims, max_iter;
 	double perplexity, theta, *data;
     int rand_seed = -1;
     TSNE* tsne = new TSNE();
+
+    applyCommandlineOptions(*tsne, argc, argv);
 
     // Read the parameters and the dataset
 	if(tsne->load_data(&data, &D, &no_dims, &theta, &perplexity, &rand_seed, &max_iter)) {
