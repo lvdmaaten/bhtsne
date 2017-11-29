@@ -28,4 +28,4 @@ namespace bhtsne {
         //TODO bool flags
 
     }
-}
+}// namespace bhtsne
