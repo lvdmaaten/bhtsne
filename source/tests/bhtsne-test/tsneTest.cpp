@@ -126,7 +126,19 @@ TEST_F(TsneTest, OutputDimensions)
 
 TEST_F(TsneTest, InputDimensions)
 {
-    FAIL();
+    createTempfileLegacy(1, 1, 0.5, 25.0, 1, 100, 42, { 42.0 });
+
+    EXPECT_TRUE(m_tsne.loadLegacy(tempfile));
+    EXPECT_EQ(1, m_tsne.inputDimensions());
+
+    removeTempfile();
+
+    createTempfileLegacy(1, 3, 0.5, 25.0, 1, 100, 42, { 42.0, 0.0, 0.0 });
+
+    EXPECT_TRUE(m_tsne.loadLegacy(tempfile));
+    EXPECT_EQ(3, m_tsne.inputDimensions());
+
+    removeTempfile();
 }
 
 TEST_F(TsneTest, DataSize)
