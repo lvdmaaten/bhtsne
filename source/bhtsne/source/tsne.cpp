@@ -1150,38 +1150,45 @@ void TSNE::run()
 	}
 
 	m_resultP = Y;
+
+	size_t offset = 0;
+	for (size_t i = 0; i < m_dataSize; ++i) {
+		auto point = std::vector<double>();
+		for (size_t j = 0; j < m_outputDimensions; ++j) {
+			point.push_back(Y[offset++]);
+		}
+		m_result.push_back(point);
+	}
+
 	std::cout << "Fitting performed in " << total_time << " seconds." << std::endl;
 }
 
 void TSNE::saveLegacy()
 {
-	FILE *h;
-	if ((h = fopen((m_outputFile + ".dat").c_str(), "w+b")) == nullptr) {
-		printf("Error: could not open data file.\n");
+	auto f = std::ofstream();
+	f.open(m_outputFile + ".dat", std::ios::binary);
+
+	if (!f.is_open()) {
+		std::cerr << "can't open " << m_outputFile << ".dat" << std::endl;
 		return;
 	}
 
-	int* landmarks = (int*)malloc(m_dataSize * sizeof(int));
-	if (landmarks == nullptr) {
-		printf("Memory allocation failed!\n");
-		exit(1);
-	}
-	for (unsigned int n = 0; n < m_dataSize; n++)
-		landmarks[n] = n;
-
-	double* costs = (double*)calloc(m_dataSize, sizeof(double));
-	if (costs == nullptr) {
-		printf("Memory allocation failed!\n");
-		exit(1);
+	auto landmarks = std::vector<int>(m_dataSize);
+	for (size_t i = 0; i < m_dataSize; ++i)
+	{
+		landmarks[i] = i;
 	}
 
-	fwrite(&m_dataSize, sizeof(int), 1, h);
-	fwrite(&m_outputDimensions, sizeof(int), 1, h);
-	fwrite(m_resultP, sizeof(double), m_dataSize * m_outputDimensions, h);
-	fwrite(landmarks, sizeof(int), m_dataSize, h);
-	fwrite(costs, sizeof(double), m_dataSize, h);
-	fclose(h);
-	printf("Wrote the %i x %i data matrix successfully!\n", m_dataSize, m_outputDimensions);
+	auto costs = std::vector<double>(m_dataSize, 0.0);
+
+	f.write(reinterpret_cast<char*>(&m_dataSize), sizeof(m_dataSize));
+	f.write(reinterpret_cast<char*>(&m_outputDimensions), sizeof(m_outputDimensions));
+	f.write(reinterpret_cast<char*>(m_resultP), m_dataSize * m_outputDimensions * sizeof(double));
+	f.write(reinterpret_cast<char*>(landmarks.data()), landmarks.size() * sizeof(int));
+	f.write(reinterpret_cast<char*>(costs.data()), costs.size() * sizeof(double));
+
+	f.close();
+	std::cout << "Wrote the " << m_dataSize << " x " << m_outputDimensions << " data matrix successfully!" << std::endl;
 }
 
 void TSNE::saveCSV()
