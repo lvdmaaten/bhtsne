@@ -5,6 +5,45 @@
 #include <fstream>
 #include <initializer_list>
 
+class PublicTSNE : public bhtsne::TSNE
+{
+public:
+    std::vector<std::vector<double>> data() 
+    {
+        return m_data;
+    };
+
+    void setData(std::vector<std::vector<double>> data)
+    {
+        m_data = data;
+    };
+
+    std::vector<std::vector<double>> result()
+    {
+        return m_result;
+    };
+
+    void setResult(std::vector<std::vector<double>> result)
+    {
+        m_result = result;
+        m_resultP = new double[m_dataSize * m_outputDimensions];
+        int offset = 0;
+        for (auto sample : result)
+        {
+            for (auto value : sample)
+            {
+                m_resultP[offset++] = value;
+            }
+        }
+    };
+
+    void setInputDimensions(int dimensions)
+    {
+        m_inputDimensions = dimensions;
+    }
+
+};
+
 class BinaryWriter
 {
 private:
@@ -31,7 +70,7 @@ class TsneTest : public testing::Test
 protected:
     TsneTest()
     {
-        m_tsne = bhtsne::TSNE();
+        m_tsne = PublicTSNE();
     }
 
     void createTempfile()
@@ -42,57 +81,12 @@ protected:
         writer = BinaryWriter(filestream);
     }
 
-    void createTempfileLegacy(int dataSize, int inputDimensions, double gradientAccuracy, double perplexity, int outputDimensions, int iterations, int randomSeed, std::initializer_list<double> data)
-    {
-        createTempfile();
-        writer << dataSize << inputDimensions << gradientAccuracy << perplexity << outputDimensions << iterations;
-        for (auto value : data)
-        {
-            writer << value;
-        }
-        writer << randomSeed;
-        filestream.flush();
-        filestream.close();
-    }
-
-    void createTempfileTSNE(int dataSize, int inputDimensions, std::initializer_list<double> data)
-    {
-        createTempfile();
-        writer << dataSize << inputDimensions;
-        for (auto value : data)
-        {
-            writer << value;
-        }
-        filestream.flush();
-        filestream.close();
-    }
-
-    void createTempfileCSV(int inputDimensions, std::initializer_list<double> data)
-    {
-        createTempfile();
-        int dimension = 0;
-        for (auto value : data)
-        {
-            filestream << value;
-            if (++dimension % inputDimensions == 0)
-            {
-                filestream << std::endl;
-            }
-            else
-            {
-                filestream << ',';
-            }
-        }
-        filestream.flush();
-        filestream.close();
-    }
-
     void removeTempfile()
     {
         remove(tempfile.c_str());
     }
 
-    bhtsne::TSNE m_tsne;
+    PublicTSNE m_tsne;
     std::string tempfile;
     std::ofstream filestream;
     BinaryWriter writer;
@@ -157,19 +151,11 @@ TEST_F(TsneTest, OutputDimensions)
 
 TEST_F(TsneTest, InputDimensions)
 {
-    createTempfileLegacy(1, 1, 0.5, 25.0, 1, 100, 42, { 42.0 });
-
-    EXPECT_TRUE(m_tsne.loadLegacy(tempfile));
+    // only test accessor - setting is tested alongside the respective load method
+    m_tsne.setInputDimensions(1);
     EXPECT_EQ(1, m_tsne.inputDimensions());
-
-    removeTempfile();
-
-    createTempfileLegacy(1, 3, 0.5, 25.0, 1, 100, 42, { 42.0, 0.0, 0.0 });
-
-    EXPECT_TRUE(m_tsne.loadLegacy(tempfile));
-    EXPECT_EQ(3, m_tsne.inputDimensions());
-
-    removeTempfile();
+    m_tsne.setInputDimensions(2);
+    EXPECT_EQ(2, m_tsne.inputDimensions());
 }
 
 TEST_F(TsneTest, DataSize)
@@ -190,58 +176,116 @@ TEST_F(TsneTest, OutputFile)
 
 TEST_F(TsneTest, LoadLegacy)
 {
-    createTempfileLegacy(1, 1, 0.5, 25.0, 1, 100, 42, { 42.0 });
+    int dataSize = 1;
+    int inputDimensions = 1;
+    double gradientAccuracy = 0.5;
+    double perplexity = 25.0;
+    int outputDimensions = 1;
+    int iterations = 100;
+    int randomSeed = 42;
+    double data = 42.0;
+
+    createTempfile();
+    writer << dataSize << inputDimensions << gradientAccuracy << perplexity << outputDimensions << iterations;
+    writer << data;
+    writer << randomSeed;
+    filestream.flush();
+    filestream.close();
 
     EXPECT_TRUE(m_tsne.loadLegacy(tempfile));
-    EXPECT_EQ(1, m_tsne.dataSize());
-    EXPECT_EQ(1, m_tsne.inputDimensions());
-    EXPECT_EQ(0.5, m_tsne.gradientAccuracy());
-    EXPECT_EQ(25.0, m_tsne.perplexity());
-    EXPECT_EQ(1, m_tsne.outputDimensions());
-    EXPECT_EQ(100, m_tsne.iterations());
-    EXPECT_EQ(42, m_tsne.randomSeed());
+    EXPECT_EQ(dataSize, m_tsne.dataSize());
+    EXPECT_EQ(inputDimensions, m_tsne.inputDimensions());
+    EXPECT_EQ(gradientAccuracy, m_tsne.gradientAccuracy());
+    EXPECT_EQ(perplexity, m_tsne.perplexity());
+    EXPECT_EQ(outputDimensions, m_tsne.outputDimensions());
+    EXPECT_EQ(iterations, m_tsne.iterations());
+    EXPECT_EQ(randomSeed, m_tsne.randomSeed());
+    EXPECT_EQ(data, m_tsne.data()[0][0]);
 
     removeTempfile();
 }
 
 TEST_F(TsneTest, LoadCSV)
 {
-    createTempfileCSV(3, { 1.0, 2.0, 3.0, 4.0, 5.0, 6.0 });
+    auto data = std::vector<std::vector<double>>{ { 1.0, 2.0, 3.0 },{ 4.0, 5.0, 6.0 } };
+
+    createTempfile();
+    for (auto sample : data)
+    {
+        for (auto value : sample)
+        {
+            filestream << value << ',';
+        }
+        filestream.seekp(-1, std::ios_base::cur);
+        filestream << std::endl;
+    }
+
+    filestream.flush();
+    filestream.close();
 
     EXPECT_TRUE(m_tsne.loadCSV(tempfile));
     EXPECT_EQ(2, m_tsne.dataSize());
     EXPECT_EQ(3, m_tsne.inputDimensions());
+    for (auto i = 0; i < 2; i++)
+    {
+        for (auto j = 0; j < 3; j++)
+        {
+            EXPECT_EQ(data[i][j], m_tsne.data()[i][j]);
+        }
+    }
 
     removeTempfile();
 }
 
 TEST_F(TsneTest, LoadTSNE)
 {
-    createTempfileTSNE(1, 1, { 42.0 });
+    int dataSize = 1;
+    int inputDimensions = 1;
+    double data = 42.0;
+
+    createTempfile();
+    writer << dataSize << inputDimensions;
+    writer << data;
+    filestream.flush();
+    filestream.close();
 
     EXPECT_TRUE(m_tsne.loadTSNE(tempfile));
     EXPECT_EQ(1, m_tsne.dataSize());
     EXPECT_EQ(1, m_tsne.inputDimensions());
+    EXPECT_EQ(data, m_tsne.data()[0][0]);
 
     removeTempfile();
 }
 
 TEST_F(TsneTest, Run)
 {
-    createTempfileLegacy(2, 1, 0.1, 0.01, 1, 100, 42, { 42.0, 17.0 });
+    m_tsne.setDataSize(2);
+    m_tsne.setInputDimensions(1);
+    m_tsne.setGradientAccuracy(0.2);
+    m_tsne.setPerplexity(0.1);
+    m_tsne.setOutputDimensions(1);
+    m_tsne.setIterations(100);
+    m_tsne.setRandomSeed(42);
+    m_tsne.setData(std::vector<std::vector<double>>{ { 42.0 }, { 17.0 } });
 
-    EXPECT_TRUE(m_tsne.loadLegacy(tempfile));
     EXPECT_NO_THROW(m_tsne.run());
-
-    removeTempfile();
+    std::vector<unsigned long long> expected = { 0xC07DAC741DC680D4, 0x407DAC741DC680D4 };
+    for (auto i = 0; i < 2; i++)
+    {
+        EXPECT_EQ(*reinterpret_cast<double*>(&expected[i]), m_tsne.result()[i][0]);
+    }
 }
 
 TEST_F(TsneTest, SaveLegacy)
 {
-    createTempfileLegacy(2, 1, 0.1, 0.01, 1, 100, 42, { 42.0, 17.0 });
-    // test load/run/save
-    EXPECT_TRUE(m_tsne.loadLegacy(tempfile));
-    EXPECT_NO_THROW(m_tsne.run());
+    std::vector<unsigned long long> expected = { 0xC07DAC741DC680D4, 0x407DAC741DC680D4 };
+    std::vector<double> expectedDouble = std::vector<double>();
+    std::for_each(expected.begin(), expected.end(), [&](auto& v) { expectedDouble.push_back(*reinterpret_cast<double*>(&v)); });
+    
+    // test save
+    m_tsne.setResult(std::vector<std::vector<double>>{ { expectedDouble[0] }, { expectedDouble[1] }});
+    m_tsne.setDataSize(2);
+    m_tsne.setOutputDimensions(1);
     m_tsne.setOutputFile(tempfile);
     EXPECT_NO_THROW(m_tsne.saveLegacy());
     // check file exists and has right size
@@ -263,15 +307,13 @@ TEST_F(TsneTest, SaveLegacy)
     result.read(reinterpret_cast<char*>(costs.data()), 2 * sizeof(double));
     EXPECT_EQ(2, dataSize);
     EXPECT_EQ(1, outputDimensions);
-    std::vector<unsigned long long> expected = { 0xC07DAC741DC680D4, 0x407DAC741DC680D4 };
     for (auto i = 0; i < 2; i++)
     {
-        EXPECT_EQ(*reinterpret_cast<double*>(&expected[i]), data[i]);
+        EXPECT_EQ(expectedDouble[i], data[i]);
         EXPECT_EQ(i, landmarks[i]);
         EXPECT_EQ(0, costs[i]);
     }
 
-    removeTempfile();
     remove((tempfile + ".dat").c_str());
 }
 
