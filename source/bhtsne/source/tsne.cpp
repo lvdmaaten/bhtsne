@@ -1185,7 +1185,6 @@ void TSNE::saveLegacy()
 
 void TSNE::saveCSV()
 {
-	std::cout << "saveCSV" << std::endl;
 	std::ofstream f;
 	f.open(m_outputFile + ".csv");
 	if (!f.is_open())
@@ -1199,7 +1198,7 @@ void TSNE::saveCSV()
 		{
 			for (size_t j = 0; j < m_outputDimensions; ++j)
 			{
-				f << *(m_resultP + offset++);
+				f << m_resultP[offset++];
 				if (j < m_outputDimensions - 1)
 				{
 					f << ",";
@@ -1216,7 +1215,79 @@ void TSNE::saveCSV()
 
 void TSNE::saveSVG()
 {
-    //TODO: implement saving svg
+	std::string labelFile = "";
+
+	double extreme = 0;
+	for (unsigned int i = 0; i < m_dataSize * m_outputDimensions; i++)
+		extreme = max(extreme, abs(m_resultP[i]));
+	double radius = 0.5;
+	double halfwidth = extreme + radius;
+	string viewBox = to_string(-halfwidth) + " " + to_string(-halfwidth) + " " + to_string(2 * halfwidth) + " " + to_string(2 * halfwidth);
+
+	auto labels = vector<uint8_t>();
+	bool useLabels = false;
+	if (labelFile.size() > 0)
+	{
+		useLabels = true;
+		ifstream labelInput;
+		labelInput.open(labelFile, ios::in | ios::binary);
+		if (!labelInput.is_open())
+		{
+			std::cerr << "Could not open labels." << std::endl;
+			return;
+		}
+
+		uint32_t labelCount;
+		labelInput.read(reinterpret_cast<char*>(&labelCount), sizeof(labelCount));
+		cout << "Labels file contains " << labelCount << " labels." << endl;
+		if (labelCount < m_dataSize)
+		{
+			std::cerr << "Not enough labels for result.";
+			return;
+		}
+
+		labelCount = min(labelCount, m_dataSize);
+		labels.resize(labelCount);
+		labelInput.read(reinterpret_cast<char*>(labels.data()), labels.size());
+
+		labelInput.close();
+		cout << "Read labels." << endl;
+	}
+
+	uint8_t maxLabel = 0;
+	for (auto label : labels)
+		maxLabel = max(label, maxLabel);
+	auto colors = vector<string>();
+	for (int i = 0; i <= maxLabel; ++i)
+		colors.push_back("hsl(" + to_string(360.0 * i / (maxLabel / 2 + 1)) + ", 100%, " + (i % 2 == 0 ? "25" : "60") + "%)");
+
+	ofstream f;
+	f.open(m_outputFile + ".svg", ios::out | ios::trunc);
+
+	if (!f.is_open()) {
+		std::cerr << "can't open " << m_outputFile << ".svg" << std::endl;
+		return;
+	}
+
+	f << "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>" << endl;
+	f << "<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\" width=\"600\" height=\"600\" viewBox=\"" << viewBox << "\">" << endl;
+	
+	string color = "black";
+	for (unsigned int i = 0; i < m_dataSize; i++)
+	{
+		if (useLabels)
+			color = labels[i] < colors.size() ? colors[labels[i]] : "black";
+
+		f << "<circle "
+			<< "cx='" << m_resultP[i * 2] << "' "
+			<< "cy='" << m_resultP[i * 2 + 1] << "' "
+			<< "fill='" << color << "' "
+			<< "r='" << radius << "' "
+			<< "stroke='none' opacity='0.5'/>" << endl;
+	}
+	f << "</svg>" << endl;
+
+	f.close();
 }
 
 void TSNE::zeroMean(std::vector<std::vector<double>>& data, unsigned int dimensions)
