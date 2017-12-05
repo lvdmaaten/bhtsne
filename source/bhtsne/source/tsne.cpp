@@ -900,7 +900,15 @@ void TSNE::run()
 	bool skip_random_init = false;
 	int stop_lying_iter = 250;
 	int mom_switch_iter = 250;
-
+	
+	if (m_randomSeed >= 0) {
+		std::cout << "Using random seed: " << m_randomSeed << std::endl;
+		srand((unsigned int)m_randomSeed);
+	}
+	else {
+		std::cout << "Using current time as random seed..." << std::endl;
+		srand(time(nullptr));
+	}
 
 	// Determine whether we are using an exact algorithm
 	if (m_numberOfSamples - 1 < 3 * m_perplexity) {
