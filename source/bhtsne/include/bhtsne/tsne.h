@@ -380,6 +380,7 @@ protected:
     // output
     std::string  m_outputFile;          ///< path and basename used to create output files
 	std::vector<std::vector<double>> m_result;
+	double* m_resultP;
 
 	void zeroMean(std::vector<std::vector<double>>& data, unsigned int dimensions);
 	void computeGaussianPerplexity(double* P);
