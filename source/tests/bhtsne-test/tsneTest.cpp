@@ -4,6 +4,27 @@
 #include <cstdio>
 #include <fstream>
 
+class BinaryWriter
+{
+private:
+    std::ofstream* filestream;
+
+public:
+    BinaryWriter() {}
+
+    BinaryWriter(std::ofstream& f)
+    {
+        filestream = &f;
+    }
+
+    template <typename T>
+    BinaryWriter& operator<<(const T& value)
+    {
+        filestream->write(reinterpret_cast<const char*>(&value), sizeof(value));
+        return *this;
+    };
+};
+
 class TsneTest : public testing::Test
 {
 protected:
@@ -14,10 +35,11 @@ protected:
 
     void createTempfile()
     {
-        std::string tempfile = std::tmpnam(nullptr);
+        tempfile = std::tmpnam(nullptr);
         std::cout << tempfile << std::endl;
-        std::ofstream filestream;
+        filestream;
         filestream.open(tempfile, std::ios::out | std::ios::binary | std::ios::trunc);
+        writer = BinaryWriter(filestream);
     }
 
     void removeTempfile()
@@ -29,6 +51,7 @@ protected:
     bhtsne::TSNE m_tnse;
     std::string tempfile;
     std::ofstream filestream;
+    BinaryWriter writer;
 };
 
 TEST(SanityChecks, Equality)
@@ -111,10 +134,16 @@ TEST_F(TsneTest, OutputFile)
 
 TEST_F(TsneTest, LoadLegacy)
 {
-    //createTempfile();
-    //filestream << "text in tempfile";
-    // run load and chceck if read data is correct
-    //removeTempfile();
+    createTempfile();
+    // write header
+    writer << 1 << 1 << 0.5 << 25 << 1 << 100;
+    // write data
+    writer << 42.0;
+    // random seed
+    writer << 42;
+    // run load and check if read data is correct
+    // TODO
+    removeTempfile();
     FAIL();
 }
 
