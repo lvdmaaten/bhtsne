@@ -23,7 +23,7 @@ namespace bhtsne
             }
             else if (optionValuePair.first == "--data-size")
             {
-                //TODO: use in load methods or remove --data-size option
+                //TODO: use in load methods and re-enable test or remove --data-size option
                 //tsne.setDataSize(static_cast<unsigned int>(std::stol(optionValuePair.second)));
                 std::cerr << "warning: --data-size has no effect, the full data is loaded and used\n";
             }
