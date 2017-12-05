@@ -73,7 +73,7 @@ TEST_F(TsneTest, DefaultValues)
     EXPECT_EQ(1000, m_tsne.iterations());
     EXPECT_EQ(2, m_tsne.outputDimensions());
     EXPECT_EQ(0, m_tsne.dataSize());
-    EXPECT_EQ("./result", m_tsne.outputFile());
+    EXPECT_EQ("result", m_tsne.outputFile());
 }
 
 TEST_F(TsneTest, RandomSeed)
