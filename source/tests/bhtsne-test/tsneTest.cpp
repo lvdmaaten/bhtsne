@@ -121,7 +121,7 @@ TEST_F(TsneTest, InputDimensions)
     FAIL();
 }
 
-TEST_F(TsneTest, NumberOfSamples)
+TEST_F(TsneTest, DataSize)
 {
     m_tsne.setDataSize(1);
     EXPECT_EQ(1, m_tsne.dataSize());
