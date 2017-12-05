@@ -21,7 +21,7 @@ int main(int argc, char * argv[])
 		std::cerr << "please specify one of the output options: -csv, -svg, -legacy\n";
 		return 1;
 	}
- 
+
     applyCommandlineOptions(tsne, parsedArguments.options());
 
     //read correct input file
@@ -35,6 +35,8 @@ int main(int argc, char * argv[])
     if (params.empty())
     {
         //TODO(!): read from stdin
+        std::cerr << "reading from stdin is not supported yet, please specify an input file\n";
+        return 42;
     } else {
         //determine extension
         auto inputfile = params.front();

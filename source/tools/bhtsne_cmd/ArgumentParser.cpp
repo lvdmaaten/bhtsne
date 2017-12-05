@@ -33,11 +33,11 @@ namespace cppassist
             }
             else if (arg.find('-') == 0) // Options without value (-option-name)
             {
-                m_options[std::move(arg)] = "true";
+                m_options[arg] = "true";
             }
             else // Additional parameters
             {
-                m_params.push_back(std::move(arg));
+                m_params.push_back(arg);
             }
         }
     }

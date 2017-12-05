@@ -37,7 +37,7 @@ namespace bhtsne
             {
                 tsne.setRandomSeed(std::stoi(optionValuePair.second));
             }
-            else
+            else if (optionValuePair.first.find("--") == 0)
             {
                 std::cerr << "warning: ignored unexpected command line option " << optionValuePair.first << "\n"
                     << "allowed options are: --perplexity, --gradient-accuracy, --iterations, --data-size, "
