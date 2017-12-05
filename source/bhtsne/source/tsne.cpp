@@ -907,6 +907,10 @@ bool TSNE::loadCSV(std::string file)
 			m_data.push_back(point);
 		}
 	}
+	if (m_data.size() < 1 || m_data[0].size() < 1)
+	{
+		return false;
+	}
 	m_numberOfSamples = m_data.size();
 	m_inputDimensions = m_data[0].size();
 
