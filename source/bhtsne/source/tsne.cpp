@@ -906,6 +906,7 @@ bool TSNE::loadCSV(std::string file)
 			}
 			m_data.push_back(point);
 		}
+		f.close();
 	}
 	if (m_data.size() < 1 || m_data[0].size() < 1)
 	{
@@ -1184,7 +1185,16 @@ void TSNE::saveLegacy()
 
 void TSNE::saveCSV()
 {
+	std::ofstream f;
+	f.open(m_outputFile + ".csv");
+	if (!f.is_open)
+	{
+		std::cerr << "can't open " << m_outputFile << ".csv" << std::endl;
+	}
+	else
+	{
 
+	}
 }
 
 void TSNE::saveSVG()
