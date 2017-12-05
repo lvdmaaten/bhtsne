@@ -28,7 +28,7 @@ int main(int argc, char * argv[])
 
     //read correct input file
     auto params = parsedArguments.params();
-    if (params.size > 1)
+    if (params.size() > 1)
     {
         cerr << "only one input file at a time" << endl;
         return 1;
