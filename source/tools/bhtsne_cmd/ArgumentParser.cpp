@@ -2,48 +2,42 @@
 
 #include <iostream>
 
-
 namespace cppassist
 {
+    ArgumentParser::ArgumentParser() = default;
 
-
-    ArgumentParser::ArgumentParser()
-    {
-    }
-
-    ArgumentParser::~ArgumentParser()
-    {
-    }
+    ArgumentParser::~ArgumentParser() = default;
 
     void ArgumentParser::parse(int argc, char * argv[])
     {
         m_options.clear();
         m_params.clear();
+        auto argumentVector = std::vector<std::string>(argv, argv + argc);
 
-        for (int i=1; i<argc; i++)
+        for (auto it = argumentVector.begin() + 1; it != argumentVector.end(); ++it)
         {
             // Get current and next argument
-            std::string arg  = argv[i];
-            std::string next = (i+1 < argc ? argv[i+1] : "");
+            auto arg = *it;
 
-            // Options with value (--option-name <value>)
-            if (arg.find("--") == 0)
+            if (arg.find("--") == 0) // Options with value (--option-name <value>)
             {
                 // Save value
-                m_options[std::move(arg)] = std::move(next);
-                i++;
+                ++it;
+                if (it != argumentVector.end()) {
+                    m_options[arg] = *it;
+                }
+                else
+                {
+                    m_options[arg] = "";
+                }
             }
-
-                // Options without value (-option-name)
-            else if (arg.find("-") == 0)
+            else if (arg.find('-') == 0) // Options without value (-option-name)
             {
-                m_options[std::move(arg)] = "true";
+                m_options[arg] = "true";
             }
-
-                // Additional parameters
-            else
+            else // Additional parameters
             {
-                m_params.push_back(std::move(arg));
+                m_params.push_back(arg);
             }
         }
     }
@@ -62,5 +56,4 @@ namespace cppassist
     {
         return m_params;
     }
-
 } // namespace cppassist

@@ -11,9 +11,9 @@ private:
     std::ofstream* filestream;
 
 public:
-    BinaryWriter() {}
+    BinaryWriter() = default;
 
-    BinaryWriter(std::ofstream& f)
+    explicit BinaryWriter(std::ofstream& f)
     {
         filestream = &f;
     }
@@ -23,7 +23,7 @@ public:
     {
         filestream->write(reinterpret_cast<const char*>(&value), sizeof(value));
         return *this;
-    };
+    }
 };
 
 class TsneTest : public testing::Test

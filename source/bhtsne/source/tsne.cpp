@@ -1187,19 +1187,19 @@ void TSNE::saveCSV()
 {
 	std::ofstream f;
 	f.open(m_outputFile + ".csv");
-	if (!f.is_open)
+	if (!f.is_open())
 	{
 		std::cerr << "can't open " << m_outputFile << ".csv" << std::endl;
 	}
 	else
 	{
-
+        //TODO(!): implement saving csv
 	}
 }
 
 void TSNE::saveSVG()
 {
-
+    //TODO(!): implement saving svg
 }
 
 void TSNE::zeroMean(std::vector<std::vector<double>>& data, unsigned int dimensions)

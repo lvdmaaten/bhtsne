@@ -3,6 +3,7 @@
 #include <bhtsne/tsne.h>
 #include <map>
 
-namespace bhtsne {
+namespace bhtsne
+{
     void applyCommandlineOptions(TSNE & tsne, const std::map<std::string, std::string> & options);
 }
