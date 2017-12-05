@@ -30,6 +30,10 @@
  *
  */
 
+
+#include <bhtsne/tsne.h>
+
+
 #include <cfloat>
 #include <cmath>
 #include <cstdlib>
@@ -45,7 +49,6 @@
 
 #include <bhtsne/sptree.h>
 #include <bhtsne/vptree.h>
-#include <bhtsne/tsne.h>
 
 #include <bhtsne/bhtsne-version.h> // includes BHTSNE_VERSION macro
 
@@ -855,89 +858,99 @@ void TSNE::setOutputFile(const std::string& file)
 
 bool TSNE::loadLegacy(std::string file)
 {
-	std::ifstream f;
-	f.open(file, std::ios::binary);
-	if (!f.is_open()) {
+	auto f = std::ifstream(file, std::ios::binary);
+	if (!f.is_open()) 
 		return false;
-	}
-	else 
-	{
-		f.read(reinterpret_cast<char*>(&m_dataSize), sizeof(m_dataSize));
-		f.read(reinterpret_cast<char*>(&m_inputDimensions), sizeof(m_inputDimensions));
-		f.read(reinterpret_cast<char*>(&m_gradientAccuracy), sizeof(m_gradientAccuracy));
-		f.read(reinterpret_cast<char*>(&m_perplexity), sizeof(m_perplexity));
-		f.read(reinterpret_cast<char*>(&m_outputDimensions), sizeof(m_outputDimensions));
-		f.read(reinterpret_cast<char*>(&m_iterations), sizeof(m_iterations));
 
-		for (size_t i = 0; i < m_dataSize; ++i) {
-			auto point = std::vector<double>(m_inputDimensions);
-			f.read(reinterpret_cast<char*>(point.data()), sizeof(double) * m_inputDimensions);
-			m_data.push_back(point);
-		}
-		if (!f.eof()) {
-			f.read(reinterpret_cast<char*>(&m_randomSeed), sizeof(m_randomSeed));
-		}
+    //read params
+	f.read(reinterpret_cast<char*>(&m_dataSize), sizeof(m_dataSize));
+	f.read(reinterpret_cast<char*>(&m_inputDimensions), sizeof(m_inputDimensions));
+	f.read(reinterpret_cast<char*>(&m_gradientAccuracy), sizeof(m_gradientAccuracy));
+	f.read(reinterpret_cast<char*>(&m_perplexity), sizeof(m_perplexity));
+	f.read(reinterpret_cast<char*>(&m_outputDimensions), sizeof(m_outputDimensions));
+	f.read(reinterpret_cast<char*>(&m_iterations), sizeof(m_iterations));
 
-		f.close();
+    //read data
+	for (size_t i = 0; i < m_dataSize; ++i) {
+		auto point = std::vector<double>(m_inputDimensions);
+		f.read(reinterpret_cast<char*>(point.data()), sizeof(double) * m_inputDimensions);
+        m_data.emplace_back(std::move(point));
 	}
+
+    //read seed
+	if (!f.eof()) {
+		f.read(reinterpret_cast<char*>(&m_randomSeed), sizeof(m_randomSeed));
+	}
+
 	return true;
 }
 
 bool TSNE::loadCSV(std::string file)
 {
 	auto seperator = ',';
-	std::ifstream f;
-	f.open(file);
-	if (!f.is_open()) {
+
+	auto f = std::ifstream(file);
+	if (!f.is_open()) 
 		return false;
-	}
-	else
+
+    //read data points
+	std::string line;
+    bool first = true;
+	while (std::getline(f, line))
 	{
-		std::string line;
-		while (std::getline(f, line))
+		std::istringstream iss(line);
+		std::string element;
+
+		std::vector<double> point;
+
+        //read values of data point
+		while (std::getline(iss, element, seperator))
 		{
-			std::istringstream iss(line);
-			std::string element;
-
-			std::vector<double> point;
-
-			while (std::getline(iss, element, seperator))
-			{
-				point.push_back(std::stod(element));
-			}
-			m_data.push_back(point);
+			point.push_back(std::stod(element));
 		}
-		f.close();
+
+        //set dimensionality
+        if (first)
+        {
+            first = false;
+            m_inputDimensions = point.size();
+        }
+        
+        //fail if inconsistent dimensionality
+        if (m_inputDimensions != point.size() || m_inputDimensions == 0)
+        {
+            m_inputDimensions = 0;
+            m_data.clear();
+            return false;
+        }
+
+		m_data.emplace_back(std::move(point));
 	}
-	if (m_data.size() < 1 || m_data[0].size() < 1)
-	{
+	
+	if (m_data.size() == 0)
 		return false;
-	}
+
 	m_dataSize = m_data.size();
-	m_inputDimensions = m_data[0].size();
 
 	return true;
 }
 
 bool TSNE::loadTSNE(std::string file)
 {
-	std::ifstream f;
-	f.open(file, std::ios::binary);
-	if (!f.is_open()) {
+	auto f = std::ifstream(file, std::ios::binary);
+	if (!f.is_open())
 		return false;
-	}
-	else 
-	{
-		f.read(reinterpret_cast<char*>(&m_dataSize), sizeof(m_dataSize));
-		f.read(reinterpret_cast<char*>(&m_inputDimensions), sizeof(m_inputDimensions));
 
-		for (size_t i = 0; i < m_dataSize; ++i) {
-			auto point = std::vector<double>(m_inputDimensions);
-			f.read(reinterpret_cast<char*>(point.data()), sizeof(double) * m_inputDimensions);
-			m_data.push_back(point);
-		}
-		f.close();
+	f.read(reinterpret_cast<char*>(&m_dataSize), sizeof(m_dataSize));
+	f.read(reinterpret_cast<char*>(&m_inputDimensions), sizeof(m_inputDimensions));
+
+	for (size_t i = 0; i < m_dataSize; ++i) 
+    {
+		auto point = std::vector<double>(m_inputDimensions);
+		f.read(reinterpret_cast<char*>(point.data()), sizeof(double) * m_inputDimensions);
+		m_data.emplace_back(std::move(point));
 	}
+	
 	return true;
 }
 
