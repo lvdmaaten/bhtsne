@@ -42,9 +42,14 @@ protected:
         writer = BinaryWriter(filestream);
     }
 
+    void closeTempfile()
+    {
+        filestream.flush();
+        filestream.close();
+    }
+
     void removeTempfile()
     {
-        filestream.close();
         remove(tempfile.c_str());
     }
 
@@ -135,16 +140,26 @@ TEST_F(TsneTest, OutputFile)
 TEST_F(TsneTest, LoadLegacy)
 {
     createTempfile();
+
     // write header
-    writer << 1 << 1 << 0.5 << 25 << 1 << 100;
+    writer << 1 << 1 << 0.5 << 25.0 << 1 << 100;
     // write data
     writer << 42.0;
     // random seed
     writer << 42;
-    // run load and check if read data is correct
-    // TODO
+
+    closeTempfile();
+
+    EXPECT_TRUE(m_tsne.loadLegacy(tempfile));
+    EXPECT_EQ(42, m_tsne.randomSeed());
+    EXPECT_EQ(25.0, m_tsne.perplexity());
+    EXPECT_EQ(0.5, m_tsne.gradientAccuracy());
+    EXPECT_EQ(100, m_tsne.iterations());
+    EXPECT_EQ(1, m_tsne.outputDimensions());
+    EXPECT_EQ(1, m_tsne.inputDimensions());
+    EXPECT_EQ(1, m_tsne.getNumberOfSamples());
+
     removeTempfile();
-    FAIL();
 }
 
 TEST_F(TsneTest, LoadCSV)
@@ -159,7 +174,21 @@ TEST_F(TsneTest, LoadTSNE)
 
 TEST_F(TsneTest, Run)
 {
-    FAIL();
+    createTempfile();
+
+    // write header
+    writer << 3 << 1 << 0.2 << 0.1 << 1 << 100;
+    // write data
+    writer << 42.0 << 17.0 << 1.0;
+    // random seed
+    writer << 42;
+
+    closeTempfile();
+
+    EXPECT_TRUE(m_tsne.loadLegacy(tempfile));
+    EXPECT_NO_THROW(m_tsne.run());
+
+    removeTempfile();
 }
 
 TEST_F(TsneTest, SaveLegacy)
