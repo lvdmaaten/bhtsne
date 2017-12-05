@@ -41,6 +41,7 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <string>
 
 #include <bhtsne/sptree.h>
 #include <bhtsne/vptree.h>
@@ -1215,25 +1216,26 @@ void TSNE::saveCSV()
 
 void TSNE::saveSVG()
 {
-	std::string labelFile = "";
+    //TODO: allow setting a labelFile, e.g. by command line option
+    auto labelFile = std::string();
 
 	double extreme = 0;
 	for (unsigned int i = 0; i < m_dataSize * m_outputDimensions; i++)
 		extreme = max(extreme, abs(m_resultP[i]));
 	double radius = 0.5;
-	double halfwidth = extreme + radius;
-	string viewBox = to_string(-halfwidth) + " " + to_string(-halfwidth) + " " + to_string(2 * halfwidth) + " " + to_string(2 * halfwidth);
+	double halfWidth = extreme + radius;
+	auto viewBox = to_string(-halfWidth) + " " + to_string(-halfWidth) + " " + to_string(2 * halfWidth) + " " + to_string(2 * halfWidth);
 
 	auto labels = vector<uint8_t>();
 	bool useLabels = false;
-	if (labelFile.size() > 0)
+	if (!labelFile.empty())
 	{
 		useLabels = true;
 		ifstream labelInput;
 		labelInput.open(labelFile, ios::in | ios::binary);
 		if (!labelInput.is_open())
 		{
-			std::cerr << "Could not open labels." << std::endl;
+			std::cerr << "Could not open labels\n";
 			return;
 		}
 
@@ -1242,7 +1244,7 @@ void TSNE::saveSVG()
 		cout << "Labels file contains " << labelCount << " labels." << endl;
 		if (labelCount < m_dataSize)
 		{
-			std::cerr << "Not enough labels for result.";
+			std::cerr << "Not enough labels for result\n";
 			return;
 		}
 
@@ -1251,7 +1253,6 @@ void TSNE::saveSVG()
 		labelInput.read(reinterpret_cast<char*>(labels.data()), labels.size());
 
 		labelInput.close();
-		cout << "Read labels." << endl;
 	}
 
 	uint8_t maxLabel = 0;
@@ -1261,7 +1262,7 @@ void TSNE::saveSVG()
 	for (int i = 0; i <= maxLabel; ++i)
 		colors.push_back("hsl(" + to_string(360.0 * i / (maxLabel / 2 + 1)) + ", 100%, " + (i % 2 == 0 ? "25" : "60") + "%)");
 
-	ofstream f;
+	auto f = std::ofstream();
 	f.open(m_outputFile + ".svg", ios::out | ios::trunc);
 
 	if (!f.is_open()) {
@@ -1269,23 +1270,25 @@ void TSNE::saveSVG()
 		return;
 	}
 
-	f << "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>" << endl;
-	f << "<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\" width=\"600\" height=\"600\" viewBox=\"" << viewBox << "\">" << endl;
+	f << "<?xml version='1.0' encoding='UTF-8' ?>\n";
+	f << "<svg xmlns='http://www.w3.org/2000/svg' version='1.1' width='600' height='600' viewBox='" << viewBox << "'>\n";
 	
-	string color = "black";
+	auto color = std::string("black");
 	for (unsigned int i = 0; i < m_dataSize; i++)
 	{
 		if (useLabels)
-			color = labels[i] < colors.size() ? colors[labels[i]] : "black";
+        {
+            color = labels[i] < colors.size() ? colors[labels[i]] : "black";
+        }
 
 		f << "<circle "
 			<< "cx='" << m_resultP[i * 2] << "' "
 			<< "cy='" << m_resultP[i * 2 + 1] << "' "
 			<< "fill='" << color << "' "
 			<< "r='" << radius << "' "
-			<< "stroke='none' opacity='0.5'/>" << endl;
+			<< "stroke='none' opacity='0.5'/>\n";
 	}
-	f << "</svg>" << endl;
+	f << "</svg>\n";
 
 	f.close();
 }
