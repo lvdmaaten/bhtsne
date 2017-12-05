@@ -263,9 +263,10 @@ TEST_F(TsneTest, SaveLegacy)
     result.read(reinterpret_cast<char*>(costs.data()), 2 * sizeof(double));
     EXPECT_EQ(2, dataSize);
     EXPECT_EQ(1, outputDimensions);
-    // TODO: maybe check actual results
+    std::vector<unsigned long long> expected = { 0xC07DAC741DC680D4, 0x407DAC741DC680D4 };
     for (auto i = 0; i < 2; i++)
     {
+        EXPECT_EQ(*reinterpret_cast<double*>(&expected[i]), data[i]);
         EXPECT_EQ(i, landmarks[i]);
         EXPECT_EQ(0, costs[i]);
     }
