@@ -3,6 +3,7 @@
 #include <string>
 #include <cstdio>
 #include <fstream>
+#include <initializer_list>
 
 class BinaryWriter
 {
@@ -42,8 +43,15 @@ protected:
         writer = BinaryWriter(filestream);
     }
 
-    void closeTempfile()
+    void createTempfileLegacy(int dataSize, int inputDimensions, double gradientAccuracy, double perplexity, int outputDimensions, int iterations, int randomSeed, std::initializer_list<double> data)
     {
+        createTempfile();
+        writer << dataSize << inputDimensions << gradientAccuracy << perplexity << outputDimensions << iterations;
+        for (auto value : data)
+        {
+            writer << value;
+        }
+        writer << randomSeed;
         filestream.flush();
         filestream.close();
     }
@@ -139,25 +147,16 @@ TEST_F(TsneTest, OutputFile)
 
 TEST_F(TsneTest, LoadLegacy)
 {
-    createTempfile();
-
-    // write header
-    writer << 1 << 1 << 0.5 << 25.0 << 1 << 100;
-    // write data
-    writer << 42.0;
-    // random seed
-    writer << 42;
-
-    closeTempfile();
+    createTempfileLegacy(1, 1, 0.5, 25.0, 1, 100, 42, { 42.0 });
 
     EXPECT_TRUE(m_tsne.loadLegacy(tempfile));
-    EXPECT_EQ(42, m_tsne.randomSeed());
-    EXPECT_EQ(25.0, m_tsne.perplexity());
-    EXPECT_EQ(0.5, m_tsne.gradientAccuracy());
-    EXPECT_EQ(100, m_tsne.iterations());
-    EXPECT_EQ(1, m_tsne.outputDimensions());
-    EXPECT_EQ(1, m_tsne.inputDimensions());
     EXPECT_EQ(1, m_tsne.dataSize());
+    EXPECT_EQ(1, m_tsne.inputDimensions());
+    EXPECT_EQ(0.5, m_tsne.gradientAccuracy());
+    EXPECT_EQ(25.0, m_tsne.perplexity());
+    EXPECT_EQ(1, m_tsne.outputDimensions());
+    EXPECT_EQ(100, m_tsne.iterations());
+    EXPECT_EQ(42, m_tsne.randomSeed());
 
     removeTempfile();
 }
@@ -174,16 +173,7 @@ TEST_F(TsneTest, LoadTSNE)
 
 TEST_F(TsneTest, Run)
 {
-    createTempfile();
-
-    // write header
-    writer << 3 << 1 << 0.2 << 0.1 << 1 << 100;
-    // write data
-    writer << 42.0 << 17.0 << 1.0;
-    // random seed
-    writer << 42;
-
-    closeTempfile();
+    createTempfileLegacy(3, 1, 0.2, 0.1, 1, 100, 42, { 42.0, 17.0, 1.0 });
 
     EXPECT_TRUE(m_tsne.loadLegacy(tempfile));
     EXPECT_NO_THROW(m_tsne.run());
