@@ -80,10 +80,10 @@ int main(int argc, char * argv[])
 	}
 	if (parsedArguments.isSet("-svg"))
 	{
-		tsne.saveCSV();
+		tsne.saveSVG();
 	}
 	if (parsedArguments.isSet("-csv"))
 	{
-		tsne.saveSVG();
+		tsne.saveCSV();
 	}
 }
