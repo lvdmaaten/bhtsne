@@ -379,7 +379,7 @@ private:
 protected:
     // params
     int          m_randomSeed;               ///< used to initialize the internal random generator
-    double       m_perplexity;               ///< TODO comment
+    double       m_perplexity;               ///< balance local/global data aspects, see documentation of perplexity()
     double       m_gradientAccuracy;         ///< used as the width for the gauss sampling kernel
     unsigned int m_iterations;               ///< defines how many iterations the algorithm does in run()
 
@@ -390,7 +390,7 @@ protected:
 	std::vector<std::vector<double>> m_data; ///< loaded data
 
     // output
-    std::string  m_outputFile;          ///< path and basename used to create output files
+    std::string  m_outputFile;               ///< path and basename used to create output files
 	std::vector<std::vector<double>> m_result;
 	double* m_resultP;
 

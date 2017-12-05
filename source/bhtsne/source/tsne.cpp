@@ -1216,7 +1216,7 @@ void TSNE::saveCSV()
 
 void TSNE::saveSVG()
 {
-    //TODO(!): implement saving svg
+    //TODO: implement saving svg
 }
 
 void TSNE::zeroMean(std::vector<std::vector<double>>& data, unsigned int dimensions)
