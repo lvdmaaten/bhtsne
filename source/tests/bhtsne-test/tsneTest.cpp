@@ -67,6 +67,26 @@ protected:
         filestream.close();
     }
 
+    void createTempfileCSV(int inputDimensions, std::initializer_list<double> data)
+    {
+        createTempfile();
+        int dimension = 0;
+        for (auto value : data)
+        {
+            filestream << value;
+            if (++dimension % inputDimensions == 0)
+            {
+                filestream << std::endl;
+            }
+            else
+            {
+                filestream << ',';
+            }
+        }
+        filestream.flush();
+        filestream.close();
+    }
+
     void removeTempfile()
     {
         remove(tempfile.c_str());
@@ -186,14 +206,20 @@ TEST_F(TsneTest, LoadLegacy)
 
 TEST_F(TsneTest, LoadCSV)
 {
-    FAIL();
+    createTempfileCSV(3, { 1.0, 2.0, 3.0, 4.0, 5.0, 6.0 });
+
+    EXPECT_TRUE(m_tsne.loadCSV(tempfile));
+    EXPECT_EQ(2, m_tsne.dataSize());
+    EXPECT_EQ(3, m_tsne.inputDimensions());
+
+    removeTempfile();
 }
 
 TEST_F(TsneTest, LoadTSNE)
 {
     createTempfileTSNE(1, 1, { 42.0 });
 
-    EXPECT_TRUE(m_tsne.loadLegacy(tempfile));
+    EXPECT_TRUE(m_tsne.loadTSNE(tempfile));
     EXPECT_EQ(1, m_tsne.dataSize());
     EXPECT_EQ(1, m_tsne.inputDimensions());
 
