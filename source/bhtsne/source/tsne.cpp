@@ -1195,7 +1195,7 @@ void TSNE::saveCSV()
 	else
 	{
 		size_t offset = 0;
-		for (size_t i = 0; i < m_numberOfSamples; ++i)
+		for (size_t i = 0; i < m_dataSize; ++i)
 		{
 			for (size_t j = 0; j < m_outputDimensions; ++j)
 			{
@@ -1205,7 +1205,7 @@ void TSNE::saveCSV()
 					f << ",";
 				}
 			}
-			if (i < m_numberOfSamples - 1)
+			if (i < m_dataSize - 1)
 			{
 				f << "\n";
 			}
