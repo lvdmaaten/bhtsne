@@ -10,7 +10,7 @@ namespace bhtsne {
                 tsne.setGradientAccuracy(std::stod(optionValuePair.second));
             } else if (optionValuePair.first == "--iterations") {
                 tsne.setIterations(static_cast<unsigned int>(std::stol(optionValuePair.second)));
-            } else if (optionValuePair.first == "--number-of-samples") {
+            } else if (optionValuePair.first == "--data-size") {
                 tsne.setDataSize(static_cast<unsigned int>(std::stol(optionValuePair.second)));
             } else if (optionValuePair.first == "--output-dimensions") {
                 tsne.setOutputDimensions(static_cast<unsigned int>(std::stol(optionValuePair.second)));

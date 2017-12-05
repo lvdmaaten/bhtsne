@@ -894,9 +894,6 @@ bool TSNE::loadTSNE(std::string file)
 
 void TSNE::run()
 {
-
-	std::cout << "Using random seed: " << m_randomSeed << std::endl;
-
 	bool skip_random_init = false;
 	int stop_lying_iter = 250;
 	int mom_switch_iter = 250;
