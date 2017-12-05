@@ -22,8 +22,16 @@ int main(int argc, char * argv[]) {
     applyCommandlineOptions(*tsne, argc, argv);
 
     // Read the parameters and the dataset
-	if(tsne->load_data(&data, &D, &no_dims, &theta, &perplexity, &rand_seed, &max_iter)) {
+	//if (tsne->loadLegacy("C:/Users/dajg1/Documents/HPI/cpp/bhtsne/build/build/Releasedata.dat")) {
+	if (tsne->load_data(&data, &D, &no_dims, &theta, &perplexity, &rand_seed, &max_iter)) {
+		//tsne->setNumberOfSamples(5000);
+		/*tsne->run();
+		tsne->saveLegacy();/**/
 
+		rand_seed = 0;
+		perplexity = 50.0;
+		theta = 0.2;
+		max_iter = 1000;
 		// Make dummy landmarks
         int* landmarks = (int*) malloc(tsne->getNumberOfSamples() * sizeof(int));
         if(landmarks == nullptr) {
@@ -46,10 +54,10 @@ int main(int argc, char * argv[]) {
 		tsne->save_data(Y, landmarks, costs, tsne->getNumberOfSamples(), no_dims);
 
         // Clean up the memory
-		free(data); data = nullptr;
+		//free(data); data = nullptr;
 		free(Y); Y = nullptr;
 		free(costs); costs = nullptr;
-		free(landmarks); landmarks = nullptr;
+		free(landmarks); landmarks = nullptr;/**/
     }
     delete(tsne);
 }

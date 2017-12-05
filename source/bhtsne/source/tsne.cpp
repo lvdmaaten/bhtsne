@@ -772,7 +772,7 @@ TSNE::TSNE()
 
 	m_outputDimensions = 2;
 	m_numberOfSamples = 0;
-	m_outputFile = "./result";
+	m_outputFile = "result";
 }
 
 
@@ -1094,12 +1094,42 @@ void TSNE::run()
 		free(col_P); col_P = nullptr;
 		free(val_P); val_P = nullptr;
 	}
+
+	m_resultP = Y;
 	std::cout << "Fitting performed in " << total_time << " seconds." << std::endl;
 }
 
 void TSNE::saveLegacy()
 {
+	//double* data, int* landmarks, double* costs, int n, int d
+	//Y, landmarks, costs, tsne->getNumberOfSamples(), no_dims
+	FILE *h;
+	if ((h = fopen((m_outputFile + ".dat").c_str(), "w+b")) == nullptr) {
+		printf("Error: could not open data file.\n");
+		return;
+	}
 
+	int* landmarks = (int*)malloc(m_numberOfSamples * sizeof(int));
+	if (landmarks == nullptr) {
+		printf("Memory allocation failed!\n");
+		exit(1);
+	}
+	for (unsigned int n = 0; n < m_numberOfSamples; n++)
+		landmarks[n] = n;
+
+	double* costs = (double*)calloc(m_numberOfSamples, sizeof(double));
+	if (costs == nullptr) {
+		printf("Memory allocation failed!\n");
+		exit(1);
+	}
+
+	fwrite(&m_numberOfSamples, sizeof(int), 1, h);
+	fwrite(&m_outputDimensions, sizeof(int), 1, h);
+	fwrite(m_resultP, sizeof(double), m_numberOfSamples * m_outputDimensions, h);
+	fwrite(landmarks, sizeof(int), m_numberOfSamples, h);
+	fwrite(costs, sizeof(double), m_numberOfSamples, h);
+	fclose(h);
+	printf("Wrote the %i x %i data matrix successfully!\n", m_numberOfSamples, m_outputDimensions);
 }
 
 void TSNE::saveCSV()
@@ -1223,7 +1253,7 @@ void TSNE::computeSquaredEuclideanDistance(std::vector<std::vector<double>> data
 	{
 		for (auto& val : point)
 		{
-			*(XnD + offset) = val;
+			*(XnD + offset++) = val;
 		}
 	}
 
@@ -1251,9 +1281,16 @@ void TSNE::computeGaussianPerplexity(unsigned int** _row_P,	unsigned int** _col_
 	{
 		for (auto& val : point)
 		{
-			*(X + offset) = val;
+			*(X + offset++) = val;
 		}
-	}
+	}/**/
+	/*for (size_t i = 0; i < m_data[0].size(); ++i)
+	{
+		for (size_t j = 0; j < m_data.size(); ++j)
+		{
+
+		}
+	}/**/
 
 	int K = (int)(3 * m_perplexity);
 
