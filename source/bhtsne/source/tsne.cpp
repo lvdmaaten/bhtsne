@@ -40,6 +40,7 @@
 #include <vector>
 #include <iostream>
 #include <fstream>
+#include <sstream>
 
 #include <bhtsne/sptree.h>
 #include <bhtsne/vptree.h>
@@ -853,14 +854,13 @@ void TSNE::setOutputFile(const std::string& file)
 
 bool TSNE::loadLegacy(std::string file)
 {
-
 	std::ifstream f;
 	f.open(file, std::ios::binary);
 	if (!f.is_open()) {
-		std::cout << "failed to open " << file << std::endl;
 		return false;
 	}
-	else {
+	else 
+	{
 		f.read(reinterpret_cast<char*>(&m_numberOfSamples), sizeof(m_numberOfSamples));
 		f.read(reinterpret_cast<char*>(&m_inputDimensions), sizeof(m_inputDimensions));
 		f.read(reinterpret_cast<char*>(&m_gradientAccuracy), sizeof(m_gradientAccuracy));
@@ -884,12 +884,60 @@ bool TSNE::loadLegacy(std::string file)
 
 bool TSNE::loadCSV(std::string file)
 {
-	return false;
+	auto seperator = ',';
+	std::ifstream f;
+	f.open(file);
+	if (!f.is_open()) {
+		return false;
+	}
+	else
+	{
+		std::string line;
+		while (std::getline(f, line))
+		{
+			std::istringstream iss(line);
+			std::string element;
+
+			std::vector<double> point;
+
+			while (std::getline(iss, element, seperator))
+			{
+				point.push_back(std::stod(element));
+			}
+			m_data.push_back(point);
+		}
+		f.close();
+	}
+	if (m_data.size() < 1 || m_data[0].size() < 1)
+	{
+		return false;
+	}
+	m_numberOfSamples = m_data.size();
+	m_inputDimensions = m_data[0].size();
+
+	return true;
 }
 
 bool TSNE::loadTSNE(std::string file)
 {
-	return false;
+	std::ifstream f;
+	f.open(file, std::ios::binary);
+	if (!f.is_open()) {
+		return false;
+	}
+	else 
+	{
+		f.read(reinterpret_cast<char*>(&m_numberOfSamples), sizeof(m_numberOfSamples));
+		f.read(reinterpret_cast<char*>(&m_inputDimensions), sizeof(m_inputDimensions));
+
+		for (size_t i = 0; i < m_numberOfSamples; ++i) {
+			auto point = std::vector<double>(m_inputDimensions);
+			f.read(reinterpret_cast<char*>(point.data()), sizeof(double) * m_inputDimensions);
+			m_data.push_back(point);
+		}
+		f.close();
+	}
+	return true;
 }
 
 void TSNE::run()
@@ -1137,7 +1185,16 @@ void TSNE::saveLegacy()
 
 void TSNE::saveCSV()
 {
+	std::ofstream f;
+	f.open(m_outputFile + ".csv");
+	if (!f.is_open)
+	{
+		std::cerr << "can't open " << m_outputFile << ".csv" << std::endl;
+	}
+	else
+	{
 
+	}
 }
 
 void TSNE::saveSVG()
