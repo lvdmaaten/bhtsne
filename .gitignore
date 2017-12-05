@@ -19,6 +19,7 @@ release_build
 /bin
 /lib
 /install
+/cmake-build-debug/
 
 # Qt cache
 CMakeLists.txt.user
@@ -27,6 +28,7 @@ CMakeLists.txt.user.*
 # IDE project files
 *.sublime-project
 *.sublime-workspace
+/.idea/
 
 # Local config windows
 _configure.bat

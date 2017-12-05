@@ -1,56 +1,44 @@
-
-#
+# 
 # External dependencies
-#
+# 
 
-# find_package(THIRDPARTY REQUIRED)
+find_package(${META_PROJECT_NAME} REQUIRED HINTS "${CMAKE_CURRENT_SOURCE_DIR}/../../../")
 
-
-#
+# 
 # Executable name and options
-#
+# 
 
 # Target name
-set(target bhtsne_cmd)
-
-# Exit here if required dependencies are not met
-message(STATUS "Tool ${target}")
+set(target tools-test)
+message(STATUS "Test ${target}")
 
 
-#
+# 
 # Sources
-#
-
-set(headers
-    ArgumentParser.h
-    CommandlineOptions.h
-)
+# 
 
 set(sources
-    ArgumentParser.cpp
-    CommandlineOptions.cpp
-    tsne_main.cpp
+    main.cpp
+    bhtsneCmdTest.cpp
 )
 
 
-#
+# 
 # Create executable
-#
+# 
 
 # Build executable
 add_executable(${target}
-    MACOSX_BUNDLE
     ${sources}
-    ${headers}
 )
 
 # Create namespaced alias
 add_executable(${META_PROJECT_NAME}::${target} ALIAS ${target})
 
 
-#
+# 
 # Project options
-#
+# 
 
 set_target_properties(${target}
     PROPERTIES
@@ -59,9 +47,9 @@ set_target_properties(${target}
 )
 
 
-#
+# 
 # Include directories
-#
+# 
 
 target_include_directories(${target}
     PRIVATE
@@ -70,20 +58,21 @@ target_include_directories(${target}
 )
 
 
-#
+# 
 # Libraries
-#
+# 
 
 target_link_libraries(${target}
     PRIVATE
     ${DEFAULT_LIBRARIES}
     ${META_PROJECT_NAME}::bhtsne
+    gmock-dev
 )
 
 
-#
+# 
 # Compile definitions
-#
+# 
 
 target_compile_definitions(${target}
     PRIVATE
@@ -91,9 +80,9 @@ target_compile_definitions(${target}
 )
 
 
-#
+# 
 # Compile options
-#
+# 
 
 target_compile_options(${target}
     PRIVATE
@@ -101,33 +90,11 @@ target_compile_options(${target}
 )
 
 
-#
+# 
 # Linker options
-#
+# 
 
 target_link_libraries(${target}
     PRIVATE
     ${DEFAULT_LINKER_OPTIONS}
-)
-
-
-#
-# Target Health
-#
-
-perform_health_checks(
-    ${target}
-    ${sources}
-    ${headers}
-)
-
-
-#
-# Deployment
-#
-
-# Executable
-install(TARGETS ${target}
-    RUNTIME DESTINATION ${INSTALL_BIN} COMPONENT tools
-    BUNDLE  DESTINATION ${INSTALL_BIN} COMPONENT tools
 )
