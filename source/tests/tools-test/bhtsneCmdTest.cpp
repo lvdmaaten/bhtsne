@@ -50,7 +50,7 @@ TEST_F(bhtsneCmdTest, SettingCommandLineParameters)
                            "--perplexity 40.123 "
                            "--gradient-accuracy 2.123 "
                            "--iterations 4123 "
-                           "--number-of-samples 3123 "
+                           "--data-size 3123 "
                            "--output-dimensions 2 "
                            "--output-file another_result.dat "
                            "--random-seed 321 input_file.dat");
