@@ -203,7 +203,17 @@ public:
     */
     unsigned int inputDimensions() const;
 
-    //TODO documentation
+    /**
+    *  @brief
+    *    Get number of data points in input
+    *
+    *  @return
+    *    number of data points
+    *
+    *  @remarks
+    *    This is the number of data points in the loaded dataset.
+    *    The loading method (e.g. loadCSV()) deduces this value from the given dataset file.
+    */
     unsigned int dataSize() const;
     void setDataSize(unsigned int value);
 
@@ -368,15 +378,15 @@ private:
 
 protected:
     // params
-    int          m_randomSeed;      ///< used to initialize the internal random generator
-    double       m_perplexity;      ///< TODO comment
-    double       m_gradientAccuracy;///< used as the width for the gauss sampling kernel
-    unsigned int m_iterations;      ///< defines how many iterations the algorithm does in run()
+    int          m_randomSeed;               ///< used to initialize the internal random generator
+    double       m_perplexity;               ///< TODO comment
+    double       m_gradientAccuracy;         ///< used as the width for the gauss sampling kernel
+    unsigned int m_iterations;               ///< defines how many iterations the algorithm does in run()
 
     // dataset
     unsigned int m_outputDimensions;         ///< dimensionality of the result
     unsigned int m_inputDimensions;          ///< dimensionality of the input; set during load
-    unsigned int m_numberOfSamples;          ///< size of data; set during load
+    unsigned int m_dataSize;                 ///< size of data; set during load
 	std::vector<std::vector<double>> m_data; ///< loaded data
 
     // output
