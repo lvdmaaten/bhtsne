@@ -71,12 +71,11 @@ protected:
     TsneTest()
     {
         m_tsne = PublicTSNE();
+        tempfile = std::tmpnam(nullptr);
     }
 
     void createTempfile()
     {
-        tempfile = std::tmpnam(nullptr);
-        std::cout << tempfile << std::endl;
         filestream.open(tempfile, std::ios::out | std::ios::binary | std::ios::trunc);
         writer = BinaryWriter(filestream);
     }
@@ -283,10 +282,10 @@ TEST_F(TsneTest, SaveLegacy)
     std::for_each(expected.begin(), expected.end(), [&](auto& v) { expectedDouble.push_back(*reinterpret_cast<double*>(&v)); });
     
     // test save
-    m_tsne.setResult(std::vector<std::vector<double>>{ { expectedDouble[0] }, { expectedDouble[1] }});
     m_tsne.setDataSize(2);
     m_tsne.setOutputDimensions(1);
-    m_tsne.setOutputFile(tempfile);
+    m_tsne.setOutputFile(tempfile); 
+    m_tsne.setResult(std::vector<std::vector<double>>{ { expectedDouble[0] }, { expectedDouble[1] }});
     EXPECT_NO_THROW(m_tsne.saveLegacy());
     // check file exists and has right size
     std::ifstream result;
@@ -314,12 +313,40 @@ TEST_F(TsneTest, SaveLegacy)
         EXPECT_EQ(0, costs[i]);
     }
 
+    result.close();
     remove((tempfile + ".dat").c_str());
 }
 
 TEST_F(TsneTest, SaveCSV)
 {
-    FAIL();
+    std::vector<unsigned long long> expected = { 0xC07DAC741DC680D4, 0x407DAC741DC680D4 };
+    std::vector<double> expectedDouble = std::vector<double>();
+    std::for_each(expected.begin(), expected.end(), [&](auto& v) { expectedDouble.push_back(*reinterpret_cast<double*>(&v)); });
+
+    // test save
+    m_tsne.setDataSize(2);
+    m_tsne.setOutputDimensions(1);
+    m_tsne.setResult(std::vector<std::vector<double>>{ { expectedDouble[0] }, { expectedDouble[1] }});
+    m_tsne.setOutputFile(tempfile);
+    EXPECT_NO_THROW(m_tsne.saveCSV());
+    // check file exists and has right size
+    std::ifstream result;
+    EXPECT_NO_THROW(result.open(tempfile + ".csv", std::ios::in | std::ios::binary | std::ios::ate));
+    EXPECT_TRUE(result.is_open());
+    // file size may change based on current os (\n vs \r\n)
+    EXPECT_LE(16, result.tellg());
+    EXPECT_GE(17, result.tellg());
+    // check values in file
+    result.seekg(0);
+    double value;
+    int offset = 0;
+    while (result >> value)
+    {
+        EXPECT_DOUBLE_EQ(expectedDouble[offset++], value);
+    }
+
+    result.close();
+    EXPECT_EQ(0, remove((tempfile + ".csv").c_str()));
 }
 
 TEST_F(TsneTest, SaveSVG)
