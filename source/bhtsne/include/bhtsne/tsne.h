@@ -79,7 +79,7 @@ public:
     *    Random seed
     *
     *  @remarks
-    *    This seed is used to initialize the internal random generator.
+    *    This seed is used to initialize the internal random generator. The current time is used if the seed is negative.
     */
     int randomSeed() const;
 
@@ -391,4 +391,4 @@ protected:
 };
 
 
-}; // bhtsne
+} // bhtsne
