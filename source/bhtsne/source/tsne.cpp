@@ -1185,6 +1185,7 @@ void TSNE::saveLegacy()
 
 void TSNE::saveCSV()
 {
+	std::cout << "saveCSV" << std::endl;
 	std::ofstream f;
 	f.open(m_outputFile + ".csv");
 	if (!f.is_open())
@@ -1193,7 +1194,23 @@ void TSNE::saveCSV()
 	}
 	else
 	{
-        //TODO(!): implement saving csv
+		size_t offset = 0;
+		for (size_t i = 0; i < m_numberOfSamples; ++i)
+		{
+			for (size_t j = 0; j < m_outputDimensions; ++j)
+			{
+				f << *(m_resultP + offset++);
+				if (j < m_outputDimensions - 1)
+				{
+					f << ",";
+				}
+			}
+			if (i < m_numberOfSamples - 1)
+			{
+				f << "\n";
+			}
+		}
+		f.close();
 	}
 }
 
