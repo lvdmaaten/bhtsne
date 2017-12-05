@@ -4,6 +4,16 @@
 #include "../../tools/bhtsne_cmd/ArgumentParser.cpp" //needed because we are not linking to a ArgumentParser definition
 #include "../../tools/bhtsne_cmd/CommandlineOptions.cpp"
 
+void parseArguments(cppassist::ArgumentParser & parsedArguments, std::string argString) {
+    auto argv = std::vector<char *>();
+    auto token = strtok(&argString[0], " ");
+    while (token != nullptr) {
+        argv.push_back(token);
+        token = strtok(nullptr, " ");
+    }
+    parsedArguments.parse(static_cast<int>(argv.size()), argv.data());
+}
+
 class bhtsneCmdTest : public testing::Test
 {
 protected:
@@ -25,7 +35,7 @@ TEST(SanityChecks, Equality)
     EXPECT_EQ((unsigned int) 1, 1);
 }
 
-TEST_F(bhtsneCmdTest, CommandLineArgsParsing)
+TEST_F(bhtsneCmdTest, SettingCommandLineParameters)
 {
     m_tsne.setPerplexity(30.123);
     m_tsne.setGradientAccuracy(1.123);
@@ -35,23 +45,17 @@ TEST_F(bhtsneCmdTest, CommandLineArgsParsing)
     m_tsne.setOutputFile("result123.csv");
     m_tsne.setRandomSeed(123);
 
-    //build argv
-    auto argv = std::vector<char *>();
-    auto argString = std::string{"./bhtsne_cmd "
-            "--perplexity 40.123 "
-            "--gradient-accuracy 2.123 "
-            "--iterations 4123 "
-            "--number-of-samples 3123 "
-            "--output-dimensions 2 "
-            "--output-file another_result.dat "
-            "--random-seed 321 input_file.dat"};
-    auto token = strtok(&argString[0], " ");
-    while (token != nullptr) {
-        argv.push_back(token);
-        token = strtok(nullptr, " ");
-    }
+    auto parsedArguments = cppassist::ArgumentParser();
+    parseArguments(parsedArguments, "./bhtsne_cmd "
+                           "--perplexity 40.123 "
+                           "--gradient-accuracy 2.123 "
+                           "--iterations 4123 "
+                           "--number-of-samples 3123 "
+                           "--output-dimensions 2 "
+                           "--output-file another_result.dat "
+                           "--random-seed 321 input_file.dat");
 
-    applyCommandlineOptions(m_tsne, static_cast<int>(argv.size()), argv.data());
+    applyCommandlineOptions(m_tsne, parsedArguments.options());
 
     EXPECT_EQ(40.123, m_tsne.perplexity()) << "perplexity was not set correctly via commandline option";
     EXPECT_EQ(2.123, m_tsne.gradientAccuracy()) << "gradient-accuracy was not set correctly via commandline option";
@@ -60,4 +64,20 @@ TEST_F(bhtsneCmdTest, CommandLineArgsParsing)
     EXPECT_EQ(2, m_tsne.outputDimensions()) << "output-dimensions was not set correctly via commandline option";
     EXPECT_EQ("another_result.dat", m_tsne.outputFile()) << "output-file was not set correctly via commandline option";
     EXPECT_EQ(321, m_tsne.randomSeed()) << "random-seed was not set correctly via commandline option";
+}
+
+TEST_F(bhtsneCmdTest, SettingCommandLineOptions)
+{
+    auto parsedArguments = cppassist::ArgumentParser();
+    parseArguments(parsedArguments, "./bhtsne_cmd");
+
+    EXPECT_TRUE(!parsedArguments.isSet("-legacy")
+                && !parsedArguments.isSet("-svg")
+                && !parsedArguments.isSet("-csv")) << "did not recognize that no output option was set";
+
+    parseArguments(parsedArguments, "./bhtsne_cmd -svg -csv -legacy");
+
+    EXPECT_TRUE(parsedArguments.isSet("-svg")) << "svg output was not set correctly via commandline option";
+    EXPECT_TRUE(parsedArguments.isSet("-csv")) << "csv output was not set correctly via commandline option";
+    EXPECT_TRUE(parsedArguments.isSet("-legacy")) << "legacy output was not set correctly via commandline option";
 }

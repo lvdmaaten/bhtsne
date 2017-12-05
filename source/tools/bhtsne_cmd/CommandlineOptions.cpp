@@ -1,13 +1,9 @@
 #include "CommandlineOptions.h"
-#include "ArgumentParser.h"
 
 namespace bhtsne {
-    void applyCommandlineOptions(TSNE &tsne, int argc, char *argv[]) {
-        auto parser = cppassist::ArgumentParser();
-        parser.parse(argc, argv);
-
+    void applyCommandlineOptions(TSNE & tsne, const std::map<std::string, std::string> & options) {
         //set parameter values
-        for (auto optionValuePair : parser.options()) {
+        for (const auto & optionValuePair : options) {
             if (optionValuePair.first == "--perplexity") {
                 tsne.setPerplexity(std::stod(optionValuePair.second));
             } else if (optionValuePair.first == "--gradient-accuracy") {
@@ -24,8 +20,5 @@ namespace bhtsne {
                 tsne.setRandomSeed(std::stoi(optionValuePair.second));
             }
         }
-
-        //TODO bool flags
-
     }
 }// namespace bhtsne
