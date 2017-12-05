@@ -831,12 +831,12 @@ unsigned int TSNE::inputDimensions() const
 	return m_inputDimensions;
 }
 
-unsigned int TSNE::getNumberOfSamples() const
+unsigned int TSNE::dataSize() const
 {
 	return m_numberOfSamples;
 }
 
-void TSNE::setNumberOfSamples(unsigned int value)
+void TSNE::setDataSize(unsigned int value)
 {
 	m_numberOfSamples = value;
 }
@@ -1101,8 +1101,6 @@ void TSNE::run()
 
 void TSNE::saveLegacy()
 {
-	//double* data, int* landmarks, double* costs, int n, int d
-	//Y, landmarks, costs, tsne->getNumberOfSamples(), no_dims
 	FILE *h;
 	if ((h = fopen((m_outputFile + ".dat").c_str(), "w+b")) == nullptr) {
 		printf("Error: could not open data file.\n");

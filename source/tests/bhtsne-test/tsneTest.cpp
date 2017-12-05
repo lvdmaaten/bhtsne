@@ -48,7 +48,7 @@ TEST_F(TsneTest, DefaultValues)
     EXPECT_EQ(0.2, m_tnse.gradientAccuracy());
     EXPECT_EQ(1000, m_tnse.iterations());
     EXPECT_EQ(2, m_tnse.outputDimensions());
-    EXPECT_EQ(0, m_tnse.getNumberOfSamples());
+    EXPECT_EQ(0, m_tnse.dataSize());
     EXPECT_EQ("./result", m_tnse.outputFile());
 }
 
@@ -99,10 +99,10 @@ TEST_F(TsneTest, InputDimensions)
 
 TEST_F(TsneTest, NumberOfSamples)
 {
-    m_tnse.setNumberOfSamples(1);
-    EXPECT_EQ(1, m_tnse.getNumberOfSamples());
-    m_tnse.setNumberOfSamples(2);
-    EXPECT_EQ(2, m_tnse.getNumberOfSamples());
+    m_tnse.setDataSize(1);
+    EXPECT_EQ(1, m_tnse.dataSize());
+    m_tnse.setDataSize(2);
+    EXPECT_EQ(2, m_tnse.dataSize());
 }
 
 TEST_F(TsneTest, OutputFile)
