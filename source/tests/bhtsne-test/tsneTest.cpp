@@ -55,6 +55,18 @@ protected:
         filestream.close();
     }
 
+    void createTempfileTSNE(int dataSize, int inputDimensions, std::initializer_list<double> data)
+    {
+        createTempfile();
+        writer << dataSize << inputDimensions;
+        for (auto value : data)
+        {
+            writer << value;
+        }
+        filestream.flush();
+        filestream.close();
+    }
+
     void removeTempfile()
     {
         remove(tempfile.c_str());
@@ -179,12 +191,18 @@ TEST_F(TsneTest, LoadCSV)
 
 TEST_F(TsneTest, LoadTSNE)
 {
-    FAIL();
+    createTempfileTSNE(1, 1, { 42.0 });
+
+    EXPECT_TRUE(m_tsne.loadLegacy(tempfile));
+    EXPECT_EQ(1, m_tsne.dataSize());
+    EXPECT_EQ(1, m_tsne.inputDimensions());
+
+    removeTempfile();
 }
 
 TEST_F(TsneTest, Run)
 {
-    createTempfileLegacy(3, 1, 0.2, 0.1, 1, 100, 42, { 42.0, 17.0, 1.0 });
+    createTempfileLegacy(2, 1, 0.1, 0.01, 1, 100, 42, { 42.0, 17.0 });
 
     EXPECT_TRUE(m_tsne.loadLegacy(tempfile));
     EXPECT_NO_THROW(m_tsne.run());
@@ -194,7 +212,40 @@ TEST_F(TsneTest, Run)
 
 TEST_F(TsneTest, SaveLegacy)
 {
-    FAIL();
+    createTempfileLegacy(2, 1, 0.1, 0.01, 1, 100, 42, { 42.0, 17.0 });
+    // test load/run/save
+    EXPECT_TRUE(m_tsne.loadLegacy(tempfile));
+    EXPECT_NO_THROW(m_tsne.run());
+    m_tsne.setOutputFile(tempfile);
+    EXPECT_NO_THROW(m_tsne.saveLegacy());
+    // check file exists and has right size
+    std::ifstream result;
+    EXPECT_NO_THROW(result.open(tempfile + ".dat", std::ios::in | std::ios::binary | std::ios::ate));
+    EXPECT_TRUE(result.is_open());
+    EXPECT_EQ(48, result.tellg());
+    // check values in file
+    result.seekg(0);
+    int dataSize;
+    int outputDimensions;
+    std::vector<double> data = std::vector<double>(2);
+    std::vector<int> landmarks = std::vector<int>(2);
+    std::vector<double> costs = std::vector<double>(2);
+    result.read(reinterpret_cast<char*>(&dataSize), sizeof(dataSize));
+    result.read(reinterpret_cast<char*>(&outputDimensions), sizeof(outputDimensions));
+    result.read(reinterpret_cast<char*>(data.data()), 2 * sizeof(double));
+    result.read(reinterpret_cast<char*>(landmarks.data()), 2 * sizeof(int));
+    result.read(reinterpret_cast<char*>(costs.data()), 2 * sizeof(double));
+    EXPECT_EQ(2, dataSize);
+    EXPECT_EQ(1, outputDimensions);
+    // TODO: maybe check actual results
+    for (auto i = 0; i < 2; i++)
+    {
+        EXPECT_EQ(i, landmarks[i]);
+        EXPECT_EQ(0, costs[i]);
+    }
+
+    removeTempfile();
+    remove((tempfile + ".dat").c_str());
 }
 
 TEST_F(TsneTest, SaveCSV)
