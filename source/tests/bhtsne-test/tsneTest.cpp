@@ -26,7 +26,7 @@ public:
     void setResult(std::vector<std::vector<double>> result)
     {
         m_result = result;
-        m_resultP = new double[m_dataSize * m_outputDimensions];
+        m_resultP = new double[result.size() * result[0].size()];
         int offset = 0;
         for (auto sample : result)
         {
@@ -351,5 +351,43 @@ TEST_F(TsneTest, SaveCSV)
 
 TEST_F(TsneTest, SaveSVG)
 {
-    FAIL();
+    std::vector<unsigned long long> expected = { 0xC07DAC741DC680D4, 0xC07DAC741DC680D4, 0x407DAC741DC680D4, 0x407DAC741DC680D4 };
+    std::vector<double> expectedDouble = std::vector<double>();
+    std::for_each(expected.begin(), expected.end(), [&](auto& v) { expectedDouble.push_back(*reinterpret_cast<double*>(&v)); });
+
+    // test save
+    m_tsne.setDataSize(2);
+    m_tsne.setOutputDimensions(1);
+    m_tsne.setResult(std::vector<std::vector<double>>{ { expectedDouble[0], expectedDouble[1] }, { expectedDouble[2], expectedDouble[3] }});
+    m_tsne.setOutputFile(tempfile);
+    EXPECT_NO_THROW(m_tsne.saveSVG());
+    // check file exists
+    std::ifstream result;
+    EXPECT_NO_THROW(result.open(tempfile + ".svg", std::ios::in | std::ios::binary));
+    EXPECT_TRUE(result.is_open());
+    // check values in file
+    std::vector<std::string> expectedLines = std::vector<std::string>();
+    expectedLines.push_back("<?xml version='1.0' encoding='UTF-8' ?>");
+    double expectedRadius = 0.5;
+    double expectedViewBoxMin = expectedDouble[0] - expectedRadius;
+    double expectedViewBoxSize = 2 * -expectedViewBoxMin;
+    expectedLines.push_back("<svg xmlns='http://www.w3.org/2000/svg' version='1.1' width='600' height='600' viewBox='" + std::to_string(expectedViewBoxMin) + " " + std::to_string(expectedViewBoxMin) + " " + std::to_string(expectedViewBoxSize) + " " + std::to_string(expectedViewBoxSize) + "'>");
+    expectedLines.push_back("<circle cx='" + std::to_string(expectedDouble[0]) + "' cy='" + std::to_string(expectedDouble[1]) + "' fill='black' r='" + std::to_string(expectedRadius) + "' stroke='none' opacity='0.5'/>");
+    expectedLines.push_back("<circle cx='" + std::to_string(expectedDouble[2]) + "' cy='" + std::to_string(expectedDouble[3]) + "' fill='black' r='" + std::to_string(expectedRadius) + "' stroke='none' opacity='0.5'/>");
+    expectedLines.push_back("</svg>");
+
+    std::string line;
+    int offset = 0;
+    while (std::getline(result, line))
+    {
+        // getline keeps windows' \r - cut it off!
+        if (*line.rbegin() == '\r')
+        {
+            line.erase(line.length() - 1);
+        }
+        EXPECT_EQ(expectedLines[offset++], line);
+    }
+
+    result.close();
+    EXPECT_EQ(0, remove((tempfile + ".svg").c_str()));
 }
