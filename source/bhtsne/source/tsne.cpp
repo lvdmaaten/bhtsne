@@ -884,7 +884,7 @@ bool TSNE::loadLegacy(std::string file)
 
 bool TSNE::loadCSV(std::string file)
 {
-	auto seperator = 'c';
+	auto seperator = ',';
 	std::ifstream f;
 	f.open(file);
 	if (!f.is_open()) {
@@ -895,20 +895,16 @@ bool TSNE::loadCSV(std::string file)
 		std::string line;
 		while (std::getline(f, line))
 		{
-			//std::getline(f, line);
 			std::istringstream iss(line);
 			std::string element;
 
 			std::vector<double> point;
 
-			while (std::getline(iss, element, ','))
+			while (std::getline(iss, element, seperator))
 			{
-				//std::cout << element << " ";
 				point.push_back(std::stod(element));
 			}
 			m_data.push_back(point);
-			//std::cout << endl;
-
 		}
 	}
 	m_numberOfSamples = m_data.size();
@@ -919,9 +915,6 @@ bool TSNE::loadCSV(std::string file)
 
 bool TSNE::loadTSNE(std::string file)
 {
-	std::ofstream csvF;
-	csvF.open("C:/Users/dajg1/Documents/HPI/cpp/bhtsne/build/build/Release/data.csv");
-
 	std::ifstream f;
 	f.open(file, std::ios::binary);
 	if (!f.is_open()) {
@@ -936,14 +929,7 @@ bool TSNE::loadTSNE(std::string file)
 			auto point = std::vector<double>(m_inputDimensions);
 			f.read(reinterpret_cast<char*>(point.data()), sizeof(double) * m_inputDimensions);
 			m_data.push_back(point);
-
-			for (size_t j = 0; j < point.size(); ++j) {
-				csvF << point[j];
-				if (j != point.size() - 1) csvF << ",";
-			}
-			csvF << "\n";
 		}
-		csvF.close();
 		f.close();
 	}
 	return true;
