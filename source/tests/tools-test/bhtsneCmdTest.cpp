@@ -40,7 +40,7 @@ TEST_F(bhtsneCmdTest, SettingCommandLineParameters)
     m_tsne.setPerplexity(30.123);
     m_tsne.setGradientAccuracy(1.123);
     m_tsne.setIterations(5123);
-    m_tsne.setNumberOfSamples(2123);
+    m_tsne.setDataSize(2123);
     m_tsne.setOutputDimensions(3);
     m_tsne.setOutputFile("result123.csv");
     m_tsne.setRandomSeed(123);
@@ -60,7 +60,7 @@ TEST_F(bhtsneCmdTest, SettingCommandLineParameters)
     EXPECT_EQ(40.123, m_tsne.perplexity()) << "perplexity was not set correctly via commandline option";
     EXPECT_EQ(2.123, m_tsne.gradientAccuracy()) << "gradient-accuracy was not set correctly via commandline option";
     EXPECT_EQ(4123, m_tsne.iterations()) << "iterations was not set correctly via commandline option";
-    EXPECT_EQ(3123, m_tsne.getNumberOfSamples()) << "number-of-samples was not set correctly via commandline option";
+    EXPECT_EQ(3123, m_tsne.dataSize()) << "number-of-samples was not set correctly via commandline option";
     EXPECT_EQ(2, m_tsne.outputDimensions()) << "output-dimensions was not set correctly via commandline option";
     EXPECT_EQ("another_result.dat", m_tsne.outputFile()) << "output-file was not set correctly via commandline option";
     EXPECT_EQ(321, m_tsne.randomSeed()) << "random-seed was not set correctly via commandline option";

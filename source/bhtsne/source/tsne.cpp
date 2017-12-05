@@ -831,12 +831,12 @@ unsigned int TSNE::inputDimensions() const
 	return m_inputDimensions;
 }
 
-unsigned int TSNE::getNumberOfSamples() const
+unsigned int TSNE::dataSize() const
 {
 	return m_numberOfSamples;
 }
 
-void TSNE::setNumberOfSamples(unsigned int value)
+void TSNE::setDataSize(unsigned int value)
 {
 	m_numberOfSamples = value;
 }
@@ -894,13 +894,18 @@ bool TSNE::loadTSNE(std::string file)
 
 void TSNE::run()
 {
-
-	std::cout << "Using random seed: " << m_randomSeed << std::endl;
-
 	bool skip_random_init = false;
 	int stop_lying_iter = 250;
 	int mom_switch_iter = 250;
-
+	
+	if (m_randomSeed >= 0) {
+		std::cout << "Using random seed: " << m_randomSeed << std::endl;
+		srand((unsigned int)m_randomSeed);
+	}
+	else {
+		std::cout << "Using current time as random seed..." << std::endl;
+		srand(time(nullptr));
+	}
 
 	// Determine whether we are using an exact algorithm
 	if (m_numberOfSamples - 1 < 3 * m_perplexity) {
@@ -1101,8 +1106,6 @@ void TSNE::run()
 
 void TSNE::saveLegacy()
 {
-	//double* data, int* landmarks, double* costs, int n, int d
-	//Y, landmarks, costs, tsne->getNumberOfSamples(), no_dims
 	FILE *h;
 	if ((h = fopen((m_outputFile + ".dat").c_str(), "w+b")) == nullptr) {
 		printf("Error: could not open data file.\n");

@@ -47,10 +47,10 @@ namespace bhtsne
 
 /**
 *  @brief
-*    Representation of the Barnes-Hut approximation for 
+*    Representation of the Barnes-Hut approximation for
 *    the t-distributed stochastic neighbor embedding algorithm
 *
-*    Default parameters are: 
+*    Default parameters are:
 *    - randomSeed          0
 *    - perplexity          50
 *    - gradientAccuracy    0.2
@@ -102,7 +102,9 @@ public:
     *    Perplexity (0..inputDimensions)
     *
     *  @remarks
-    *    TODO: explain perplexity
+    *    Perplexity controls how to balance attention between local and global aspects of the
+    *    data. The parameter is a guess about the number of close neighbors each point has. Typical
+    *    values are between 5 and 50.
     */
     double perplexity() const;
 
@@ -149,7 +151,7 @@ public:
     *    Number of iterations
     *
     *  @remarks
-    *    This defines how many times the algorithm adjusts the result to minimize the error. 
+    *    This defines how many times the algorithm adjusts the result to minimize the error.
     *    A higher value can improve the result but also increases computation times.
     */
     unsigned int iterations() const;
@@ -196,33 +198,33 @@ public:
     *    Input dimensionality (1 <= outDim < inDim)
     *
     *  @remarks
-    *    This is the dimensionality of the loaded dataset. 
+    *    This is the dimensionality of the loaded dataset.
     *    The loading method (e.g. loadCSV()) deduces this value from the given dataset file.
     */
     unsigned int inputDimensions() const;
 
-    //TODO: rename (w/o get) and rename NumberOfSamples to samples or datasize
-    unsigned int getNumberOfSamples() const; 
-    void setNumberOfSamples(unsigned int value);
+    //TODO documentation
+    unsigned int dataSize() const;
+    void setDataSize(unsigned int value);
 
     /**
     *  @brief
-    *    Get output file 
+    *    Get output file
     *
     *  @return
     *    Output file
     *
     *  @remarks
-    *    This is the path and basename that is used to create all output files. 
+    *    This is the path and basename that is used to create all output files.
     */
     std::string outputFile() const;
 
     /**
     *  @brief
-    *    Set output file 
+    *    Set output file
     *
     *  @param[in] name
-    *    Output file 
+    *    Output file
     *
     *  @see outputFile()
     */
@@ -236,11 +238,11 @@ public:
     *    Input file path
     *
     *  @post
-    *    If this fuction returns true, the dataset was loaded and run() can be called. 
+    *    If this fuction returns true, the dataset was loaded and run() can be called.
     *
     *  @remarks
     *    Loads files with the extension ".dat" as used in the original implementation (https://github.com/lvdmaaten/bhtsne).
-    *    In addition to the dataset parameters also 
+    *    In addition to the dataset parameters also
     *    sets (and overrides) gradient accuracy, perplexity, output dimensionality, iterations, and possibly the seed.
     *    The file must contain the following binary information:
     *    - int         number of datapoints
@@ -266,7 +268,7 @@ public:
     *
     *  @remarks
     *    Loads files with the extension ".csv".
-    *    The file should contain x lines with y numerical values each. 
+    *    The file should contain x lines with y numerical values each.
     *    The number of samples is set to x and the input dimensionality to y.
     */
     bool loadCSV(std::string file);
@@ -301,7 +303,7 @@ public:
     *    The result is computed and ready to be saved by any of the "save" functions.
     *
     *  @remarks
-    *    This function runs the barnes hut implementation of the T-SNE algorithm. 
+    *    This function runs the barnes hut implementation of the T-SNE algorithm.
     */
     void run();
 
@@ -310,7 +312,7 @@ public:
     *    Saves the result in a ".dat" file
     *
     *  @pre
-    *    The algorithm must have ran (i.e. run() was called). 
+    *    The algorithm must have ran (i.e. run() was called).
     *
     *  @remarks
     *    Saves the result of the computation to "<outputFile>.dat".
@@ -375,7 +377,7 @@ protected:
     unsigned int m_outputDimensions;         ///< dimensionality of the result
     unsigned int m_inputDimensions;          ///< dimensionality of the input; set during load
     unsigned int m_numberOfSamples;          ///< size of data; set during load
-	std::vector<std::vector<double>> m_data; ///< loaded data 
+	std::vector<std::vector<double>> m_data; ///< loaded data
 
     // output
     std::string  m_outputFile;          ///< path and basename used to create output files
