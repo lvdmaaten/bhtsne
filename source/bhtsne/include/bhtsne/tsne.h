@@ -304,6 +304,15 @@ public:
 
     /**
     *  @brief
+    *    Loads a dataset from std::cin
+    *
+    *  @remarks
+    *    Expects the same format as loadCSV()
+    */
+    bool loadCin();
+
+    /**
+    *  @brief
     *    Runs the algorithm
     *
     *  @pre
@@ -374,6 +383,8 @@ private:
     void computeGaussianPerplexity(double* X, int N, int D, unsigned int** _row_P, unsigned int** _col_P, double** _val_P, double perplexity, int K);
     void computeSquaredEuclideanDistance(double* X, int N, int D, double* DD); //static?
     double randn();
+
+    bool loadFromStream(std::istream& stream);
 
 
 protected:

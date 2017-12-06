@@ -32,11 +32,11 @@ int main(int argc, char * argv[])
         return 2;
     }
 
+    bool loaded = false;
+
     if (params.empty())
     {
-        //TODO(!): read from stdin
-        std::cerr << "reading from stdin is not supported yet, please specify an input file\n";
-        return 42;
+        loaded = tsne.loadCin();
     } else {
         //determine extension
         auto inputfile = params.front();
@@ -49,7 +49,7 @@ int main(int argc, char * argv[])
         auto ext = inputfile.substr(ext_pos);
 
         //load correct file
-        bool loaded = false;
+        
         if (ext == ".dat")
         {
             loaded = tsne.loadLegacy(inputfile);
@@ -63,12 +63,11 @@ int main(int argc, char * argv[])
             std::cerr << "file extension of " << ext << " not supported\n";
             return 4;
         }
-
-        if (!loaded)
-        {
-            std::cerr << "failed to load " << inputfile << "\n";
-            return 5;
-        }
+    }
+    if (!loaded)
+    {
+        std::cerr << "failed to load input file\n";
+        return 5;
     }
 
 	tsne.run();

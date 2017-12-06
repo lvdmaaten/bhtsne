@@ -724,6 +724,53 @@ double TSNE::randn() {
 	return x;
 }
 
+bool bhtsne::TSNE::loadFromStream(std::istream & stream)
+{
+    auto seperator = ',';
+
+    //read data points
+    std::string line;
+    bool first = true;
+    while (std::getline(stream, line))
+    {
+        std::istringstream iss(line);
+        std::string element;
+
+        std::vector<double> point;
+        point.reserve(m_inputDimensions);
+
+        //read values of data point
+        while (std::getline(iss, element, seperator))
+        {
+            point.push_back(std::stod(element));
+        }
+
+        //set dimensionality
+        if (first)
+        {
+            first = false;
+            m_inputDimensions = point.size();
+        }
+
+        //fail if inconsistent dimensionality
+        if (m_inputDimensions != point.size() || m_inputDimensions == 0)
+        {
+            m_inputDimensions = 0;
+            m_data.clear();
+            return false;
+        }
+
+        m_data.emplace_back(std::move(point));
+    }
+
+    if (m_data.size() == 0)
+        return false;
+
+    m_dataSize = m_data.size();
+
+    return true;
+}
+
 // Function that loads data from a t-SNE file
 // Note: this function does a malloc that should be freed elsewhere
 bool TSNE::load_data(double** data, int* d, int* no_dims, double* theta,
@@ -776,6 +823,7 @@ TSNE::TSNE()
 	m_iterations = 1000;
 
 	m_outputDimensions = 2;
+    m_inputDimensions = 0;
 	m_dataSize = 0;
 	m_outputFile = "result";
 }
@@ -887,52 +935,11 @@ bool TSNE::loadLegacy(std::string file)
 
 bool TSNE::loadCSV(std::string file)
 {
-	auto seperator = ',';
-
 	auto f = std::ifstream(file);
 	if (!f.is_open()) 
 		return false;
 
-    //read data points
-	std::string line;
-    bool first = true;
-	while (std::getline(f, line))
-	{
-		std::istringstream iss(line);
-		std::string element;
-
-		std::vector<double> point;
-
-        //read values of data point
-		while (std::getline(iss, element, seperator))
-		{
-			point.push_back(std::stod(element));
-		}
-
-        //set dimensionality
-        if (first)
-        {
-            first = false;
-            m_inputDimensions = point.size();
-        }
-        
-        //fail if inconsistent dimensionality
-        if (m_inputDimensions != point.size() || m_inputDimensions == 0)
-        {
-            m_inputDimensions = 0;
-            m_data.clear();
-            return false;
-        }
-
-		m_data.emplace_back(std::move(point));
-	}
-	
-	if (m_data.size() == 0)
-		return false;
-
-	m_dataSize = m_data.size();
-
-	return true;
+    return loadFromStream(f);
 }
 
 bool TSNE::loadTSNE(std::string file)
@@ -952,6 +959,11 @@ bool TSNE::loadTSNE(std::string file)
 	}
 	
 	return true;
+}
+
+bool TSNE::loadCin()
+{
+    return loadFromStream(cin);
 }
 
 void TSNE::run()
