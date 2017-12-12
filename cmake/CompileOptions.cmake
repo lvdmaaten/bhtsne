@@ -19,6 +19,7 @@ endif()
 
 set(DEFAULT_PROJECT_OPTIONS
     DEBUG_POSTFIX             "d"
+    CXX_STANDARD              14
     LINKER_LANGUAGE           "CXX"
     POSITION_INDEPENDENT_CODE ON
     CXX_VISIBILITY_PRESET     "hidden"
@@ -85,8 +86,6 @@ if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "MSVC")
         /GF           # -> enable string pooling
         >
 
-        /std:c++17
-
         # No manual c++11 enable for MSVC as all supported MSVC versions for cmake-init have C++11 implicitly enabled (MSVC >=2013)
     )
 endif ()
@@ -126,8 +125,6 @@ if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU" OR "${CMAKE_CXX_COMPILER_ID}" MATCH
         $<$<PLATFORM_ID:Darwin>:
             -pthread
         >
-
-        -std=c++17
     )
 endif ()
 
