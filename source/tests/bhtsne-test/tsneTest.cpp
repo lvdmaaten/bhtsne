@@ -8,32 +8,32 @@
 class PublicTSNE : public bhtsne::TSNE
 {
 public:
-    std::vector<std::vector<double>> data() 
+    auto data() 
     {
         return m_data;
     };
 
-    void setData(std::vector<std::vector<double>> data)
+    auto setData(std::vector<std::vector<double>> data)
     {
         m_data = data;
     };
 
-    std::vector<std::vector<double>> result()
+    auto result()
     {
         return m_result;
     };
 
-    void setResult(std::vector<std::vector<double>> result)
+    auto setResult(std::vector<std::vector<double>> result)
     {
         m_result = result;
     };
 
-    void setInputDimensions(int dimensions)
+    auto setInputDimensions(int dimensions)
     {
         m_inputDimensions = dimensions;
     }
 
-    double firstGaussNumber()
+    auto firstGaussNumber()
     {
         return gaussNumber();
     }
@@ -53,7 +53,7 @@ public:
     }
 
     template <typename T>
-    BinaryWriter& operator<<(const T& value)
+    auto& operator<<(const T& value)
     {
         filestream->write(reinterpret_cast<const char*>(&value), sizeof(value));
         return *this;
@@ -69,18 +69,18 @@ protected:
         tempfile = std::tmpnam(nullptr);
     }
 
-    void createTempfile()
+    auto createTempfile()
     {
         filestream.open(tempfile, std::ios::out | std::ios::binary | std::ios::trunc);
         writer = BinaryWriter(filestream);
     }
 
-    void removeTempfile()
+    auto removeTempfile()
     {
         remove(tempfile.c_str());
     }
 
-    double firstGaussNumber(int seed)
+    auto firstGaussNumber(int seed)
     {
         auto gen = std::mt19937(seed);
         auto dist = std::normal_distribution<>(0,2);
@@ -177,14 +177,14 @@ TEST_F(TsneTest, OutputFile)
 
 TEST_F(TsneTest, LoadLegacy)
 {
-    int dataSize = 1;
-    int inputDimensions = 1;
-    double gradientAccuracy = 0.5;
-    double perplexity = 25.0;
-    int outputDimensions = 1;
-    int iterations = 100;
-    int randomSeed = 42;
-    double data = 42.0;
+    auto dataSize = 1;
+    auto inputDimensions = 1;
+    auto gradientAccuracy = 0.5;
+    auto perplexity = 25.0;
+    auto outputDimensions = 1;
+    auto iterations = 100;
+    auto randomSeed = 42;
+    auto data = 42.0;
 
     createTempfile();
     writer << dataSize << inputDimensions << gradientAccuracy << perplexity << outputDimensions << iterations;
@@ -240,9 +240,9 @@ TEST_F(TsneTest, LoadCSV)
 
 TEST_F(TsneTest, LoadTSNE)
 {
-    int dataSize = 1;
-    int inputDimensions = 1;
-    double data = 42.0;
+    auto dataSize = 1;
+    auto inputDimensions = 1;
+    auto data = 42.0;
 
     createTempfile();
     writer << dataSize << inputDimensions;
