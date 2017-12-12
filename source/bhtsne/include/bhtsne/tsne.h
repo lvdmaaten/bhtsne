@@ -433,7 +433,6 @@ protected:
     // output
     std::string  m_outputFile;               ///< path and basename used to create output files
 	std::vector<std::vector<double>> m_result;
-	double* m_resultP;
 
     std::mt19937 m_gen;
     std::normal_distribution<> m_dist;

@@ -930,8 +930,6 @@ void TSNE::run()
 		free(val_P); val_P = nullptr;
 	}
 
-	m_resultP = Y;
-
 	size_t offset = 0;
 	for (size_t i = 0; i < m_dataSize; ++i) {
 		auto point = std::vector<double>();
@@ -954,7 +952,7 @@ void TSNE::saveToStream(std::ostream & stream)
 	{
 		for (size_t j = 0; j < m_outputDimensions; ++j)
 		{
-			stream << m_resultP[offset++];
+			stream << m_result[i][j];
 			if (j < m_outputDimensions - 1)
 			{
 				stream << ',';
@@ -1006,7 +1004,9 @@ void TSNE::saveLegacy()
 
 	f.write(reinterpret_cast<char*>(&m_dataSize), sizeof(m_dataSize));
 	f.write(reinterpret_cast<char*>(&m_outputDimensions), sizeof(m_outputDimensions));
-	f.write(reinterpret_cast<char*>(m_resultP), m_dataSize * m_outputDimensions * sizeof(double));
+	for (auto& point : m_result) {
+		f.write(reinterpret_cast<char*>(point.data()), m_outputDimensions * sizeof(double));
+	}
 	f.write(reinterpret_cast<char*>(landmarks.data()), landmarks.size() * sizeof(int));
 	f.write(reinterpret_cast<char*>(costs.data()), costs.size() * sizeof(double));
 
@@ -1021,8 +1021,13 @@ void TSNE::saveSVG()
     auto labelFile = std::string();
 
 	double extreme = 0;
-	for (unsigned int i = 0; i < m_dataSize * m_outputDimensions; i++)
-		extreme = std::max(extreme, std::abs(m_resultP[i]));
+	for (size_t i = 0; i < m_dataSize; ++i)
+	{
+		for (size_t j = 0; j < m_outputDimensions; ++j)
+		{
+			extreme = std::max(extreme, std::abs(m_result[i][j]));
+		}
+	}
 	double radius = 0.5;
 	double halfWidth = extreme + radius;
 
@@ -1082,8 +1087,8 @@ void TSNE::saveSVG()
         }
 
 		f << "<circle "
-			<< "cx='" << m_resultP[i * 2] << "' "
-			<< "cy='" << m_resultP[i * 2 + 1] << "' "
+			<< "cx='" << m_result[i][0] << "' "
+			<< "cy='" << m_result[i][1] << "' "
 			<< "fill='" << color << "' "
 			<< "r='" << radius << "' "
 			<< "stroke='none' opacity='0.5'/>\n";

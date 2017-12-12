@@ -26,15 +26,6 @@ public:
     void setResult(std::vector<std::vector<double>> result)
     {
         m_result = result;
-        m_resultP = new double[result.size() * result[0].size()];
-        int offset = 0;
-        for (auto sample : result)
-        {
-            for (auto value : sample)
-            {
-                m_resultP[offset++] = value;
-            }
-        }
     };
 
     void setInputDimensions(int dimensions)
