@@ -1,7 +1,7 @@
 
-# 
+#
 # Platform and architecture setup
-# 
+#
 
 # Get upper case system name
 string(TOUPPER ${CMAKE_SYSTEM_NAME} SYSTEM_NAME_UPPER)
@@ -13,36 +13,35 @@ if(CMAKE_SIZEOF_VOID_P EQUAL 8)
 endif()
 
 
-# 
+#
 # Project options
-# 
+#
 
 set(DEFAULT_PROJECT_OPTIONS
     DEBUG_POSTFIX             "d"
-    CXX_STANDARD              11 # Not available before CMake 3.1; see below for manual command line argument addition
     LINKER_LANGUAGE           "CXX"
     POSITION_INDEPENDENT_CODE ON
     CXX_VISIBILITY_PRESET     "hidden"
 )
 
 
-# 
+#
 # Include directories
-# 
+#
 
 set(DEFAULT_INCLUDE_DIRECTORIES)
 
 
-# 
+#
 # Libraries
-# 
+#
 
 set(DEFAULT_LIBRARIES)
 
 
-# 
+#
 # Compile definitions
-# 
+#
 
 set(DEFAULT_COMPILE_DEFINITIONS
     SYSTEM_${SYSTEM_NAME_UPPER}
@@ -57,9 +56,9 @@ if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "MSVC")
 endif ()
 
 
-# 
+#
 # Compile options
-# 
+#
 
 set(DEFAULT_COMPILE_OPTIONS)
 
@@ -74,18 +73,20 @@ if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "MSVC")
         /wd4592       # -> disable warning: 'identifier': symbol will be dynamically initialized (implementation limitation)
         # /wd4201     # -> disable warning: nonstandard extension used: nameless struct/union (caused by GLM)
         # /wd4127     # -> disable warning: conditional expression is constant (caused by Qt)
-        
+
         #$<$<CONFIG:Debug>:
         #/RTCc         # -> value is assigned to a smaller data type and results in a data loss
         #>
 
-        $<$<CONFIG:Release>: 
+        $<$<CONFIG:Release>:
         /Gw           # -> whole program global optimization
-        /GS-          # -> buffer security check: no 
+        /GS-          # -> buffer security check: no
         /GL           # -> whole program optimization: enable link-time code generation (disables Zi)
         /GF           # -> enable string pooling
         >
-        
+
+        /std:c++17
+
         # No manual c++11 enable for MSVC as all supported MSVC versions for cmake-init have C++11 implicitly enabled (MSVC >=2013)
     )
 endif ()
@@ -105,38 +106,35 @@ if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU" OR "${CMAKE_CXX_COMPILER_ID}" MATCH
         -Wswitch-default
         -Wuninitialized
         -Wmissing-field-initializers
-        
+
         $<$<CXX_COMPILER_ID:GNU>:
             -Wmaybe-uninitialized
-            
+
             $<$<VERSION_GREATER:$<CXX_COMPILER_VERSION>,4.8>:
                 -Wpedantic
-                
+
                 -Wreturn-local-addr
             >
         >
-        
+
         $<$<CXX_COMPILER_ID:Clang>:
             -Wpedantic
-            
+
             # -Wreturn-stack-address # gives false positives
         >
-        
+
         $<$<PLATFORM_ID:Darwin>:
             -pthread
         >
-        
-        # Required for CMake < 3.1; should be removed if minimum required CMake version is raised.
-        $<$<VERSION_LESS:${CMAKE_VERSION},3.1>:
-            -std=c++11
-        >
+
+        -std=c++17
     )
 endif ()
 
 
-# 
+#
 # Linker options
-# 
+#
 
 set(DEFAULT_LINKER_OPTIONS)
 
