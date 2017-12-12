@@ -1209,10 +1209,7 @@ void TSNE::saveToStream(std::ostream & stream)
 				stream << ',';
 			}
 		}
-		if (i < m_dataSize - 1)
-		{
-			stream << '\n';
-		}
+		stream << '\n';
 	}
 
     stream.flush();
