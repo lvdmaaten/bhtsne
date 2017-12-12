@@ -331,19 +331,27 @@ TEST_F(TsneTest, SaveCSV)
     EXPECT_NO_THROW(m_tsne.saveCSV());
     // check file exists and has right size
     std::ifstream result;
-    EXPECT_NO_THROW(result.open(tempfile + ".csv", std::ios::in | std::ios::binary | std::ios::ate));
+    EXPECT_NO_THROW(result.open(tempfile + ".csv", std::ios::in | std::ios::ate));
     EXPECT_TRUE(result.is_open());
     // file size may change based on current os (\n vs \r\n)
     EXPECT_LE(16, result.tellg());
     EXPECT_GE(17, result.tellg());
     // check values in file
+    std::ostringstream expectedOut;
+    expectedOut << std::setprecision(6);
+    expectedOut << expectedDouble[0] << std::endl << expectedDouble[1] << std::endl;
+    std::istringstream expectedIn(expectedOut.str());
+
     result.seekg(0);
-    double value;
-    int offset = 0;
-    while (result >> value)
+    std::string actualLine;
+    std::string expectedLine;
+    while ((bool)std::getline(result, actualLine) & (bool)std::getline(expectedIn, expectedLine))
     {
-        EXPECT_DOUBLE_EQ(expectedDouble[offset++], value);
+        EXPECT_EQ(expectedLine, actualLine);
     }
+
+    EXPECT_TRUE(result.eof());
+    EXPECT_TRUE(expectedIn.eof());
 
     result.close();
     EXPECT_EQ(0, remove((tempfile + ".csv").c_str()));
