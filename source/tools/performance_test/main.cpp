@@ -42,42 +42,28 @@ int main(int argc, char* argv[])
             auto iterations = iteration_times[j];
 
             //TODO update to new interface
-            /*
             auto start_prepare = std::chrono::high_resolution_clock::now();
 
-            int input_dimension = 784; //magic
-            int output_dimension = 2;
-            double perplexity = 50;
-            double gradient_accuracy = 0.5;
-            double* data;
-            int rand_seed = 0;
-            bhtsne::TSNE tsne;
-            if (!fileIsPresent())
-            {
-                std::cout << "data.dat not found" << std::endl;
-            }
-            int temp;
-            double temp2;
-            tsne.load_data(&data, &temp, &temp, &temp2, &temp2, &temp, &temp);
-            tsne.setDataSize(testSize);
-            int* landmarks = (int*)malloc(testSize * sizeof(int));
-            if (landmarks == NULL) { printf("Memory allocation failed!\n"); exit(1); }
-            for (int n = 0; n < testSize; n++) landmarks[n] = n;
-            double* result = (double*)malloc(testSize * output_dimension * sizeof(double));
-            double* costs = (double*)calloc(testSize, sizeof(double));
-            if (result == NULL || costs == NULL) { printf("Memory allocation failed!\n"); exit(1); }
+            auto tsne = bhtsne::TSNE();
+            
+            //tsne.setDataSize(testSize);
+
+            tsne.loadLegacy("data.dat");
+
+            tsne.setOutputDimensions(2);
+            tsne.setPerplexity(50);
+            tsne.setGradientAccuracy(0.2);
+            tsne.setRandomSeed(0);
+            tsne.setOutputFile("./result");
+            tsne.setIterations(iterations);
 
             auto start_execute = std::chrono::high_resolution_clock::now();
-
-            tsne.run(data, input_dimension, result, output_dimension, perplexity, gradient_accuracy, rand_seed, false, iterations);
+            
+            tsne.run();
 
             auto end_execute = std::chrono::high_resolution_clock::now();
 
-            tsne.save_data(result, landmarks, costs, testSize, output_dimension);
-            free(data);
-            free(result);
-            free(costs);
-            free(landmarks);
+            tsne.saveLegacy();
 
             auto end_save = std::chrono::high_resolution_clock::now();
 
@@ -86,7 +72,7 @@ int main(int argc, char* argv[])
             current_result.execution_time = (end_execute - start_execute).count();
             current_result.save_time = (end_save - end_execute).count();
 
-            */
+            remove("result.dat");
         }
     }
 
