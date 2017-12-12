@@ -343,13 +343,13 @@ public:
 
     /**
     *  @brief
-    *    Pushes the csv result into a stream
+    *    Pushes csv result to stream
     *
     *  @pre
     *    The algorithm must have ran (i.e. run() was called).
     *
     *  @remarks
-    *    Pushes the csv result into a stream, using the same  output format as saveCSV().
+    *    Pushes the csv result to the given stream.
     */
     void saveToStream(std::ostream & stream);
 
@@ -361,7 +361,7 @@ public:
     *    The algorithm must have ran (i.e. run() was called).
     *
     *  @remarks
-    *    Pushes the csv result to std::cout, using the same  output format as saveCSV().
+    *    Pushes the csv result to std::cout.
     */
     void saveToCout();
 

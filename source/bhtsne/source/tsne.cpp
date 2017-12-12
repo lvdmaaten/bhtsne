@@ -949,12 +949,41 @@ void TSNE::run()
 
 void TSNE::saveToStream(std::ostream & stream)
 {
-    //TODO
+	size_t offset = 0;
+	for (size_t i = 0; i < m_dataSize; ++i)
+	{
+		for (size_t j = 0; j < m_outputDimensions; ++j)
+		{
+			stream << m_resultP[offset++];
+			if (j < m_outputDimensions - 1)
+			{
+				stream << ',';
+			}
+		}
+		stream << '\n';
+	}
+
+    stream.flush();
 }
 
 void TSNE::saveToCout()
 {
     saveToStream(std::cout);
+}
+
+void TSNE::saveCSV()
+{
+    std::ofstream csv_fstream;
+	csv_fstream.open(m_outputFile + ".csv");
+	if (!csv_fstream.is_open())
+	{
+		std::cerr << "can't open " << m_outputFile << ".csv" << std::endl;
+        return;
+	}
+
+    saveToStream(csv_fstream);
+
+	csv_fstream.close();
 }
 
 void TSNE::saveLegacy()
@@ -986,36 +1015,6 @@ void TSNE::saveLegacy()
         << " data matrix successfully!" << std::endl;
 }
 
-void TSNE::saveCSV()
-{
-	std::ofstream f;
-	f.open(m_outputFile + ".csv");
-	if (!f.is_open())
-	{
-		std::cerr << "can't open " << m_outputFile << ".csv" << std::endl;
-	}
-	else
-	{
-		size_t offset = 0;
-		for (size_t i = 0; i < m_dataSize; ++i)
-		{
-			for (size_t j = 0; j < m_outputDimensions; ++j)
-			{
-				f << m_resultP[offset++];
-				if (j < m_outputDimensions - 1)
-				{
-					f << ",";
-				}
-			}
-			if (i < m_dataSize - 1)
-			{
-				f << "\n";
-			}
-		}
-		f.close();
-	}
-}
-
 void TSNE::saveSVG()
 {
     //TODO: allow setting a labelFile, e.g. by command line option
@@ -1026,7 +1025,6 @@ void TSNE::saveSVG()
 		extreme = std::max(extreme, std::abs(m_resultP[i]));
 	double radius = 0.5;
 	double halfWidth = extreme + radius;
-	auto viewBox = std::to_string(-halfWidth) + " " + std::to_string(-halfWidth) + " " + std::to_string(2 * halfWidth) + " " + std::to_string(2 * halfWidth);
 
 	auto labels = std::vector<uint8_t>();
 	bool useLabels = false;
@@ -1073,7 +1071,7 @@ void TSNE::saveSVG()
 	}
 
 	f << "<?xml version='1.0' encoding='UTF-8' ?>\n";
-	f << "<svg xmlns='http://www.w3.org/2000/svg' version='1.1' width='600' height='600' viewBox='" << viewBox << "'>\n";
+	f << "<svg xmlns='http://www.w3.org/2000/svg' version='1.1' width='600' height='600' viewBox='" << -halfWidth << " " << -halfWidth << " " << 2 * halfWidth << " " << 2 * halfWidth << "'>\n";
 
 	auto color = std::string("black");
 	for (unsigned int i = 0; i < m_dataSize; i++)
