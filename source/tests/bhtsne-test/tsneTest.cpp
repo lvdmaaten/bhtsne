@@ -5,6 +5,10 @@
 #include <fstream>
 #include <initializer_list>
 
+inline bool doubleEquals(double a, double b, double epsilon = 0.0001) {
+    return std::fabs(a - b) < epsilon;
+}
+
 class PublicTSNE : public bhtsne::TSNE
 {
 public:
@@ -28,7 +32,7 @@ public:
         m_result = result;
     };
 
-    auto setInputDimensions(int dimensions)
+    auto setInputDimensions(unsigned int dimensions)
     {
         m_inputDimensions = dimensions;
     }
@@ -306,6 +310,57 @@ TEST_F(TsneTest, Run)
     for (auto i = 0; i < 2; i++)
     {
         EXPECT_EQ(*reinterpret_cast<double*>(&expected[i]), m_tsne.result()[i][0]);
+    }
+}
+
+TEST_F(TsneTest, RunOkayOnLinux)
+{
+    auto data = std::vector<std::vector<double>>{
+            { 0,56,19,80,58 },
+            { 47,35,89,82,74 },
+            { 17,85,71,51,30 },
+            { 1,9,36,14,16 },
+            { 98,44,11,0,0 },
+            { 37,53,57,60,60 },
+            { 16,66,45,35,5 },
+            { 60,78,80,51,30 },
+            { 87,72,95,92,53 },
+            { 14,46,23,86,20 }
+    };
+    m_tsne.setDataSize(data.size());
+    m_tsne.setInputDimensions(data[0].size());
+    m_tsne.setGradientAccuracy(0.2);
+    m_tsne.setPerplexity(3);
+    m_tsne.setOutputDimensions(2);
+    m_tsne.setIterations(100);
+    m_tsne.setRandomSeed(42);
+    m_tsne.setData(data);
+
+    EXPECT_NO_THROW(m_tsne.run());
+
+    auto result = m_tsne.result();
+
+    auto expected = std::vector<std::vector<double>>{
+        { -12.8567, -51.0716 },
+        { -28.6218, 17.6546 },
+        { 3.15254, 9.30955 },
+        { -7.15141, 4.18512 },
+        { 3.55131, 3.95018 },
+        { 30.5022, 33.6661 },
+        { -6.59702, 2.68195 },
+        { 18.7477, 19.6905 },
+        { 30.9434, 8.62988 },
+        { -31.6703, -48.6962 }
+    };
+
+    for (auto i = 0; i < data.size(); i++)
+    {
+        for (int j = 0; j < m_tsne.outputDimensions(); ++j)
+        {
+            EXPECT_TRUE(doubleEquals(expected[i][j], m_tsne.result()[i][j]))
+                << "expected != result at [" << i << "][" << j <<"]: "
+                << expected[i][j] << " != " << m_tsne.result()[i][j] << std::endl;
+        }
     }
 }
 
