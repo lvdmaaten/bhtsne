@@ -1198,12 +1198,44 @@ void TSNE::run()
 
 void TSNE::saveToStream(std::ostream & stream)
 {
-    //TODO
+	size_t offset = 0;
+	for (size_t i = 0; i < m_dataSize; ++i)
+	{
+		for (size_t j = 0; j < m_outputDimensions; ++j)
+		{
+			stream << m_resultP[offset++];
+			if (j < m_outputDimensions - 1)
+			{
+				stream << ',';
+			}
+		}
+		if (i < m_dataSize - 1)
+		{
+			stream << '\n';
+		}
+	}
+
+    stream.flush();
 }
 
 void TSNE::saveToCout()
 {
     saveToStream(std::cout);
+}
+
+void TSNE::saveCSV()
+{
+    std::ofstream csv_fstream;
+	csv_fstream.open(m_outputFile + ".csv");
+	if (!csv_fstream.is_open())
+	{
+		std::cerr << "can't open " << m_outputFile << ".csv" << std::endl;
+        return;
+	}
+
+    saveToStream(csv_fstream);
+
+	csv_fstream.close();
 }
 
 void TSNE::saveLegacy()
@@ -1233,36 +1265,6 @@ void TSNE::saveLegacy()
 	f.close();
 	std::cout << "Wrote the " << m_dataSize << " x " << m_outputDimensions
         << " data matrix successfully!" << std::endl;
-}
-
-void TSNE::saveCSV()
-{
-	std::ofstream f;
-	f.open(m_outputFile + ".csv");
-	if (!f.is_open())
-	{
-		std::cerr << "can't open " << m_outputFile << ".csv" << std::endl;
-	}
-	else
-	{
-		size_t offset = 0;
-		for (size_t i = 0; i < m_dataSize; ++i)
-		{
-			for (size_t j = 0; j < m_outputDimensions; ++j)
-			{
-				f << m_resultP[offset++];
-				if (j < m_outputDimensions - 1)
-				{
-					f << ",";
-				}
-			}
-			if (i < m_dataSize - 1)
-			{
-				f << "\n";
-			}
-		}
-		f.close();
-	}
 }
 
 void TSNE::saveSVG()
