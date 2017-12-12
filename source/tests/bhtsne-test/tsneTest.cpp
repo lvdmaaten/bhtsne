@@ -77,7 +77,11 @@ protected:
 
     auto removeTempfile()
     {
-        remove(tempfile.c_str());
+        if (filestream.is_open())
+        {
+            filestream.close();
+        }
+        EXPECT_EQ(0, remove(tempfile.c_str()));
     }
 
     auto firstGaussNumber(int seed)
@@ -204,6 +208,34 @@ TEST_F(TsneTest, LoadLegacy)
     EXPECT_EQ(data, m_tsne.data()[0][0]);
 
     removeTempfile();
+}
+
+TEST_F(TsneTest, LoadFromStream)
+{
+    auto data = std::vector<std::vector<double>>{ { 1.0, 2.0, 3.0 },{ 4.0, 5.0, 6.0 } };
+
+    auto out = std::ostringstream();
+    for (auto sample : data)
+    {
+        for (auto value : sample)
+        {
+            out << value << ',';
+        }
+        out.seekp(-1, std::ios_base::cur);
+        out << std::endl;
+    }
+
+    auto in = std::istringstream(out.str());
+    EXPECT_TRUE(m_tsne.loadFromStream(in));
+    EXPECT_EQ(2, m_tsne.dataSize());
+    EXPECT_EQ(3, m_tsne.inputDimensions());
+    for (auto i = 0; i < 2; i++)
+    {
+        for (auto j = 0; j < 3; j++)
+        {
+            EXPECT_EQ(data[i][j], m_tsne.data()[i][j]);
+        }
+    }
 }
 
 TEST_F(TsneTest, LoadCSV)
