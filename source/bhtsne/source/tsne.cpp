@@ -46,6 +46,7 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <chrono>
 
 #include <bhtsne/sptree.h>
 #include <bhtsne/vptree.h>
@@ -56,197 +57,18 @@
 using namespace bhtsne;
 
 
-// Perform t-SNE
-void TSNE::run(double* X, int D, double* Y, int no_dims, double perplexity, double theta,
-    int rand_seed, bool skip_random_init, int max_iter, int stop_lying_iter, int mom_switch_iter) {
-
-    // Set random seed
-    if (!skip_random_init) {
-      if(rand_seed >= 0) {
-          printf("Using random seed: %d\n", rand_seed);
-          srand((unsigned int) rand_seed);
-      } else {
-          printf("Using current time as random seed...\n");
-          srand(time(nullptr));
-      }
-    }
-
-    // Determine whether we are using an exact algorithm
-    if(m_dataSize - 1 < 3 * perplexity) {
-        printf("Perplexity too large for the number of data points!\n");
-        exit(1);
-    }
-    printf("Using no_dims = %d, perplexity = %f, and theta = %f\n", no_dims, perplexity, theta);
-    bool exact = (theta == .0);
-
-    // Set learning parameters
-    float total_time = .0;
-    clock_t start, end;
-	double momentum = .5, final_momentum = .8;
-	double eta = 200.0;
-
-    // Allocate some memory
-    double* dY = (double*) malloc(m_dataSize * no_dims * sizeof(double));
-    auto uY = std::vector<double>(m_dataSize * no_dims, 0.0);
-    auto gains = std::vector<double>(m_dataSize * no_dims, 1.0);
-    if(dY == nullptr) {
-        printf("Memory allocation failed!\n");
-        exit(1);
-    }
-
-    // Normalize input data (to prevent numerical problems)
-    printf("Computing input similarities...\n");
-    start = clock();
-    zeroMean(X, m_dataSize, D);
-    // TODO: extract normalization function for vector
-    double max_X = .0;
-    for(unsigned int i = 0; i < m_dataSize * D; i++) {
-        if(std::fabs(X[i]) > max_X)
-            max_X = std::fabs(X[i]);
-    }
-    for(int i = 0; i < m_dataSize * D; i++)
-        X[i] /= max_X;
-
-    // Compute input similarities for exact t-SNE
-    double* P; unsigned int* row_P; unsigned int* col_P; double* val_P;
-    if(exact) {
-
-        // Compute similarities
-        printf("Exact?");
-        P = (double*) malloc(m_dataSize * m_dataSize * sizeof(double));
-        if(P == nullptr) { printf("Memory allocation failed!\n"); exit(1); }
-        computeGaussianPerplexity(X, m_dataSize, D, P, perplexity);
-
-        // Symmetrize input similarities
-        printf("Symmetrizing...\n");
-        int nN = 0;
-        for(int n = 0; n < m_dataSize; n++) {
-            int mN = (n + 1) * m_dataSize;
-            for(int m = n + 1; m < m_dataSize; m++) {
-                P[nN + m] += P[mN + n];
-                P[mN + n]  = P[nN + m];
-                mN += m_dataSize;
-            }
-            nN += m_dataSize;
-        }
-        double sum_P = .0;
-        for(int i = 0; i < m_dataSize * m_dataSize; i++) sum_P += P[i];
-        for(int i = 0; i < m_dataSize * m_dataSize; i++) P[i] /= sum_P;
-    }
-
-    // Compute input similarities for approximate t-SNE
-    else {
-
-        // Compute asymmetric pairwise input similarities
-        computeGaussianPerplexity(X, m_dataSize, D, &row_P, &col_P, &val_P, perplexity,
-            (int) (3 * perplexity));
-
-        // Symmetrize input similarities
-        symmetrizeMatrix(&row_P, &col_P, &val_P, m_dataSize);
-        //normalize val_P so that sum of all val = 1
-        double sum_P = .0;
-        for(int i = 0; i < row_P[m_dataSize]; i++) sum_P += val_P[i];
-        for(int i = 0; i < row_P[m_dataSize]; i++) val_P[i] /= sum_P;
-    }
-    end = clock();
-
-    // Lie about the P-values
-    if(exact) {
-        for(int i = 0; i < m_dataSize * m_dataSize; i++)
-            P[i] *= 12.0;
-    } else {
-        for(int i = 0; i < row_P[m_dataSize]; i++)
-            val_P[i] *= 12.0;
-    }
-
-    // Initialize solution (randomly)
-    if (skip_random_init != true) {
-        for(int i = 0; i < m_dataSize * no_dims; i++)
-            Y[i] = randn() * .0001;
-    }
-
-    // Perform main training loop
-    if(exact){
-        printf("Input similarities computed in %4.2f seconds!\nLearning embedding...\n",
-        (float) (end - start) / CLOCKS_PER_SEC);
-    } else {
-        printf("Input similarities computed in %4.2f seconds (sparsity = %f)!\n",
-            (float) (end - start) / CLOCKS_PER_SEC,
-            (double) row_P[m_dataSize] / (double)(m_dataSize * m_dataSize));
-        printf("Learning embedding...\n");
-    }
-    start = clock();
-
-	for(int iter = 0; iter < max_iter; iter++) {
-
-        // Compute (approximate) gradient
-        if(exact) {
-            computeExactGradient(P, Y, no_dims, dY);
-        } else {
-            computeGradient(row_P, col_P, val_P, Y, no_dims, dY, theta);
-        }
-
-        // Update gains
-        for(int i = 0; i < m_dataSize * no_dims; i++)
-            gains[i] = (sign(dY[i]) != sign(uY[i])) ? (gains[i] + .2) : (gains[i] * .8);
-        for (int i = 0; i < m_dataSize * no_dims; i++)
-            gains[i] = std::max(gains[i], 0.1);
-
-        // Perform gradient update (with momentum and gains)
-        for(int i = 0; i < m_dataSize * no_dims; i++)
-            uY[i] = momentum * uY[i] - eta * gains[i] * dY[i];
-		for(int i = 0; i < m_dataSize * no_dims; i++)
-            Y[i] = Y[i] + uY[i];
-
-        // Make solution zero-mean
-		zeroMean(Y, m_dataSize, no_dims);
-
-        // Stop lying about the P-values after a while, and switch momentum
-        if(iter == stop_lying_iter) {
-            if(exact) {
-                for(int i = 0; i < m_dataSize * m_dataSize; i++)
-                    P[i] /= 12.0;
-            } else {
-                for(int i = 0; i < row_P[m_dataSize]; i++)
-                    val_P[i] /= 12.0;
-            }
-        }
-        if(iter == mom_switch_iter) momentum = final_momentum;
-
-        // Print out progress
-        if (iter > 0 && (iter % 50 == 0 || iter == max_iter - 1)) {
-            end = clock();
-            double C = .0;
-            if(exact) {
-                C = evaluateError(P, Y, no_dims);
-            } else {
-                // doing approximate computation here!
-                C = evaluateError(row_P, col_P, val_P, Y, no_dims, theta);
-            }
-
-            if(iter == 0)
-                printf("Iteration %d: error is %f\n", iter + 1, C);
-            else {
-                total_time += (float) (end - start) / CLOCKS_PER_SEC;
-                printf("Iteration %d: error is %f (50 iterations in %4.2f seconds)\n", iter, C,
-                    (float) (end - start) / CLOCKS_PER_SEC);
-            }
-			start = clock();
-        }
-    }
-    end = clock(); total_time += (float) (end - start) / CLOCKS_PER_SEC;
-
-    // Clean up memory
-    free(dY);
-    if(exact) free(P);
-    else {
-        free(row_P); row_P = nullptr;
-        free(col_P); col_P = nullptr;
-        free(val_P); val_P = nullptr;
-    }
-    printf("Fitting performed in %4.2f seconds.\n", total_time);
+TSNE::TSNE()
+    : m_perplexity(50.0)
+    , m_gradientAccuracy(0.2)
+    , m_iterations(1000)
+    , m_outputDimensions(2)
+    , m_inputDimensions(0)
+    , m_dataSize(0)
+    , m_outputFile("result")
+    , m_gen(0) //default seed
+    , m_dist(0, 2) //mean and standard deviation
+{
 }
-
 
 // Compute gradient of the t-SNE cost function (using Barnes-Hut algorithm)
 void TSNE::computeGradient(unsigned int* inp_row_P, unsigned int* inp_col_P,
@@ -681,6 +503,11 @@ void TSNE::computeSquaredEuclideanDistance(double* X, int N, int D, double* DD) 
     }
 }
 
+double bhtsne::TSNE::gaussNumber()
+{
+    return m_dist(m_gen);
+}
+
 
 // Makes data zero-mean
 void TSNE::zeroMean(double* X, int N, int D) {
@@ -706,21 +533,6 @@ void TSNE::zeroMean(double* X, int N, int D) {
 		}
         nD += D;
 	}
-}
-
-
-// Generates a Gaussian random number
-double TSNE::randn() {
-	double x, y, radius;
-	do {
-		x = 2 * (rand() / ((double) RAND_MAX + 1)) - 1;
-		y = 2 * (rand() / ((double) RAND_MAX + 1)) - 1;
-		radius = (x * x) + (y * y);
-	} while((radius >= 1.0) || (radius == 0.0));
-	radius = sqrt(-2 * log(radius) / radius);
-	x *= radius;
-	y *= radius;
-	return x;
 }
 
 bool bhtsne::TSNE::loadFromStream(std::istream & stream)
@@ -770,72 +582,18 @@ bool bhtsne::TSNE::loadFromStream(std::istream & stream)
     return true;
 }
 
-// Function that loads data from a t-SNE file
-// Note: this function does a malloc that should be freed elsewhere
-bool TSNE::load_data(double** data, int* d, int* no_dims, double* theta,
-    double* perplexity, int* rand_seed, int* max_iter) {
-
-	// Open file, read first 2 integers, allocate memory, and read the data
-    FILE *h;
-	if((h = fopen("data.dat", "r+b")) == nullptr) {
-		printf("Error: could not open data file.\n");
-		return false;
-	}
-	fread(&m_dataSize, sizeof(int), 1, h);                   // number of datapoints
-	fread(d, sizeof(int), 1, h);                                    // original dimensionality
-    fread(theta, sizeof(double), 1, h);                             // gradient accuracy
-    fread(perplexity, sizeof(double), 1, h);                        // perplexity
-    fread(no_dims, sizeof(int), 1, h);                              // output dimensionality
-    fread(max_iter, sizeof(int),1,h);                               // maximum number of iterations
-    *data = (double*) malloc(*d * m_dataSize * sizeof(double));
-    if(*data == nullptr) { printf("Memory allocation failed!\n"); exit(1); }
-    fread(*data, sizeof(double), m_dataSize * *d, h);        // the data
-    if(!feof(h)) fread(rand_seed, sizeof(int), 1, h);               // random seed
-    fclose(h);
-    printf("Read the %i x %i data matrix successfully!\n", m_dataSize, *d);
-    return true;
-}
-
-// Function that saves map to a t-SNE file
-void TSNE::save_data(double* data, int* landmarks, double* costs, int n, int d) {
-
-	// Open file, write first 2 integers and then the data
-	FILE *h;
-	if((h = fopen("result.dat", "w+b")) == nullptr) {
-		printf("Error: could not open data file.\n");
-		return;
-	}
-	fwrite(&n, sizeof(int), 1, h);
-	fwrite(&d, sizeof(int), 1, h);
-    fwrite(data, sizeof(double), n * d, h);
-	fwrite(landmarks, sizeof(int), n, h);
-    fwrite(costs, sizeof(double), n, h);
-    fclose(h);
-	printf("Wrote the %i x %i data matrix successfully!\n", n, d);
-}
-
-TSNE::TSNE()
-    : m_randomSeed(0)
-    , m_perplexity(50.0)
-    , m_gradientAccuracy(0.2)
-    , m_iterations(1000)
-    , m_outputDimensions(2)
-    , m_inputDimensions(0)
-    , m_dataSize(0)
-    , m_outputFile("result")
-{
-
-}
-
-
-int TSNE::randomSeed() const
-{
-	return m_randomSeed;
-}
-
 void TSNE::setRandomSeed(int seed)
 {
-	m_randomSeed = seed;
+    if (seed >= 0) {
+        std::cout << "Using random seed: " << seed << std::endl;
+        m_gen.seed(seed);
+        
+    }
+    else {
+        std::cout << "Using current time as random seed..." << std::endl;
+        m_gen.seed(std::chrono::high_resolution_clock::now().time_since_epoch().count());
+    }
+    m_dist.reset();
 }
 
 double TSNE::perplexity() const
@@ -929,7 +687,9 @@ bool TSNE::loadLegacy(const std::string & file)
 
     //read seed
 	if (!f.eof()) {
-		f.read(reinterpret_cast<char*>(&m_randomSeed), sizeof(m_randomSeed));
+        int seed;
+		f.read(reinterpret_cast<char*>(&seed), sizeof(seed));
+        setRandomSeed(seed);
 	}
 
 	return true;
@@ -976,15 +736,6 @@ void TSNE::run()
 	bool skip_random_init = false;
 	int stop_lying_iter = 250;
 	int mom_switch_iter = 250;
-
-	if (m_randomSeed >= 0) {
-		std::cout << "Using random seed: " << m_randomSeed << std::endl;
-		srand((unsigned int)m_randomSeed);
-	}
-	else {
-		std::cout << "Using current time as random seed..." << std::endl;
-		srand(time(nullptr));
-	}
 
 	// Determine whether we are using an exact algorithm
 	if (m_dataSize - 1 < 3 * m_perplexity) {
@@ -1094,7 +845,7 @@ void TSNE::run()
 	// Initialize solution (randomly)
 	if (skip_random_init != true) {
 		for (int i = 0; i < m_dataSize * m_outputDimensions; i++)
-			Y[i] = randn() * .0001;
+			Y[i] = gaussNumber() * .0001;
 	}
 
 	// Perform main training loop
@@ -1179,8 +930,6 @@ void TSNE::run()
 		free(val_P); val_P = nullptr;
 	}
 
-	m_resultP = Y;
-
 	size_t offset = 0;
 	for (size_t i = 0; i < m_dataSize; ++i) {
 		auto point = std::vector<double>();
@@ -1203,7 +952,7 @@ void TSNE::saveToStream(std::ostream & stream)
 	{
 		for (size_t j = 0; j < m_outputDimensions; ++j)
 		{
-			stream << m_resultP[offset++];
+			stream << m_result[i][j];
 			if (j < m_outputDimensions - 1)
 			{
 				stream << ',';
@@ -1255,7 +1004,9 @@ void TSNE::saveLegacy()
 
 	f.write(reinterpret_cast<char*>(&m_dataSize), sizeof(m_dataSize));
 	f.write(reinterpret_cast<char*>(&m_outputDimensions), sizeof(m_outputDimensions));
-	f.write(reinterpret_cast<char*>(m_resultP), m_dataSize * m_outputDimensions * sizeof(double));
+	for (auto& point : m_result) {
+		f.write(reinterpret_cast<char*>(point.data()), m_outputDimensions * sizeof(double));
+	}
 	f.write(reinterpret_cast<char*>(landmarks.data()), landmarks.size() * sizeof(int));
 	f.write(reinterpret_cast<char*>(costs.data()), costs.size() * sizeof(double));
 
@@ -1270,8 +1021,13 @@ void TSNE::saveSVG()
     auto labelFile = std::string();
 
 	double extreme = 0;
-	for (unsigned int i = 0; i < m_dataSize * m_outputDimensions; i++)
-		extreme = std::max(extreme, std::abs(m_resultP[i]));
+	for (size_t i = 0; i < m_dataSize; ++i)
+	{
+		for (size_t j = 0; j < m_outputDimensions; ++j)
+		{
+			extreme = std::max(extreme, std::abs(m_result[i][j]));
+		}
+	}
 	double radius = 0.5;
 	double halfWidth = extreme + radius;
 
@@ -1331,8 +1087,8 @@ void TSNE::saveSVG()
         }
 
 		f << "<circle "
-			<< "cx='" << m_resultP[i * 2] << "' "
-			<< "cy='" << m_resultP[i * 2 + 1] << "' "
+			<< "cx='" << m_result[i][0] << "' "
+			<< "cy='" << m_result[i][1] << "' "
 			<< "fill='" << color << "' "
 			<< "r='" << radius << "' "
 			<< "stroke='none' opacity='0.5'/>\n";

@@ -41,6 +41,8 @@ int main(int argc, char* argv[])
             auto testSize = testSizes[i];
             auto iterations = iteration_times[j];
 
+            //TODO update to new interface
+            /*
             auto start_prepare = std::chrono::high_resolution_clock::now();
 
             int input_dimension = 784; //magic
@@ -83,6 +85,8 @@ int main(int argc, char* argv[])
             current_result.preparation_time = (start_execute - start_prepare).count();
             current_result.execution_time = (end_execute - start_execute).count();
             current_result.save_time = (end_save - end_execute).count();
+
+            */
         }
     }
 
