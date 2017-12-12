@@ -268,7 +268,7 @@ TEST_F(TsneTest, Run)
     m_tsne.setData(std::vector<std::vector<double>>{ { 42.0 }, { 17.0 } });
 
     EXPECT_NO_THROW(m_tsne.run());
-    std::vector<unsigned long long> expected = { 0xC07DAC741DC680D4, 0x407DAC741DC680D4 };
+    auto expected = std::vector<unsigned long long>{ 0xC07DAC741DC680D4, 0x407DAC741DC680D4 };
     for (auto i = 0; i < 2; i++)
     {
         EXPECT_EQ(*reinterpret_cast<double*>(&expected[i]), m_tsne.result()[i][0]);
@@ -277,10 +277,10 @@ TEST_F(TsneTest, Run)
 
 TEST_F(TsneTest, SaveLegacy)
 {
-    std::vector<unsigned long long> expected = { 0xC07DAC741DC680D4, 0x407DAC741DC680D4 };
-    std::vector<double> expectedDouble = std::vector<double>();
+    auto expected = std::vector<unsigned long long>{ 0xC07DAC741DC680D4, 0x407DAC741DC680D4 };
+    auto expectedDouble = std::vector<double>();
     std::for_each(expected.begin(), expected.end(), [&](auto& v) { expectedDouble.push_back(*reinterpret_cast<double*>(&v)); });
-    
+
     // test save
     m_tsne.setDataSize(2);
     m_tsne.setOutputDimensions(1);
@@ -288,7 +288,7 @@ TEST_F(TsneTest, SaveLegacy)
     m_tsne.setResult(std::vector<std::vector<double>>{ { expectedDouble[0] }, { expectedDouble[1] }});
     EXPECT_NO_THROW(m_tsne.saveLegacy());
     // check file exists and has right size
-    std::ifstream result;
+    auto result = std::ifstream();
     EXPECT_NO_THROW(result.open(tempfile + ".dat", std::ios::in | std::ios::binary | std::ios::ate));
     EXPECT_TRUE(result.is_open());
     EXPECT_EQ(48, result.tellg());
@@ -296,9 +296,9 @@ TEST_F(TsneTest, SaveLegacy)
     result.seekg(0);
     int dataSize;
     int outputDimensions;
-    std::vector<double> data = std::vector<double>(2);
-    std::vector<int> landmarks = std::vector<int>(2);
-    std::vector<double> costs = std::vector<double>(2);
+    auto data = std::vector<double>(2);
+    auto landmarks = std::vector<int>(2);
+    auto costs = std::vector<double>(2);
     result.read(reinterpret_cast<char*>(&dataSize), sizeof(dataSize));
     result.read(reinterpret_cast<char*>(&outputDimensions), sizeof(outputDimensions));
     result.read(reinterpret_cast<char*>(data.data()), 2 * sizeof(double));
@@ -319,18 +319,18 @@ TEST_F(TsneTest, SaveLegacy)
 
 TEST_F(TsneTest, SaveToStream)
 {
-    std::vector<unsigned long long> expected = { 0xC07DAC741DC680D4, 0x407DAC741DC680D4 };
-    std::vector<double> expectedDouble = std::vector<double>();
+    auto expected = std::vector<unsigned long long>{ 0xC07DAC741DC680D4, 0x407DAC741DC680D4 };
+    auto expectedDouble = std::vector<double>();
     std::for_each(expected.begin(), expected.end(), [&](auto& v) { expectedDouble.push_back(*reinterpret_cast<double*>(&v)); });
 
     // test save
     m_tsne.setDataSize(2);
     m_tsne.setOutputDimensions(1);
     m_tsne.setResult(std::vector<std::vector<double>>{ { expectedDouble[0] }, { expectedDouble[1] }});
-    std::ostringstream result;
+    auto result = std::ostringstream();
     EXPECT_NO_THROW(m_tsne.saveToStream(result));
     // check values in stream
-    std::ostringstream expectedOut;
+    auto expectedOut = std::ostringstream();
     expectedOut << std::setprecision(6);
     expectedOut << expectedDouble[0] << std::endl << expectedDouble[1] << std::endl;
 
@@ -339,8 +339,8 @@ TEST_F(TsneTest, SaveToStream)
 
 TEST_F(TsneTest, SaveCSV)
 {
-    std::vector<unsigned long long> expected = { 0xC07DAC741DC680D4, 0x407DAC741DC680D4 };
-    std::vector<double> expectedDouble = std::vector<double>();
+    auto expected = std::vector<unsigned long long>{ 0xC07DAC741DC680D4, 0x407DAC741DC680D4 };
+    auto expectedDouble = std::vector<double>();
     std::for_each(expected.begin(), expected.end(), [&](auto& v) { expectedDouble.push_back(*reinterpret_cast<double*>(&v)); });
 
     // test save
@@ -350,21 +350,21 @@ TEST_F(TsneTest, SaveCSV)
     m_tsne.setOutputFile(tempfile);
     EXPECT_NO_THROW(m_tsne.saveCSV());
     // check file exists and has right size
-    std::ifstream result;
+    auto result = std::ifstream();
     EXPECT_NO_THROW(result.open(tempfile + ".csv", std::ios::in | std::ios::ate));
     EXPECT_TRUE(result.is_open());
     // file size may change based on current os (\n vs \r\n)
     EXPECT_LE(17, result.tellg());
     EXPECT_GE(19, result.tellg());
     // check values in file
-    std::ostringstream expectedOut;
+    auto expectedOut = std::ostringstream();
     expectedOut << std::setprecision(6);
     expectedOut << expectedDouble[0] << std::endl << expectedDouble[1] << std::endl;
-    std::istringstream expectedIn(expectedOut.str());
+    auto expectedIn = std::istringstream(expectedOut.str());
 
     result.seekg(0);
-    std::string actualLine;
-    std::string expectedLine;
+    auto actualLine = std::string();
+    auto expectedLine = std::string();
     while ((bool)std::getline(result, actualLine) & (bool)std::getline(expectedIn, expectedLine))
     {
         EXPECT_EQ(expectedLine, actualLine);
@@ -379,8 +379,8 @@ TEST_F(TsneTest, SaveCSV)
 
 TEST_F(TsneTest, SaveSVG)
 {
-    std::vector<unsigned long long> expected = { 0xC07DAC741DC680D4, 0xC07DAC741DC680D4, 0x407DAC741DC680D4, 0x407DAC741DC680D4 };
-    std::vector<double> expectedDouble = std::vector<double>();
+    auto expected = std::vector<unsigned long long>{ 0xC07DAC741DC680D4, 0xC07DAC741DC680D4, 0x407DAC741DC680D4, 0x407DAC741DC680D4 };
+    auto expectedDouble = std::vector<double>();
     std::for_each(expected.begin(), expected.end(), [&](auto& v) { expectedDouble.push_back(*reinterpret_cast<double*>(&v)); });
 
     // test save
@@ -390,24 +390,24 @@ TEST_F(TsneTest, SaveSVG)
     m_tsne.setOutputFile(tempfile);
     EXPECT_NO_THROW(m_tsne.saveSVG());
     // check file exists
-    std::ifstream result;
+    auto result = std::ifstream();
     EXPECT_NO_THROW(result.open(tempfile + ".svg", std::ios::in));
     EXPECT_TRUE(result.is_open());
     // check values in file
-    double expectedRadius = 0.5;
-    double expectedViewBoxMin = expectedDouble[0] - expectedRadius;
-    double expectedViewBoxSize = 2 * -expectedViewBoxMin;
-    std::ostringstream expectedOut;
+    auto expectedRadius = 0.5;
+    auto expectedViewBoxMin = expectedDouble[0] - expectedRadius;
+    auto expectedViewBoxSize = 2 * -expectedViewBoxMin;
+    auto expectedOut = std::ostringstream();
     expectedOut << std::setprecision(6);
     expectedOut << "<?xml version='1.0' encoding='UTF-8' ?>\n";
     expectedOut << "<svg xmlns='http://www.w3.org/2000/svg' version='1.1' width='600' height='600' viewBox='" << expectedViewBoxMin << " " << expectedViewBoxMin << " " << expectedViewBoxSize << " " << expectedViewBoxSize << "'>\n";
     expectedOut << "<circle cx='" << expectedDouble[0] << "' cy='" << expectedDouble[1] << "' fill='black' r='" << expectedRadius << "' stroke='none' opacity='0.5'/>\n";
     expectedOut << "<circle cx='" << expectedDouble[2] << "' cy='" << expectedDouble[3] << "' fill='black' r='" << expectedRadius << "' stroke='none' opacity='0.5'/>\n";
     expectedOut << "</svg>\n";
-    std::istringstream expectedIn(expectedOut.str());
+    auto expectedIn = std::istringstream(expectedOut.str());
 
-    std::string actualLine;
-    std::string expectedLine;
+    auto actualLine = std::string();
+    auto expectedLine = std::string();
     while ((bool)std::getline(result, actualLine) & (bool)std::getline(expectedIn, expectedLine))
     {
         EXPECT_EQ(expectedLine, actualLine);
