@@ -1277,7 +1277,6 @@ void TSNE::saveSVG()
 		extreme = std::max(extreme, std::abs(m_resultP[i]));
 	double radius = 0.5;
 	double halfWidth = extreme + radius;
-	auto viewBox = std::to_string(-halfWidth) + " " + std::to_string(-halfWidth) + " " + std::to_string(2 * halfWidth) + " " + std::to_string(2 * halfWidth);
 
 	auto labels = std::vector<uint8_t>();
 	bool useLabels = false;
@@ -1324,7 +1323,7 @@ void TSNE::saveSVG()
 	}
 
 	f << "<?xml version='1.0' encoding='UTF-8' ?>\n";
-	f << "<svg xmlns='http://www.w3.org/2000/svg' version='1.1' width='600' height='600' viewBox='" << viewBox << "'>\n";
+	f << "<svg xmlns='http://www.w3.org/2000/svg' version='1.1' width='600' height='600' viewBox='" << -halfWidth << " " << -halfWidth << " " << 2 * halfWidth << " " << 2 * halfWidth << "'>\n";
 
 	auto color = std::string("black");
 	for (unsigned int i = 0; i < m_dataSize; i++)
