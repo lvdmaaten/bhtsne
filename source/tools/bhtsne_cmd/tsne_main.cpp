@@ -14,14 +14,6 @@ int main(int argc, char * argv[])
 	auto parsedArguments = cppassist::ArgumentParser();
 	parsedArguments.parse(argc, argv);
 
-	if (!parsedArguments.isSet("-legacy")
-		&& !parsedArguments.isSet("-svg")
-		&& !parsedArguments.isSet("-csv"))
-	{
-		std::cerr << "please specify one of the output options: -csv, -svg, -legacy\n";
-		return 1;
-	}
-
     applyCommandlineOptions(tsne, parsedArguments.options());
 
     //read correct input file
@@ -85,4 +77,9 @@ int main(int argc, char * argv[])
 	{
 		tsne.saveCSV();
 	}
+
+    if (parsedArguments.isSet("-stdout"))
+    {
+        tsne.saveToCout();
+    }
 }
