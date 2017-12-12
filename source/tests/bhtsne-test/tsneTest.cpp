@@ -458,16 +458,16 @@ TEST_F(TsneTest, SaveSVG)
 TEST_F(TsneTest, ResultConsistency)
 {
     std::string input = 
-R"(0 56 19 80 58
-47 35 89 82 74
-17 85 71 51 30
-1 9 36 14 16
-98 44 11 0 0
-37 53 57 60 60
-16 66 45 35 5
-60 78 80 51 30
-87 72 95 92 53
-14 46 23 86 20)";
+R"(0,56,19,80,58
+47,35,89,82,74
+17,85,71,51,30
+1,9,36,14,16
+98,44,11,0,0
+37,53,57,60,60
+16,66,45,35,5
+60,78,80,51,30
+87,72,95,92,53
+14,46,23,86,20)";
 
     std::string expected =
 R"(-85.2955,-91.8262
@@ -483,7 +483,7 @@ R"(-85.2955,-91.8262
 )";
 
     m_tsne.setGradientAccuracy(0.2);
-    m_tsne.setPerplexity(0.2);
+    m_tsne.setPerplexity(3);
     m_tsne.setIterations(2000);
     m_tsne.setOutputDimensions(2);
     m_tsne.setRandomSeed(1337);
