@@ -729,14 +729,14 @@ bool bhtsne::TSNE::loadFromStream(std::istream & stream)
     auto seperator = ',';
 
     //read data points
-    std::string line;
+    auto line = std::string();
     bool first = true;
     while (std::getline(stream, line))
     {
-        std::istringstream iss(line);
-        std::string element;
+        auto iss = std::istringstream(line);
+        auto element = std::string();
 
-        std::vector<double> point;
+        auto point = std::vector<double>();
         point.reserve(m_inputDimensions);
 
         //read values of data point
