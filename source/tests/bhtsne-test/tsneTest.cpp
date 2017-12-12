@@ -317,6 +317,26 @@ TEST_F(TsneTest, SaveLegacy)
     remove((tempfile + ".dat").c_str());
 }
 
+TEST_F(TsneTest, SaveToStream)
+{
+    std::vector<unsigned long long> expected = { 0xC07DAC741DC680D4, 0x407DAC741DC680D4 };
+    std::vector<double> expectedDouble = std::vector<double>();
+    std::for_each(expected.begin(), expected.end(), [&](auto& v) { expectedDouble.push_back(*reinterpret_cast<double*>(&v)); });
+
+    // test save
+    m_tsne.setDataSize(2);
+    m_tsne.setOutputDimensions(1);
+    m_tsne.setResult(std::vector<std::vector<double>>{ { expectedDouble[0] }, { expectedDouble[1] }});
+    std::ostringstream result;
+    EXPECT_NO_THROW(m_tsne.saveToStream(result));
+    // check values in stream
+    std::ostringstream expectedOut;
+    expectedOut << std::setprecision(6);
+    expectedOut << expectedDouble[0] << std::endl << expectedDouble[1] << std::endl;
+
+    EXPECT_EQ(expectedOut.str(), result.str());
+}
+
 TEST_F(TsneTest, SaveCSV)
 {
     std::vector<unsigned long long> expected = { 0xC07DAC741DC680D4, 0x407DAC741DC680D4 };
@@ -334,8 +354,8 @@ TEST_F(TsneTest, SaveCSV)
     EXPECT_NO_THROW(result.open(tempfile + ".csv", std::ios::in | std::ios::ate));
     EXPECT_TRUE(result.is_open());
     // file size may change based on current os (\n vs \r\n)
-    EXPECT_LE(16, result.tellg());
-    EXPECT_GE(17, result.tellg());
+    EXPECT_LE(17, result.tellg());
+    EXPECT_GE(19, result.tellg());
     // check values in file
     std::ostringstream expectedOut;
     expectedOut << std::setprecision(6);
