@@ -1209,7 +1209,7 @@ void TSNE::computeSquaredEuclideanDistance(std::vector<std::vector<double>> data
 	{
 		for (auto & val : point)
 		{
-			*(XnD + offset++) = val;
+			XnD[offset++] = val;
 		}
 	}
 
@@ -1237,16 +1237,9 @@ void TSNE::computeGaussianPerplexity(unsigned int** _row_P,	unsigned int** _col_
 	{
 		for (auto & val : point)
 		{
-			*(X + offset++) = val;
+			X[offset++] = val;
 		}
-	}/**/
-	/*for (size_t i = 0; i < m_data[0].size(); ++i)
-	{
-		for (size_t j = 0; j < m_data.size(); ++j)
-		{
-
-		}
-	}/**/
+	}
 
 	int K = (int)(3 * m_perplexity);
 
