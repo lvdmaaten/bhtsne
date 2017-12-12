@@ -53,7 +53,6 @@
 #include <bhtsne/bhtsne-version.h> // includes BHTSNE_VERSION macro
 
 
-using namespace std;
 using namespace bhtsne;
 
 
@@ -87,9 +86,9 @@ void TSNE::run(double* X, int D, double* Y, int no_dims, double perplexity, doub
 	double eta = 200.0;
 
     // Allocate some memory
-    double* dY    = (double*) malloc(m_dataSize * no_dims * sizeof(double));
-    auto uY     = vector<double>(m_dataSize * no_dims, 0.0);
-    auto gains  = vector<double>(m_dataSize * no_dims, 1.0);
+    double* dY = (double*) malloc(m_dataSize * no_dims * sizeof(double));
+    auto uY = std::vector<double>(m_dataSize * no_dims, 0.0);
+    auto gains = std::vector<double>(m_dataSize * no_dims, 1.0);
     if(dY == nullptr) {
         printf("Memory allocation failed!\n");
         exit(1);
@@ -102,8 +101,8 @@ void TSNE::run(double* X, int D, double* Y, int no_dims, double perplexity, doub
     // TODO: extract normalization function for vector
     double max_X = .0;
     for(unsigned int i = 0; i < m_dataSize * D; i++) {
-        if(fabs(X[i]) > max_X) 
-            max_X = fabs(X[i]);
+        if(std::fabs(X[i]) > max_X)
+            max_X = std::fabs(X[i]);
     }
     for(int i = 0; i < m_dataSize * D; i++)
         X[i] /= max_X;
@@ -191,7 +190,7 @@ void TSNE::run(double* X, int D, double* Y, int no_dims, double perplexity, doub
         for(int i = 0; i < m_dataSize * no_dims; i++)
             gains[i] = (sign(dY[i]) != sign(uY[i])) ? (gains[i] + .2) : (gains[i] * .8);
         for (int i = 0; i < m_dataSize * no_dims; i++)
-            gains[i] = max(gains[i], 0.1);
+            gains[i] = std::max(gains[i], 0.1);
 
         // Perform gradient update (with momentum and gains)
         for(int i = 0; i < m_dataSize * no_dims; i++)
@@ -289,7 +288,7 @@ void TSNE::computeExactGradient(double* P, double* Y, int D, double* dC) {
     computeSquaredEuclideanDistance(Y, m_dataSize, D, DD);
 
     // Compute Q-matrix and normalization sum
-    auto Q = vector<double>(m_dataSize * m_dataSize);
+    auto Q = std::vector<double>(m_dataSize * m_dataSize);
     double sum_Q = .0;
     int nN = 0;
     for(int n = 0; n < m_dataSize; n++) {
@@ -330,7 +329,7 @@ double TSNE::evaluateError(double* P, double* Y, int D) {
 
     // Compute the squared Euclidean distance matrix
     double* DD = (double*) malloc(m_dataSize * m_dataSize * sizeof(double));
-    auto Q = vector<double>(m_dataSize * m_dataSize);
+    auto Q = std::vector<double>(m_dataSize * m_dataSize);
     if(DD == nullptr) { printf("Memory allocation failed!\n"); exit(1); }
     computeSquaredEuclideanDistance(Y, m_dataSize, D, DD);
 
@@ -419,16 +418,16 @@ void TSNE::computeGaussianPerplexity(double* X, int N, int D, double* P, double 
 		while(!found && iter < 200) {
 
 			// Compute Gaussian kernel row
-			for(int m = 0; m < N; m++) 
+			for(int m = 0; m < N; m++)
                 P[nN + m] = exp(-beta * DD[nN + m]);
 			P[nN + n] = DBL_MIN;
 
 			// Compute entropy of current row
 			sum_P = DBL_MIN;
-			for(int m = 0; m < N; m++) 
+			for(int m = 0; m < N; m++)
                 sum_P += P[nN + m];
 			double H = 0.0;
-			for(int m = 0; m < N; m++) 
+			for(int m = 0; m < N; m++)
                 H += beta * (DD[nN + m] * P[nN + m]);
 			H = (H / sum_P) + log(sum_P);
 
@@ -459,7 +458,7 @@ void TSNE::computeGaussianPerplexity(double* X, int N, int D, double* P, double 
 		}
 
 		// Row normalize P
-		for(int m = 0; m < N; m++) 
+		for(int m = 0; m < N; m++)
             P[nN + m] /= sum_P;
         nN += N;
 	}
@@ -474,7 +473,7 @@ void TSNE::computeGaussianPerplexity(double* X, int N, int D, double* P, double 
 void TSNE::computeGaussianPerplexity(double* X, int N, int D, unsigned int** _row_P,
     unsigned int** _col_P, double** _val_P, double perplexity, int K) {
 
-    if(perplexity > K) 
+    if(perplexity > K)
         printf("Perplexity should be lower than K!\n");
 
     // Allocate the memory we need
@@ -488,25 +487,25 @@ void TSNE::computeGaussianPerplexity(double* X, int N, int D, unsigned int** _ro
     unsigned int* row_P = *_row_P;
     unsigned int* col_P = *_col_P;
     double* val_P = *_val_P;
-    auto cur_P = vector<double>(N - 1);
+    auto cur_P = std::vector<double>(N - 1);
     row_P[0] = 0;
-    for(int n = 0; n < N; n++) 
+    for(int n = 0; n < N; n++)
         row_P[n + 1] = row_P[n] + (unsigned int) K;
 
     // Build ball tree on data set
     auto tree = VpTree<DataPoint, euclidean_distance>();
-    auto obj_X = vector<DataPoint>(N, DataPoint(D, -1, X));
-    for(int n = 0; n < N; n++) 
+    auto obj_X = std::vector<DataPoint>(N, DataPoint(D, -1, X));
+    for(int n = 0; n < N; n++)
         obj_X[n] = DataPoint(D, n, X + n * D);
     tree.create(obj_X);
 
     // Loop over all points to find nearest neighbors
     printf("Building tree...\n");
-    vector<DataPoint> indices;
-    vector<double> distances;
+    std::vector<DataPoint> indices;
+    std::vector<double> distances;
     for(int n = 0; n < N; n++) {
 
-        if(n % 10000 == 0) 
+        if(n % 10000 == 0)
             printf(" - point %d of %d\n", n, N);
 
         // Find nearest neighbors
@@ -526,15 +525,15 @@ void TSNE::computeGaussianPerplexity(double* X, int N, int D, unsigned int** _ro
         while(!found && iter < 200) {
 
             // Compute Gaussian kernel row
-            for(int m = 0; m < K; m++) 
+            for(int m = 0; m < K; m++)
                 cur_P[m] = exp(-beta * distances[m + 1] * distances[m + 1]);
 
             // Compute entropy of current row
             sum_P = DBL_MIN;
-            for(int m = 0; m < K; m++) 
+            for(int m = 0; m < K; m++)
                 sum_P += cur_P[m];
             double H = .0;
-            for(int m = 0; m < K; m++) 
+            for(int m = 0; m < K; m++)
                 H += beta * (distances[m + 1] * distances[m + 1] * cur_P[m]);
             H = (H / sum_P) + log(sum_P);
 
@@ -565,7 +564,7 @@ void TSNE::computeGaussianPerplexity(double* X, int N, int D, unsigned int** _ro
         }
 
         // Row-normalize current row of P and store in matrix
-        for(unsigned int m = 0; m < K; m++) 
+        for(unsigned int m = 0; m < K; m++)
             cur_P[m] /= sum_P;
         for(unsigned int m = 0; m < K; m++) {
             col_P[row_P[n] + m] = (unsigned int) indices[m + 1].index();
@@ -587,7 +586,7 @@ void TSNE::symmetrizeMatrix(unsigned int** _row_P, unsigned int** _col_P, double
     double* val_P = *_val_P;
 
     // Count number of elements and row counts of symmetric matrix
-    auto row_counts = vector<int>(N, 0);
+    auto row_counts = std::vector<int>(N, 0);
     for(int n = 0; n < N; n++) {
         for(int i = row_P[n]; i < row_P[n + 1]; i++) {
 
@@ -620,7 +619,7 @@ void TSNE::symmetrizeMatrix(unsigned int** _row_P, unsigned int** _col_P, double
     for(int n = 0; n < N; n++) sym_row_P[n + 1] = sym_row_P[n] + (unsigned int) row_counts[n];
 
     // Fill the result matrix
-    auto offset = vector<int>(N, 0);
+    auto offset = std::vector<int>(N, 0);
     for(int n = 0; n < N; n++) {
         for(unsigned int i = row_P[n]; i < row_P[n + 1]; i++) { // considering element(n, col_P[i])
 
@@ -649,7 +648,7 @@ void TSNE::symmetrizeMatrix(unsigned int** _row_P, unsigned int** _col_P, double
             // Update offsets
             if(!present || (present && n <= col_P[i])) {
                 offset[n]++;
-                if(col_P[i] != n) 
+                if(col_P[i] != n)
                     offset[col_P[i]]++;
             }
         }
@@ -687,7 +686,7 @@ void TSNE::computeSquaredEuclideanDistance(double* X, int N, int D, double* DD) 
 void TSNE::zeroMean(double* X, int N, int D) {
 
 	// Compute data mean
-	auto mean = vector<double>(D, 0.0);
+	auto mean = std::vector<double>(D, 0.0);
     int nD = 0;
 	for(int n = 0; n < N; n++) {
 		for(int d = 0; d < D; d++) {
@@ -722,6 +721,53 @@ double TSNE::randn() {
 	x *= radius;
 	y *= radius;
 	return x;
+}
+
+bool bhtsne::TSNE::loadFromStream(std::istream & stream)
+{
+    auto seperator = ',';
+
+    //read data points
+    auto line = std::string();
+    bool first = true;
+    while (std::getline(stream, line))
+    {
+        auto iss = std::istringstream(line);
+        auto element = std::string();
+
+        auto point = std::vector<double>();
+        point.reserve(m_inputDimensions);
+
+        //read values of data point
+        while (std::getline(iss, element, seperator))
+        {
+            point.push_back(std::stod(element));
+        }
+
+        //set dimensionality
+        if (first)
+        {
+            first = false;
+            m_inputDimensions = point.size();
+        }
+
+        //fail if inconsistent dimensionality
+        if (m_inputDimensions != point.size() || m_inputDimensions == 0)
+        {
+            m_inputDimensions = 0;
+            m_data.clear();
+            return false;
+        }
+
+        m_data.emplace_back(std::move(point));
+    }
+
+    if (m_data.size() == 0)
+        return false;
+
+    m_dataSize = m_data.size();
+
+    return true;
 }
 
 // Function that loads data from a t-SNE file
@@ -769,15 +815,16 @@ void TSNE::save_data(double* data, int* landmarks, double* costs, int n, int d) 
 }
 
 TSNE::TSNE()
+    : m_randomSeed(0)
+    , m_perplexity(50.0)
+    , m_gradientAccuracy(0.2)
+    , m_iterations(1000)
+    , m_outputDimensions(2)
+    , m_inputDimensions(0)
+    , m_dataSize(0)
+    , m_outputFile("result")
 {
-	m_randomSeed = 0;
-	m_perplexity = 50.0;
-	m_gradientAccuracy = 0.2;
-	m_iterations = 1000;
 
-	m_outputDimensions = 2;
-	m_dataSize = 0;
-	m_outputFile = "result";
 }
 
 
@@ -856,10 +903,13 @@ void TSNE::setOutputFile(const std::string& file)
 	m_outputFile = file;
 }
 
-bool TSNE::loadLegacy(std::string file)
+
+//load methods--------------------------------------------------------------------------------------
+
+bool TSNE::loadLegacy(const std::string & file)
 {
 	auto f = std::ifstream(file, std::ios::binary);
-	if (!f.is_open()) 
+	if (!f.is_open())
 		return false;
 
     //read params
@@ -885,57 +935,16 @@ bool TSNE::loadLegacy(std::string file)
 	return true;
 }
 
-bool TSNE::loadCSV(std::string file)
+bool TSNE::loadCSV(const std::string & file)
 {
-	auto seperator = ',';
-
 	auto f = std::ifstream(file);
-	if (!f.is_open()) 
+	if (!f.is_open())
 		return false;
 
-    //read data points
-	std::string line;
-    bool first = true;
-	while (std::getline(f, line))
-	{
-		std::istringstream iss(line);
-		std::string element;
-
-		std::vector<double> point;
-
-        //read values of data point
-		while (std::getline(iss, element, seperator))
-		{
-			point.push_back(std::stod(element));
-		}
-
-        //set dimensionality
-        if (first)
-        {
-            first = false;
-            m_inputDimensions = point.size();
-        }
-        
-        //fail if inconsistent dimensionality
-        if (m_inputDimensions != point.size() || m_inputDimensions == 0)
-        {
-            m_inputDimensions = 0;
-            m_data.clear();
-            return false;
-        }
-
-		m_data.emplace_back(std::move(point));
-	}
-	
-	if (m_data.size() == 0)
-		return false;
-
-	m_dataSize = m_data.size();
-
-	return true;
+    return loadFromStream(f);
 }
 
-bool TSNE::loadTSNE(std::string file)
+bool TSNE::loadTSNE(const std::string & file)
 {
 	auto f = std::ifstream(file, std::ios::binary);
 	if (!f.is_open())
@@ -944,22 +953,30 @@ bool TSNE::loadTSNE(std::string file)
 	f.read(reinterpret_cast<char*>(&m_dataSize), sizeof(m_dataSize));
 	f.read(reinterpret_cast<char*>(&m_inputDimensions), sizeof(m_inputDimensions));
 
-	for (size_t i = 0; i < m_dataSize; ++i) 
+	for (size_t i = 0; i < m_dataSize; ++i)
     {
 		auto point = std::vector<double>(m_inputDimensions);
 		f.read(reinterpret_cast<char*>(point.data()), sizeof(double) * m_inputDimensions);
 		m_data.emplace_back(std::move(point));
 	}
-	
+
 	return true;
 }
+
+bool TSNE::loadCin()
+{
+    return loadFromStream(std::cin);
+}
+
+
+//run method---------------------------------------------------------------------------------------
 
 void TSNE::run()
 {
 	bool skip_random_init = false;
 	int stop_lying_iter = 250;
 	int mom_switch_iter = 250;
-	
+
 	if (m_randomSeed >= 0) {
 		std::cout << "Using random seed: " << m_randomSeed << std::endl;
 		srand((unsigned int)m_randomSeed);
@@ -987,8 +1004,8 @@ void TSNE::run()
 
 	// Allocate some memory
 	double* dY = (double*)malloc(m_dataSize * m_outputDimensions * sizeof(double));
-	auto uY = vector<double>(m_dataSize * m_outputDimensions, 0.0);
-	auto gains = vector<double>(m_dataSize * m_outputDimensions, 1.0);
+	auto uY = std::vector<double>(m_dataSize * m_outputDimensions, 0.0);
+	auto gains = std::vector<double>(m_dataSize * m_outputDimensions, 1.0);
 	if (dY == nullptr) {
 		std::cout << "Memory allocation failed!" << std::endl;
 		exit(1);
@@ -1000,18 +1017,18 @@ void TSNE::run()
 	zeroMean(m_data, m_inputDimensions);
 	// TODO: extract normalization function for vector
 	double max_X = .0;
-	for (auto& point : m_data)
+	for (auto & point : m_data)
 	{
-		for (auto& val : point)
+		for (auto & val : point)
 		{
-			if (fabs(val) > max_X) {
-				max_X = fabs(val);
+			if (std::fabs(val) > max_X) {
+				max_X = std::fabs(val);
 			}
 		}
 	}
-	for (auto& point : m_data)
+	for (auto & point : m_data)
 	{
-		for (auto& val : point)
+		for (auto & val : point)
 		{
 			val /= max_X;
 		}
@@ -1025,8 +1042,8 @@ void TSNE::run()
 		std::cout << "Exact?";
 		P = (double*)malloc(m_dataSize * m_dataSize * sizeof(double));
 		if (P == nullptr)
-		{ 
-			std:cout << "Memory allocation failed!" << std::endl;
+		{
+			std::cout << "Memory allocation failed!" << std::endl;
 			exit(1);
 		}
 		computeGaussianPerplexity(P);
@@ -1106,7 +1123,7 @@ void TSNE::run()
 		for (int i = 0; i < m_dataSize * m_outputDimensions; i++)
 			gains[i] = (sign(dY[i]) != sign(uY[i])) ? (gains[i] + .2) : (gains[i] * .8);
 		for (int i = 0; i < m_dataSize * m_outputDimensions; i++)
-			gains[i] = max(gains[i], 0.1);
+			gains[i] = std::max(gains[i], 0.1);
 
 		// Perform gradient update (with momentum and gains)
 		for (int i = 0; i < m_dataSize * m_outputDimensions; i++)
@@ -1176,6 +1193,51 @@ void TSNE::run()
 	std::cout << "Fitting performed in " << total_time << " seconds." << std::endl;
 }
 
+
+//save methods--------------------------------------------------------------------------------------
+
+void TSNE::saveToStream(std::ostream & stream)
+{
+	size_t offset = 0;
+	for (size_t i = 0; i < m_dataSize; ++i)
+	{
+		for (size_t j = 0; j < m_outputDimensions; ++j)
+		{
+			stream << m_resultP[offset++];
+			if (j < m_outputDimensions - 1)
+			{
+				stream << ',';
+			}
+		}
+		if (i < m_dataSize - 1)
+		{
+			stream << '\n';
+		}
+	}
+
+    stream.flush();
+}
+
+void TSNE::saveToCout()
+{
+    saveToStream(std::cout);
+}
+
+void TSNE::saveCSV()
+{
+    std::ofstream csv_fstream;
+	csv_fstream.open(m_outputFile + ".csv");
+	if (!csv_fstream.is_open())
+	{
+		std::cerr << "can't open " << m_outputFile << ".csv" << std::endl;
+        return;
+	}
+
+    saveToStream(csv_fstream);
+
+	csv_fstream.close();
+}
+
 void TSNE::saveLegacy()
 {
 	auto f = std::ofstream();
@@ -1201,37 +1263,8 @@ void TSNE::saveLegacy()
 	f.write(reinterpret_cast<char*>(costs.data()), costs.size() * sizeof(double));
 
 	f.close();
-	std::cout << "Wrote the " << m_dataSize << " x " << m_outputDimensions << " data matrix successfully!" << std::endl;
-}
-
-void TSNE::saveCSV()
-{
-	std::ofstream f;
-	f.open(m_outputFile + ".csv");
-	if (!f.is_open())
-	{
-		std::cerr << "can't open " << m_outputFile << ".csv" << std::endl;
-	}
-	else
-	{
-		size_t offset = 0;
-		for (size_t i = 0; i < m_dataSize; ++i)
-		{
-			for (size_t j = 0; j < m_outputDimensions; ++j)
-			{
-				f << m_resultP[offset++];
-				if (j < m_outputDimensions - 1)
-				{
-					f << ",";
-				}
-			}
-			if (i < m_dataSize - 1)
-			{
-				f << "\n";
-			}
-		}
-		f.close();
-	}
+	std::cout << "Wrote the " << m_dataSize << " x " << m_outputDimensions
+        << " data matrix successfully!" << std::endl;
 }
 
 void TSNE::saveSVG()
@@ -1241,18 +1274,18 @@ void TSNE::saveSVG()
 
 	double extreme = 0;
 	for (unsigned int i = 0; i < m_dataSize * m_outputDimensions; i++)
-		extreme = max(extreme, abs(m_resultP[i]));
+		extreme = std::max(extreme, std::abs(m_resultP[i]));
 	double radius = 0.5;
 	double halfWidth = extreme + radius;
-	auto viewBox = to_string(-halfWidth) + " " + to_string(-halfWidth) + " " + to_string(2 * halfWidth) + " " + to_string(2 * halfWidth);
+	auto viewBox = std::to_string(-halfWidth) + " " + std::to_string(-halfWidth) + " " + std::to_string(2 * halfWidth) + " " + std::to_string(2 * halfWidth);
 
-	auto labels = vector<uint8_t>();
+	auto labels = std::vector<uint8_t>();
 	bool useLabels = false;
 	if (!labelFile.empty())
 	{
 		useLabels = true;
-		ifstream labelInput;
-		labelInput.open(labelFile, ios::in | ios::binary);
+		std::ifstream labelInput;
+		labelInput.open(labelFile, std::ios::in | std::ios::binary);
 		if (!labelInput.is_open())
 		{
 			std::cerr << "Could not open labels\n";
@@ -1261,14 +1294,14 @@ void TSNE::saveSVG()
 
 		uint32_t labelCount;
 		labelInput.read(reinterpret_cast<char*>(&labelCount), sizeof(labelCount));
-		cout << "Labels file contains " << labelCount << " labels." << endl;
+		std::cout << "Labels file contains " << labelCount << " labels." << std::endl;
 		if (labelCount < m_dataSize)
 		{
 			std::cerr << "Not enough labels for result\n";
 			return;
 		}
 
-		labelCount = min(labelCount, m_dataSize);
+		labelCount = std::min(labelCount, m_dataSize);
 		labels.resize(labelCount);
 		labelInput.read(reinterpret_cast<char*>(labels.data()), labels.size());
 
@@ -1277,13 +1310,13 @@ void TSNE::saveSVG()
 
 	uint8_t maxLabel = 0;
 	for (auto label : labels)
-		maxLabel = max(label, maxLabel);
-	auto colors = vector<string>();
+		maxLabel = std::max(label, maxLabel);
+	auto colors = std::vector<std::string>();
 	for (int i = 0; i <= maxLabel; ++i)
-		colors.push_back("hsl(" + to_string(360.0 * i / (maxLabel / 2 + 1)) + ", 100%, " + (i % 2 == 0 ? "25" : "60") + "%)");
+		colors.push_back("hsl(" + std::to_string(360.0 * i / (maxLabel / 2 + 1)) + ", 100%, " + (i % 2 == 0 ? "25" : "60") + "%)");
 
 	auto f = std::ofstream();
-	f.open(m_outputFile + ".svg", ios::out | ios::trunc);
+	f.open(m_outputFile + ".svg", std::ios::out | std::ios::trunc);
 
 	if (!f.is_open()) {
 		std::cerr << "can't open " << m_outputFile << ".svg" << std::endl;
@@ -1292,7 +1325,7 @@ void TSNE::saveSVG()
 
 	f << "<?xml version='1.0' encoding='UTF-8' ?>\n";
 	f << "<svg xmlns='http://www.w3.org/2000/svg' version='1.1' width='600' height='600' viewBox='" << viewBox << "'>\n";
-	
+
 	auto color = std::string("black");
 	for (unsigned int i = 0; i < m_dataSize; i++)
 	{
@@ -1313,10 +1346,10 @@ void TSNE::saveSVG()
 	f.close();
 }
 
-void TSNE::zeroMean(std::vector<std::vector<double>>& data, unsigned int dimensions)
+void TSNE::zeroMean(std::vector<std::vector<double>> & data, unsigned int dimensions)
 {
 	// Compute data mean
-	auto mean = vector<double>(dimensions, 0.0);
+	auto mean = std::vector<double>(dimensions, 0.0);
 	int nD = 0;
 	for (int n = 0; n < m_dataSize; n++) {
 		for (int d = 0; d < dimensions; d++) {
@@ -1415,14 +1448,14 @@ void TSNE::computeGaussianPerplexity(double* P)
 }
 
 // Compute squared Euclidean distance matrix
-void TSNE::computeSquaredEuclideanDistance(std::vector<std::vector<double>> data, double* DD) 
+void TSNE::computeSquaredEuclideanDistance(std::vector<std::vector<double>> data, double* DD)
 {
 	int dimensions = data[0].size();
 	double* XnD = (double*)malloc(data.size() * data[0].size() * sizeof(double));// = data;
 	int offset = 0;
-	for (auto& point : data)
+	for (auto & point : data)
 	{
-		for (auto& val : point)
+		for (auto & val : point)
 		{
 			*(XnD + offset++) = val;
 		}
@@ -1448,9 +1481,9 @@ void TSNE::computeGaussianPerplexity(unsigned int** _row_P,	unsigned int** _col_
 	int dimensions = m_data[0].size();
 	double* X = (double*)malloc(m_data.size() * m_data[0].size() * sizeof(double));// = data;
 	int offset = 0;
-	for (auto& point : m_data)
+	for (auto & point : m_data)
 	{
-		for (auto& val : point)
+		for (auto & val : point)
 		{
 			*(X + offset++) = val;
 		}
@@ -1479,22 +1512,22 @@ void TSNE::computeGaussianPerplexity(unsigned int** _row_P,	unsigned int** _col_
 	unsigned int* row_P = *_row_P;
 	unsigned int* col_P = *_col_P;
 	double* val_P = *_val_P;
-	auto cur_P = vector<double>(m_dataSize - 1);
+	auto cur_P = std::vector<double>(m_dataSize - 1);
 	row_P[0] = 0;
 	for (int n = 0; n < m_dataSize; n++)
 		row_P[n + 1] = row_P[n] + (unsigned int)K;
 
 	// Build ball tree on data set
 	auto tree = VpTree<DataPoint, euclidean_distance>();
-	auto obj_X = vector<DataPoint>(m_dataSize, DataPoint(m_inputDimensions, -1, X));
+	auto obj_X = std::vector<DataPoint>(m_dataSize, DataPoint(m_inputDimensions, -1, X));
 	for (int n = 0; n < m_dataSize; n++)
 		obj_X[n] = DataPoint(m_inputDimensions, n, X + n * m_inputDimensions);
 	tree.create(obj_X);
 
 	// Loop over all points to find nearest neighbors
 	printf("Building tree...\n");
-	vector<DataPoint> indices;
-	vector<double> distances;
+	std::vector<DataPoint> indices;
+	std::vector<double> distances;
 	for (int n = 0; n < m_dataSize; n++) {
 
 		if (n % 10000 == 0)
