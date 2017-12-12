@@ -240,6 +240,37 @@ public:
     */
     void setOutputFile(const std::string & name);
 
+
+    // load methods---------------------------------------------------------------------------------
+
+    /**
+    *  @brief
+    *    Loads a csv dataset from a stream
+    *
+    *  @param[in] file
+    *    Input file path
+    *
+    *  @post
+    *    If this fuction returns true, the dataset was loaded and run() can be called.
+    *
+    *  @remarks
+    *    Loads csv data from a stream, expects the same format as loadCSV().
+    *    The data should contain x lines with y numerical values each.
+    *    The number of samples is set to x and the input dimensionality to y.
+    */
+    bool loadFromStream(std::istream & stream);
+
+
+    /**
+    *  @brief
+    *    Loads a dataset from std::cin
+    *
+    *  @remarks
+    *    Expects the same format as loadCSV()
+    */
+    bool loadCin();
+
+
     /**
     *  @brief
     *    Loads a dataset from a ".dat" file
@@ -264,7 +295,7 @@ public:
     *    - double...   the data as an interleaved buffer (number of datapoints * input dimensionality)
     *    - int         random seed (optional)
     */
-    bool loadLegacy(std::string file);
+    bool loadLegacy(const std::string & file);
 
     /**
     *  @brief
@@ -281,7 +312,7 @@ public:
     *    The file should contain x lines with y numerical values each.
     *    The number of samples is set to x and the input dimensionality to y.
     */
-    bool loadCSV(std::string file);
+    bool loadCSV(const std::string & file);
 
     /**
     *  @brief
@@ -300,16 +331,10 @@ public:
     *    - int         input dimensionality
     *    - double...   the data as an interleaved buffer (number of datapoints * input dimensionality)
     */
-    bool loadTSNE(std::string file);
+    bool loadTSNE(const std::string & file);
 
-    /**
-    *  @brief
-    *    Loads a dataset from std::cin
-    *
-    *  @remarks
-    *    Expects the same format as loadCSV()
-    */
-    bool loadCin();
+
+    //run method------------------------------------------------------------------------------------
 
     /**
     *  @brief
@@ -326,18 +351,32 @@ public:
     */
     void run();
 
+
+    //save methods----------------------------------------------------------------------------------
+
     /**
     *  @brief
-    *    Saves the result in a ".dat" file
+    *    Pushes the csv result into a stream
     *
     *  @pre
     *    The algorithm must have ran (i.e. run() was called).
     *
     *  @remarks
-    *    Saves the result of the computation to "<outputFile>.dat".
-    *    This format was used in the original implementation (https://github.com/lvdmaaten/bhtsne).
+    *    Pushes the csv result into a stream, using the same  output format as saveCSV().
     */
-    void saveLegacy();
+    void saveToStream(std::ostream & stream);
+
+    /**
+    *  @brief
+    *    Pushes the csv result to std::cout
+    *
+    *  @pre
+    *    The algorithm must have ran (i.e. run() was called).
+    *
+    *  @remarks
+    *    Pushes the csv result to std::cout, using the same  output format as saveCSV().
+    */
+    void saveToCout();
 
     /**
     *  @brief
@@ -350,6 +389,19 @@ public:
     *    Saves the result of the computation to "<outputFile>.csv".
     */
     void saveCSV();
+
+    /**
+    *  @brief
+    *    Saves the result in a ".dat" file
+    *
+    *  @pre
+    *    The algorithm must have ran (i.e. run() was called).
+    *
+    *  @remarks
+    *    Saves the result of the computation to "<outputFile>.dat".
+    *    This format was used in the original implementation (https://github.com/lvdmaaten/bhtsne).
+    */
+    void saveLegacy();
 
     /**
     *  @brief
@@ -384,7 +436,6 @@ private:
     void computeSquaredEuclideanDistance(double* X, int N, int D, double* DD); //static?
     double randn();
 
-    bool loadFromStream(std::istream& stream);
 
 
 protected:
