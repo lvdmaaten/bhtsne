@@ -535,59 +535,13 @@ void TSNE::zeroMean(double* X, int N, int D) {
 	}
 }
 
-bool bhtsne::TSNE::loadFromStream(std::istream & stream)
-{
-    auto seperator = ',';
-
-    //read data points
-    auto line = std::string();
-    bool first = true;
-    while (std::getline(stream, line))
-    {
-        auto iss = std::istringstream(line);
-        auto element = std::string();
-
-        auto point = std::vector<double>();
-        point.reserve(m_inputDimensions);
-
-        //read values of data point
-        while (std::getline(iss, element, seperator))
-        {
-            point.push_back(std::stod(element));
-        }
-
-        //set dimensionality
-        if (first)
-        {
-            first = false;
-            m_inputDimensions = point.size();
-        }
-
-        //fail if inconsistent dimensionality
-        if (m_inputDimensions != point.size() || m_inputDimensions == 0)
-        {
-            m_inputDimensions = 0;
-            m_data.clear();
-            return false;
-        }
-
-        m_data.emplace_back(std::move(point));
-    }
-
-    if (m_data.size() == 0)
-        return false;
-
-    m_dataSize = m_data.size();
-
-    return true;
-}
 
 void TSNE::setRandomSeed(int seed)
 {
     if (seed >= 0) {
         std::cout << "Using random seed: " << seed << std::endl;
         m_gen.seed(seed);
-        
+
     }
     else {
         std::cout << "Using current time as random seed..." << std::endl;
@@ -663,6 +617,53 @@ void TSNE::setOutputFile(const std::string& file)
 
 
 //load methods--------------------------------------------------------------------------------------
+
+bool bhtsne::TSNE::loadFromStream(std::istream & stream)
+{
+    auto separator = ',';
+
+    //read data points
+    auto line = std::string();
+    bool first = true;
+    while (std::getline(stream, line))
+    {
+        auto iss = std::istringstream(line);
+        auto element = std::string();
+
+        auto point = std::vector<double>();
+        point.reserve(m_inputDimensions);
+
+        //read values of data point
+        while (std::getline(iss, element, separator))
+        {
+            point.push_back(std::stod(element));
+        }
+
+        //set dimensionality
+        if (first)
+        {
+            first = false;
+            m_inputDimensions = point.size();
+        }
+
+        //fail if inconsistent dimensionality
+        if (m_inputDimensions != point.size() || m_inputDimensions == 0)
+        {
+            m_inputDimensions = 0;
+            m_data.clear();
+            return false;
+        }
+
+        m_data.emplace_back(std::move(point));
+    }
+
+    if (m_data.empty())
+        return false;
+
+    m_dataSize = m_data.size();
+
+    return true;
+}
 
 bool TSNE::loadLegacy(const std::string & file)
 {
@@ -843,7 +844,7 @@ void TSNE::run()
 
 	double* Y = (double*)malloc(m_dataSize * m_outputDimensions * sizeof(double));
 	// Initialize solution (randomly)
-	if (skip_random_init != true) {
+	if (!skip_random_init) {
 		for (int i = 0; i < m_dataSize * m_outputDimensions; i++)
 			Y[i] = gaussNumber() * .0001;
 	}
@@ -947,7 +948,6 @@ void TSNE::run()
 
 void TSNE::saveToStream(std::ostream & stream)
 {
-	size_t offset = 0;
 	for (size_t i = 0; i < m_dataSize; ++i)
 	{
 		for (size_t j = 0; j < m_outputDimensions; ++j)
