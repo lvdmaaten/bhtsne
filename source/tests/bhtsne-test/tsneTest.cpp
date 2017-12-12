@@ -42,6 +42,10 @@ public:
         m_inputDimensions = dimensions;
     }
 
+    double firstGaussNumber()
+    {
+        return gaussNumber();
+    }
 };
 
 class BinaryWriter
@@ -85,6 +89,13 @@ protected:
         remove(tempfile.c_str());
     }
 
+    double firstGaussNumber(int seed)
+    {
+        auto gen = std::mt19937(seed);
+        auto dist = std::normal_distribution<>(0,2);
+        return dist(gen);
+    }
+
     PublicTSNE m_tsne;
     std::string tempfile;
     std::ofstream filestream;
@@ -99,7 +110,7 @@ TEST(SanityChecks, Equality)
 
 TEST_F(TsneTest, DefaultValues)
 {
-    EXPECT_EQ(0, m_tsne.randomSeed());
+    EXPECT_EQ(firstGaussNumber(0), m_tsne.firstGaussNumber());
     EXPECT_EQ(50.0, m_tsne.perplexity());
     EXPECT_EQ(0.2, m_tsne.gradientAccuracy());
     EXPECT_EQ(1000, m_tsne.iterations());
@@ -111,9 +122,9 @@ TEST_F(TsneTest, DefaultValues)
 TEST_F(TsneTest, RandomSeed)
 {
     m_tsne.setRandomSeed(1);
-    EXPECT_EQ(1, m_tsne.randomSeed());
+    EXPECT_EQ(firstGaussNumber(1), m_tsne.firstGaussNumber());
     m_tsne.setRandomSeed(2);
-    EXPECT_EQ(2, m_tsne.randomSeed());
+    EXPECT_EQ(firstGaussNumber(2), m_tsne.firstGaussNumber());
 }
 
 TEST_F(TsneTest, Perplexity)
@@ -198,7 +209,7 @@ TEST_F(TsneTest, LoadLegacy)
     EXPECT_EQ(perplexity, m_tsne.perplexity());
     EXPECT_EQ(outputDimensions, m_tsne.outputDimensions());
     EXPECT_EQ(iterations, m_tsne.iterations());
-    EXPECT_EQ(randomSeed, m_tsne.randomSeed());
+    EXPECT_EQ(firstGaussNumber(randomSeed), m_tsne.firstGaussNumber());
     EXPECT_EQ(data, m_tsne.data()[0][0]);
 
     removeTempfile();

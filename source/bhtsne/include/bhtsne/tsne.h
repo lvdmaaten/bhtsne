@@ -35,6 +35,7 @@
 
 #include <string>
 #include <vector>
+#include <random>
 
 #include <bhtsne/bhtsne_api.h> // generated header for export macros
 
@@ -73,24 +74,10 @@ public:
 
     /**
     *  @brief
-    *    Get random seed
-    *
-    *  @return
-    *    Random seed
-    *
-    *  @remarks
-    *    This seed is used to initialize the internal random generator. The current time is used if the seed is negative.
-    */
-    int randomSeed() const;
-
-    /**
-    *  @brief
     *    Set random seed
     *
     *  @param[in] seed
     *    Random seed
-    *
-    *  @see randomSeed()
     */
     void setRandomSeed(int seed);
 
@@ -417,12 +404,7 @@ public:
     void saveSVG();
 
     //TODO: remove legacy stuff
-    void run(double* X, int D, double* Y, int no_dims, double perplexity, double theta, int rand_seed,
-             bool skip_random_init, int max_iter=1000, int stop_lying_iter=250, int mom_switch_iter=250);
-    bool load_data(double** data, int* d, int* no_dims, double* theta, double* perplexity, int* rand_seed, int* max_iter);
-    void save_data(double* data, int* landmarks, double* costs, int n, int d);
     static void symmetrizeMatrix(unsigned int** row_P, unsigned int** col_P, double** val_P, int N); // should be static!
-
 
 
 private:
@@ -434,13 +416,10 @@ private:
     void computeGaussianPerplexity(double* X, int N, int D, double* P, double perplexity);
     void computeGaussianPerplexity(double* X, int N, int D, unsigned int** _row_P, unsigned int** _col_P, double** _val_P, double perplexity, int K);
     void computeSquaredEuclideanDistance(double* X, int N, int D, double* DD); //static?
-    double randn();
-
 
 
 protected:
     // params
-    int          m_randomSeed;               ///< used to initialize the internal random generator
     double       m_perplexity;               ///< balance local/global data aspects, see documentation of perplexity()
     double       m_gradientAccuracy;         ///< used as the width for the gauss sampling kernel
     unsigned int m_iterations;               ///< defines how many iterations the algorithm does in run()
@@ -456,10 +435,14 @@ protected:
 	std::vector<std::vector<double>> m_result;
 	double* m_resultP;
 
+    std::mt19937 m_gen;
+    std::normal_distribution<> m_dist;
+
 	void zeroMean(std::vector<std::vector<double>>& data, unsigned int dimensions);
 	void computeGaussianPerplexity(double* P);
 	void computeGaussianPerplexity(unsigned int** _row_P, unsigned int** _col_P, double** _val_P);
 	void computeSquaredEuclideanDistance(std::vector<std::vector<double>> X, double* DD);
+    double gaussNumber();
 };
 
 

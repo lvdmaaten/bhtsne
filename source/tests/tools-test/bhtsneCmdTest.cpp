@@ -63,7 +63,6 @@ TEST_F(bhtsneCmdTest, SettingCommandLineParameters)
     // EXPECT_EQ(3123, m_tsne.dataSize()) << "number-of-samples was not set correctly via commandline option";
     EXPECT_EQ(2, m_tsne.outputDimensions()) << "output-dimensions was not set correctly via commandline option";
     EXPECT_EQ("another_result.dat", m_tsne.outputFile()) << "output-file was not set correctly via commandline option";
-    EXPECT_EQ(321, m_tsne.randomSeed()) << "random-seed was not set correctly via commandline option";
 }
 
 TEST_F(bhtsneCmdTest, SettingCommandLineOptions)
