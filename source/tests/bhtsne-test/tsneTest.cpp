@@ -270,7 +270,7 @@ TEST_F(TsneTest, Run)
     m_tsne.setData(std::vector<std::vector<double>>{ { 42.0 }, { 17.0 } });
 
     EXPECT_NO_THROW(m_tsne.run());
-    auto expected = std::vector<unsigned long long>{ 0xC07DAC741DC680D4, 0x407DAC741DC680D4 };
+    auto expected = std::vector<unsigned long long>{ 0x407D9E4445A98755, 0xC07D9E4445A98755 };
     for (auto i = 0; i < 2; i++)
     {
         EXPECT_EQ(*reinterpret_cast<double*>(&expected[i]), m_tsne.result()[i][0]);
