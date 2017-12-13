@@ -12,7 +12,7 @@ inline bool doubleEquals(double a, double b, double epsilon = 0.0001) {
 class PublicTSNE : public bhtsne::TSNE
 {
 public:
-    auto data() 
+    auto data()
     {
         return m_data;
     };
@@ -105,7 +105,7 @@ TEST(SanityChecks, Equality)
 {
     EXPECT_EQ((unsigned int) 0, 0);
     EXPECT_EQ((unsigned int) 1, 1);
-}   
+}
 
 TEST_F(TsneTest, DefaultValues)
 {
@@ -128,10 +128,10 @@ TEST_F(TsneTest, RandomSeed)
 
 TEST_F(TsneTest, Perplexity)
 {
-    m_tsne.setPerplexity(1.0);
-    EXPECT_EQ(1.0, m_tsne.perplexity());
-    m_tsne.setPerplexity(2.0);
-    EXPECT_EQ(2.0, m_tsne.perplexity());
+    m_tsne.setPerplexity(5.0);
+    EXPECT_EQ(5.0, m_tsne.perplexity());
+    m_tsne.setPerplexity(25.0);
+    EXPECT_EQ(25.0, m_tsne.perplexity());
 }
 
 TEST_F(TsneTest, GradientAccuracy)
@@ -299,13 +299,18 @@ TEST_F(TsneTest, Run)
     m_tsne.setDataSize(2);
     m_tsne.setInputDimensions(1);
     m_tsne.setGradientAccuracy(0.2);
-    m_tsne.setPerplexity(0.1);
+    m_tsne.setPerplexity(0.1); //TODO set perplexity >= 2, needs bigger data input (datasize >=6)
     m_tsne.setOutputDimensions(1);
     m_tsne.setIterations(100);
     m_tsne.setRandomSeed(42);
     m_tsne.setData(std::vector<std::vector<double>>{ { 42.0 }, { 17.0 } });
 
-    EXPECT_NO_THROW(m_tsne.run());
+    try {
+        m_tsne.run();
+    } catch (std::exception & e) {
+        FAIL() << "run method exception: " << e.what();
+    }
+
     auto expected = std::vector<unsigned long long>{ 0x407D9E4445A98755, 0xC07D9E4445A98755 };
     for (auto i = 0; i < 2; i++)
     {
@@ -330,13 +335,17 @@ TEST_F(TsneTest, RunOkayOnLinux)
     m_tsne.setDataSize(data.size());
     m_tsne.setInputDimensions(data[0].size());
     m_tsne.setGradientAccuracy(0.2);
-    m_tsne.setPerplexity(3);
+    m_tsne.setPerplexity(3.0);
     m_tsne.setOutputDimensions(2);
     m_tsne.setIterations(100);
     m_tsne.setRandomSeed(42);
     m_tsne.setData(data);
 
-    EXPECT_NO_THROW(m_tsne.run());
+    try {
+        m_tsne.run();
+    } catch (std::exception & e) {
+        FAIL() << "run method exception: " << e.what();
+    }
 
     auto result = m_tsne.result();
 
@@ -353,13 +362,13 @@ TEST_F(TsneTest, RunOkayOnLinux)
         { -31.6703, -48.6962 }
     };
 
-    for (auto i = 0; i < data.size(); i++)
+    for (size_t i = 0; i < m_tsne.dataSize(); i++)
     {
-        for (int j = 0; j < m_tsne.outputDimensions(); ++j)
+        for (size_t j = 0; j < m_tsne.outputDimensions(); j++)
         {
-            EXPECT_TRUE(doubleEquals(expected[i][j], m_tsne.result()[i][j]))
+            EXPECT_TRUE(doubleEquals(expected[i][j], result[i][j]))
                 << "expected != result at [" << i << "][" << j <<"]: "
-                << expected[i][j] << " != " << m_tsne.result()[i][j] << std::endl;
+                << expected[i][j] << " != " << result[i][j] << std::endl;
         }
     }
 }
@@ -373,7 +382,7 @@ TEST_F(TsneTest, SaveLegacy)
     // test save
     m_tsne.setDataSize(2);
     m_tsne.setOutputDimensions(1);
-    m_tsne.setOutputFile(tempfile); 
+    m_tsne.setOutputFile(tempfile);
     m_tsne.setResult(std::vector<std::vector<double>>{ { expectedDouble[0] }, { expectedDouble[1] }});
     EXPECT_NO_THROW(m_tsne.saveLegacy());
     // check file exists and has right size
@@ -512,7 +521,7 @@ TEST_F(TsneTest, SaveSVG)
 
 TEST_F(TsneTest, ResultConsistency)
 {
-    std::string input = 
+    std::string input =
 R"(0,56,19,80,58
 47,35,89,82,74
 17,85,71,51,30
@@ -538,7 +547,7 @@ R"(-85.2955,-91.8262
 )";
 
     m_tsne.setGradientAccuracy(0.2);
-    m_tsne.setPerplexity(3);
+    m_tsne.setPerplexity(3.0);
     m_tsne.setIterations(2000);
     m_tsne.setOutputDimensions(2);
     m_tsne.setRandomSeed(1337);
@@ -546,8 +555,12 @@ R"(-85.2955,-91.8262
     auto iss = std::istringstream(input);
     EXPECT_TRUE(m_tsne.loadFromStream(iss));
 
-    EXPECT_NO_THROW(m_tsne.run());
-    
+    try {
+        m_tsne.run();
+    } catch (std::exception & e) {
+        FAIL() << "run method exception: " << e.what();
+    }
+
     auto oss = std::ostringstream();
     EXPECT_NO_THROW(m_tsne.saveToStream(oss));
 

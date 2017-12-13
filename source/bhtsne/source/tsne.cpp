@@ -47,6 +47,7 @@
 #include <sstream>
 #include <string>
 #include <chrono>
+#include <stdexcept>
 
 #include <bhtsne/sptree.h>
 #include <bhtsne/vptree.h>
@@ -558,6 +559,11 @@ double TSNE::perplexity() const
 void TSNE::setPerplexity(double perplexity)
 {
 	m_perplexity = perplexity;
+    if (m_perplexity < 2.0)
+    {
+        std::cerr << "perplexity has to be at least 2.0, setting perplexity to 2.0" << std::endl;
+        m_perplexity = 2.0;
+    }
 }
 
 double TSNE::gradientAccuracy() const
@@ -740,8 +746,11 @@ void TSNE::run()
 
 	// Determine whether we are using an exact algorithm
 	if (m_dataSize - 1 < 3 * m_perplexity) {
-		std::cout << "Perplexity too large for the number of data points!\n" << std::endl;
-		exit(1);
+        auto stringStream = std::ostringstream();
+        stringStream << "perplexity (perplexity=" << m_perplexity
+                     << ") has to be smaller than a third of the dataSize (dataSize=" << m_dataSize << ")";
+        std::cerr << stringStream.str() << std::endl;
+        throw std::invalid_argument(stringStream.str());
 	}
 	std::cout << "Using m_outputDimensions = " << m_outputDimensions
 		<< ", m_perplexity = " << m_perplexity
