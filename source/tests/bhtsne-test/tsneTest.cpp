@@ -37,9 +37,9 @@ public:
         m_inputDimensions = dimensions;
     }
 
-    auto firstGaussNumber()
+    auto gaussNumber()
     {
-        return gaussNumber();
+        return TSNE::gaussNumber();
     }
 };
 
@@ -88,13 +88,6 @@ protected:
         EXPECT_EQ(0, remove(tempfile.c_str()));
     }
 
-    auto firstGaussNumber(int seed)
-    {
-        auto gen = std::mt19937(seed);
-        auto dist = std::normal_distribution<>(0,2);
-        return dist(gen);
-    }
-
     PublicTSNE m_tsne;
     std::string tempfile;
     std::ofstream filestream;
@@ -109,7 +102,7 @@ TEST(SanityChecks, Equality)
 
 TEST_F(TsneTest, DefaultValues)
 {
-    EXPECT_EQ(firstGaussNumber(0), m_tsne.firstGaussNumber());
+    ASSERT_DOUBLE_EQ(1.1630780958763871, m_tsne.gaussNumber());
     EXPECT_EQ(50.0, m_tsne.perplexity());
     EXPECT_EQ(0.2, m_tsne.gradientAccuracy());
     EXPECT_EQ(1000, m_tsne.iterations());
@@ -121,9 +114,9 @@ TEST_F(TsneTest, DefaultValues)
 TEST_F(TsneTest, RandomSeed)
 {
     m_tsne.setRandomSeed(1);
-    EXPECT_EQ(firstGaussNumber(1), m_tsne.firstGaussNumber());
-    m_tsne.setRandomSeed(2);
-    EXPECT_EQ(firstGaussNumber(2), m_tsne.firstGaussNumber());
+    ASSERT_DOUBLE_EQ(0.15606557998386178, m_tsne.gaussNumber());
+    m_tsne.setRandomSeed(0);
+    ASSERT_DOUBLE_EQ(1.1630780958763871, m_tsne.gaussNumber());
 }
 
 TEST_F(TsneTest, Perplexity)
@@ -208,7 +201,7 @@ TEST_F(TsneTest, LoadLegacy)
     EXPECT_EQ(perplexity, m_tsne.perplexity());
     EXPECT_EQ(outputDimensions, m_tsne.outputDimensions());
     EXPECT_EQ(iterations, m_tsne.iterations());
-    EXPECT_EQ(firstGaussNumber(randomSeed), m_tsne.firstGaussNumber());
+    ASSERT_DOUBLE_EQ(-0.51696416431811998, m_tsne.gaussNumber());
     EXPECT_EQ(data, m_tsne.data()[0][0]);
 
     removeTempfile();
