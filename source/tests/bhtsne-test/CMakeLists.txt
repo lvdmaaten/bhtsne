@@ -1,32 +1,33 @@
 
-# 
+#
 # External dependencies
-# 
+#
 
 find_package(${META_PROJECT_NAME} REQUIRED HINTS "${CMAKE_CURRENT_SOURCE_DIR}/../../../")
 
-# 
+#
 # Executable name and options
-# 
+#
 
 # Target name
 set(target bhtsne-test)
 message(STATUS "Test ${target}")
 
 
-# 
+#
 # Sources
-# 
+#
 
 set(sources
     main.cpp
     tsneTest.cpp
+    randomTest.cpp
 )
 
 
-# 
+#
 # Create executable
-# 
+#
 
 # Build executable
 add_executable(${target}
@@ -37,9 +38,9 @@ add_executable(${target}
 add_executable(${META_PROJECT_NAME}::${target} ALIAS ${target})
 
 
-# 
+#
 # Project options
-# 
+#
 
 set_target_properties(${target}
     PROPERTIES
@@ -48,9 +49,9 @@ set_target_properties(${target}
 )
 
 
-# 
+#
 # Include directories
-# 
+#
 
 target_include_directories(${target}
     PRIVATE
@@ -59,9 +60,9 @@ target_include_directories(${target}
 )
 
 
-# 
+#
 # Libraries
-# 
+#
 
 target_link_libraries(${target}
     PRIVATE
@@ -71,9 +72,9 @@ target_link_libraries(${target}
 )
 
 
-# 
+#
 # Compile definitions
-# 
+#
 
 target_compile_definitions(${target}
     PRIVATE
@@ -81,9 +82,9 @@ target_compile_definitions(${target}
 )
 
 
-# 
+#
 # Compile options
-# 
+#
 
 target_compile_options(${target}
     PRIVATE
@@ -91,9 +92,9 @@ target_compile_options(${target}
 )
 
 
-# 
+#
 # Linker options
-# 
+#
 
 target_link_libraries(${target}
     PRIVATE

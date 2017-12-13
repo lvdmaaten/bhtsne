@@ -503,9 +503,25 @@ void TSNE::computeSquaredEuclideanDistance(double* X, int N, int D, double* DD) 
     }
 }
 
+// with mean zero and standard deviation one
 double bhtsne::TSNE::gaussNumber()
 {
-    return m_dist(m_gen);
+    // Knuth, Art of Computer Programming vol v2, Section 3.4.1, Algorithm P (p.117)
+
+    double S, V1, V2;
+    // executed 1.27 times on the average
+    do 
+    {
+        // V1, V2 uniformly distributed between -1 and +l.
+        V1 = 2.0 * static_cast<double>(m_gen()) / m_gen.max() - 1.0;
+        V2 = 2.0 * static_cast<double>(m_gen()) / m_gen.max() - 1.0;
+        S = V1*V1 + V2*V2;
+    } while (S >= 1);
+
+    auto X1 = V1 * std::sqrt(-2 * std::log(S) / S);
+    //same can be done for X2
+
+    return X1;
 }
 
 
