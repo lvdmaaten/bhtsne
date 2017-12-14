@@ -289,30 +289,6 @@ TEST_F(TsneTest, LoadTSNE)
 
 TEST_F(TsneTest, Run)
 {
-    m_tsne.setDataSize(2);
-    m_tsne.setInputDimensions(1);
-    m_tsne.setGradientAccuracy(0.2);
-    m_tsne.setPerplexity(0.1); //TODO set perplexity >= 2, needs bigger data input (datasize >=6)
-    m_tsne.setOutputDimensions(1);
-    m_tsne.setIterations(100);
-    m_tsne.setRandomSeed(42);
-    m_tsne.setData(std::vector<std::vector<double>>{ { 42.0 }, { 17.0 } });
-
-    try {
-        m_tsne.run();
-    } catch (std::exception & e) {
-        FAIL() << "run method exception: " << e.what();
-    }
-
-    auto expected = std::vector<unsigned long long>{ 0x407D9E4445A98755, 0xC07D9E4445A98755 };
-    for (auto i = 0; i < 2; i++)
-    {
-        EXPECT_EQ(*reinterpret_cast<double*>(&expected[i]), m_tsne.result()[i][0]);
-    }
-}
-
-TEST_F(TsneTest, RunOkayOnLinux)
-{
     auto data = std::vector<std::vector<double>>{
             { 0,56,19,80,58 },
             { 47,35,89,82,74 },
@@ -343,16 +319,16 @@ TEST_F(TsneTest, RunOkayOnLinux)
     auto result = m_tsne.result();
 
     auto expected = std::vector<std::vector<double>>{
-        { -12.8567, -51.0716 },
-        { -28.6218, 17.6546 },
-        { 3.15254, 9.30955 },
-        { -7.15141, 4.18512 },
-        { 3.55131, 3.95018 },
-        { 30.5022, 33.6661 },
-        { -6.59702, 2.68195 },
-        { 18.7477, 19.6905 },
-        { 30.9434, 8.62988 },
-        { -31.6703, -48.6962 }
+        { -37.969682880670781, 13.53176098293458 },
+        { 17.747120647448977, 11.769259684044014 },
+        { 31.823026258301418, -9.5819351822503673 },
+        { -9.325729922489689, -18.726748023156155 },
+        { -20.281048368449309, -1.4635189684119658 },
+        { 13.980657219661596, 15.40660294520521 },
+        { -5.1885801679382269, -12.140850978402652 },
+        { 34.539709042863528, -3.5143701898564852 },
+        { 15.971308234165035, 17.035942809420174 },
+        { -41.296780062892559, -12.316143079526352 }
     };
 
     for (size_t i = 0; i < m_tsne.dataSize(); i++)
@@ -548,11 +524,7 @@ R"(3.16374,-91.2264
     auto iss = std::istringstream(input);
     EXPECT_TRUE(m_tsne.loadFromStream(iss));
 
-    try {
-        m_tsne.run();
-    } catch (std::exception & e) {
-        FAIL() << "run method exception: " << e.what();
-    }
+    EXPECT_NO_THROW(m_tsne.run());
 
     auto oss = std::ostringstream();
     EXPECT_NO_THROW(m_tsne.saveToStream(oss));
