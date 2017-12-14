@@ -511,7 +511,7 @@ double bhtsne::TSNE::gaussNumber()
 
     double S, V1, V2;
     // executed 1.27 times on the average
-    do 
+    do
     {
         // V1, V2 uniformly distributed between -1 and +l.
         V1 = 2.0 * static_cast<double>(m_gen()) / m_gen.max() - 1.0;
@@ -691,7 +691,10 @@ bool TSNE::loadLegacy(const std::string & file)
 {
 	auto f = std::ifstream(file, std::ios::binary);
 	if (!f.is_open())
-		return false;
+    {
+        std::cerr << "Could not open " << file << std::endl;
+        return false;
+    }
 
     //read params
 	f.read(reinterpret_cast<char*>(&m_dataSize), sizeof(m_dataSize));
@@ -722,7 +725,10 @@ bool TSNE::loadCSV(const std::string & file)
 {
 	auto f = std::ifstream(file);
 	if (!f.is_open())
-		return false;
+    {
+        std::cerr << "Could not open " << file << std::endl;
+        return false;
+    }
 
     return loadFromStream(f);
 }
@@ -731,7 +737,10 @@ bool TSNE::loadTSNE(const std::string & file)
 {
 	auto f = std::ifstream(file, std::ios::binary);
 	if (!f.is_open())
-		return false;
+    {
+        std::cerr << "Could not open " << file << std::endl;
+        return false;
+    }
 
 	f.read(reinterpret_cast<char*>(&m_dataSize), sizeof(m_dataSize));
 	f.read(reinterpret_cast<char*>(&m_inputDimensions), sizeof(m_inputDimensions));
@@ -996,8 +1005,7 @@ void TSNE::saveToCout()
 
 void TSNE::saveCSV()
 {
-    std::ofstream csv_fstream;
-	csv_fstream.open(m_outputFile + ".csv");
+    auto csv_fstream = std::ofstream(m_outputFile + ".csv");
 	if (!csv_fstream.is_open())
 	{
 		std::cerr << "can't open " << m_outputFile << ".csv" << std::endl;
@@ -1005,15 +1013,11 @@ void TSNE::saveCSV()
 	}
 
     saveToStream(csv_fstream);
-
-	csv_fstream.close();
 }
 
 void TSNE::saveLegacy()
 {
-	auto f = std::ofstream();
-	f.open(m_outputFile + ".dat", std::ios::binary);
-
+	auto f = std::ofstream(m_outputFile + ".dat", std::ios::binary);
 	if (!f.is_open()) {
 		std::cerr << "can't open " << m_outputFile << ".dat" << std::endl;
 		return;
@@ -1035,37 +1039,34 @@ void TSNE::saveLegacy()
 	f.write(reinterpret_cast<char*>(landmarks.data()), landmarks.size() * sizeof(int));
 	f.write(reinterpret_cast<char*>(costs.data()), costs.size() * sizeof(double));
 
-	f.close();
 	std::cout << "Wrote the " << m_dataSize << " x " << m_outputDimensions
         << " data matrix successfully!" << std::endl;
 }
 
 void TSNE::saveSVG()
 {
+    double extreme = 0;
+    for (size_t i = 0; i < m_dataSize; ++i)
+	{
+        for (size_t j = 0; j < m_outputDimensions; ++j)
+		{
+            extreme = std::max(extreme, std::abs(m_result[i][j]));
+        }
+    }
+    double radius = 0.5;
+    double halfWidth = extreme + radius;
+    
     //TODO: allow setting a labelFile, e.g. by command line option
     auto labelFile = std::string();
-
-	double extreme = 0;
-	for (size_t i = 0; i < m_dataSize; ++i)
-	{
-		for (size_t j = 0; j < m_outputDimensions; ++j)
-		{
-			extreme = std::max(extreme, std::abs(m_result[i][j]));
-		}
-	}
-	double radius = 0.5;
-	double halfWidth = extreme + radius;
-
-	auto labels = std::vector<uint8_t>();
-	bool useLabels = false;
+    auto labels = std::vector<uint8_t>();
+    bool usingLabels = false;
 	if (!labelFile.empty())
 	{
-		useLabels = true;
-		std::ifstream labelInput;
-		labelInput.open(labelFile, std::ios::in | std::ios::binary);
+		usingLabels = true;
+		auto labelInput = std::ifstream(labelFile, std::ios::in | std::ios::binary);
 		if (!labelInput.is_open())
 		{
-			std::cerr << "Could not open labels\n";
+            std::cerr << "Could not open " << labelFile << std::endl;
 			return;
 		}
 
@@ -1081,8 +1082,6 @@ void TSNE::saveSVG()
 		labelCount = std::min(labelCount, m_dataSize);
 		labels.resize(labelCount);
 		labelInput.read(reinterpret_cast<char*>(labels.data()), labels.size());
-
-		labelInput.close();
 	}
 
 	uint8_t maxLabel = 0;
@@ -1092,9 +1091,7 @@ void TSNE::saveSVG()
 	for (int i = 0; i <= maxLabel; ++i)
 		colors.push_back("hsl(" + std::to_string(360.0 * i / (maxLabel / 2 + 1)) + ", 100%, " + (i % 2 == 0 ? "25" : "60") + "%)");
 
-	auto f = std::ofstream();
-	f.open(m_outputFile + ".svg", std::ios::out | std::ios::trunc);
-
+	auto f = std::ofstream(m_outputFile + ".svg", std::ios::out | std::ios::trunc);
 	if (!f.is_open()) {
 		std::cerr << "can't open " << m_outputFile << ".svg" << std::endl;
 		return;
@@ -1106,7 +1103,7 @@ void TSNE::saveSVG()
 	auto color = std::string("black");
 	for (unsigned int i = 0; i < m_dataSize; i++)
 	{
-		if (useLabels)
+		if (usingLabels)
         {
             color = labels[i] < colors.size() ? colors[labels[i]] : "black";
         }
@@ -1119,8 +1116,6 @@ void TSNE::saveSVG()
 			<< "stroke='none' opacity='0.5'/>\n";
 	}
 	f << "</svg>\n";
-
-	f.close();
 }
 
 void TSNE::zeroMean(std::vector<std::vector<double>> & data, unsigned int dimensions)
