@@ -297,7 +297,9 @@ void TSNE::computeGaussianPerplexity(double* X, int N, int D, unsigned int** _ro
     unsigned int** _col_P, double** _val_P, double perplexity, int K) {
 
     if(perplexity > K)
-        printf("Perplexity should be lower than K!\n");
+    {
+        std::cerr << "Perplexity should be lower than K!" << std::endl;
+    }
 
     // Allocate the memory we need
     *_row_P = (unsigned int*)    malloc((N + 1) * sizeof(unsigned int));
@@ -323,13 +325,15 @@ void TSNE::computeGaussianPerplexity(double* X, int N, int D, unsigned int** _ro
     tree.create(obj_X);
 
     // Loop over all points to find nearest neighbors
-    printf("Building tree...\n");
+    std::cout << "Building tree..." << std::endl;
     std::vector<DataPoint> indices;
     std::vector<double> distances;
     for(int n = 0; n < N; n++) {
 
         if(n % 10000 == 0)
-            printf(" - point %d of %d\n", n, N);
+        {
+            std::cout << " - point " << n << " of " << N << std::endl;
+        }
 
         // Find nearest neighbors
         indices.clear();
@@ -1055,7 +1059,7 @@ void TSNE::saveSVG()
     }
     double radius = 0.5;
     double halfWidth = extreme + radius;
-    
+
     //TODO: allow setting a labelFile, e.g. by command line option
     auto labelFile = std::string();
     auto labels = std::vector<uint8_t>();
@@ -1075,7 +1079,7 @@ void TSNE::saveSVG()
 		std::cout << "Labels file contains " << labelCount << " labels." << std::endl;
 		if (labelCount < m_dataSize)
 		{
-			std::cerr << "Not enough labels for result\n";
+			std::cerr << "Not enough labels for result" << std::endl;
 			return;
 		}
 
@@ -1264,7 +1268,9 @@ void TSNE::computeGaussianPerplexity(unsigned int** _row_P,	unsigned int** _col_
 	int K = (int)(3 * m_perplexity);
 
 	if (m_perplexity > K)
-		printf("Perplexity should be lower than K!\n");
+    {
+        std::cerr << "Perplexity should be lower than K!" << std::endl;
+    }
 
 	// Allocate the memory we need
 	*_row_P = (unsigned int*)malloc((m_dataSize + 1) * sizeof(unsigned int));
@@ -1290,13 +1296,15 @@ void TSNE::computeGaussianPerplexity(unsigned int** _row_P,	unsigned int** _col_
 	tree.create(obj_X);
 
 	// Loop over all points to find nearest neighbors
-	printf("Building tree...\n");
+	std::cout << "Building tree..." << std::endl;
 	std::vector<DataPoint> indices;
 	std::vector<double> distances;
 	for (int n = 0; n < m_dataSize; n++) {
 
 		if (n % 10000 == 0)
-			printf(" - point %d of %d\n", n, m_dataSize);
+        {
+            std::cout << " - point " << n << " of " << m_dataSize << std::endl;
+        }
 
 		// Find nearest neighbors
 		indices.clear();
