@@ -1063,6 +1063,8 @@ std::vector<double> TSNE::computeSquaredEuclideanDistance(double* X)
 // Compute squared Euclidean distance matrix for INPUT!!! data
 std::vector<double> TSNE::computeSquaredEuclideanDistance(std::vector<std::vector<double>> data)
 {
+    assert(data.size() == m_dataSize);
+    
     auto dimensions = data[0].size();
     assert(dimensions == m_inputDimensions || dimensions == m_outputDimensions);
 
@@ -1070,19 +1072,15 @@ std::vector<double> TSNE::computeSquaredEuclideanDistance(std::vector<std::vecto
 
     for (auto i = 0; i < m_dataSize; ++i)
     {
-        for (auto j = 0; j < m_dataSize; ++j)
+        for (auto j = i + 1; j < m_dataSize; ++j)
         {
-            if (i >= j)
-            {
-                continue;
-            }
-
             auto distance = 0.0;
             for (auto d = 0; d < dimensions; ++d)
             {
                 auto diff = data[i][d] - data[j][d];
                 distance += diff * diff;
             }
+
             distances[i*m_dataSize + j] = distance;
             distances[j*m_dataSize + i] = distance;
         }
