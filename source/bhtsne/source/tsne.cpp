@@ -138,7 +138,7 @@ void TSNE::computeExactGradient(double* P, double* Y /*m_result*/, std::vector<d
 
 
 // Evaluate t-SNE cost function (exactly)
-double TSNE::evaluateError(double* P, double* Y) 
+double TSNE::evaluateError(double* P, double* Y)
 {
     // Compute the squared Euclidean distance matrix
     auto Q = std::vector<double>(m_dataSize * m_dataSize);
@@ -202,7 +202,7 @@ double TSNE::evaluateError(unsigned int* row_P, unsigned int* col_P,
 }
 
 // Symmetrizes a sparse matrix
-void TSNE::symmetrizeMatrix(std::vector<unsigned int> & row_P, std::vector<unsigned int> & col_P, std::vector<double> & val_P) 
+void TSNE::symmetrizeMatrix(std::vector<unsigned int> & row_P, std::vector<unsigned int> & col_P, std::vector<double> & val_P)
 {
     auto N = m_dataSize;
     // Get sparse matrix
@@ -737,7 +737,7 @@ void TSNE::runExact()
     double sum_P = .0;
     for (int i = 0; i < m_dataSize * m_dataSize; i++) sum_P += P[i];
     for (int i = 0; i < m_dataSize * m_dataSize; i++) P[i] /= sum_P;
-    
+
 
     // Lie about the P-values
     for (int i = 0; i < m_dataSize * m_dataSize; i++)
@@ -754,7 +754,7 @@ void TSNE::runExact()
     auto gradients = std::vector<double>(m_dataSize * m_outputDimensions, 0.0);
     auto uY = std::vector<double>(m_dataSize * m_outputDimensions, 0.0);
     auto gains = std::vector<double>(m_dataSize * m_outputDimensions, 1.0);
-    for (int iter = 0; iter < m_iterations; iter++) 
+    for (int iter = 0; iter < m_iterations; iter++)
     {
         // Compute exact gradient
         computeExactGradient(P, Y, gradients);
@@ -775,7 +775,7 @@ void TSNE::runExact()
         zeroMean(Y, m_dataSize, m_outputDimensions);
 
         // Stop lying about the P-values after a while, and switch momentum
-        if (iter == stop_lying_iter) 
+        if (iter == stop_lying_iter)
         {
             for (int i = 0; i < m_dataSize * m_dataSize; i++)
                 P[i] /= 12.0;
@@ -1091,6 +1091,33 @@ std::vector<double> TSNE::computeSquaredEuclideanDistance(std::vector<std::vecto
 		}
 	}
     return distances;
+
+    // auto dimensions = points.size() / m_dataSize;
+    // assert(dimensions == m_inputDimensions || dimensions == m_outputDimensions);
+    //
+    // auto distances = std::vector<double>(m_dataSize * m_dataSize, 0.0);
+    //
+    // for (auto i = 0; i < m_dataSize; ++i)
+    // {
+    //     for (auto j = 0; j < m_dataSize; ++j)
+    //     {
+    //         if (i >= j)
+    //         {
+    //             continue;
+    //         }
+    //
+    //         auto distance = 0.0;
+    //         for (auto d = 0; d < dimensions; ++d)
+    //         {
+    //             auto diff = points[i * dimensions + d] - points[j * dimensions + d];
+    //             distance += diff * diff;
+    //         }
+    //         distances[i*m_dataSize + j] = distance;
+    //         distances[j*m_dataSize + i] = distance;
+    //     }
+    // }
+    //
+    // return distances;
 }
 
 void TSNE::computeGaussianPerplexity(std::vector<unsigned int> & row_P, std::vector<unsigned int> & col_P, std::vector<double> & val_P)
@@ -1115,7 +1142,7 @@ void TSNE::computeGaussianPerplexity(std::vector<unsigned int> & row_P, std::vec
 	row_P.resize(m_dataSize + 1);
     col_P.resize(m_dataSize * K);
     val_P.resize(m_dataSize * K, 0.0);
-	
+
 	auto cur_P = std::vector<double>(m_dataSize - 1);
 	row_P[0] = 0;
 	for (int n = 0; n < m_dataSize; n++)
