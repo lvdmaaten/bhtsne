@@ -109,7 +109,7 @@ void TSNE::computeExactGradient(double* P, double* Y /*m_result*/, std::vector<d
     assert(distances.size() == m_dataSize * m_dataSize);
 
     // Compute Q-matrix and normalization sum
-    // https://en.wikipedia.org/wiki/Q-matrix
+    // https://en.wikipedia.org/wiki/Q-matrix ??
     auto Q = std::vector<double>(m_dataSize * m_dataSize);
     double sum_Q = .0;
     for(int n = 0; n < m_dataSize; n++) {
@@ -302,34 +302,6 @@ double bhtsne::TSNE::gaussNumber()
 
     return X1;
 }
-
-
-// Makes data zero-mean
-void TSNE::zeroMean(double* X, int N, int D) {
-
-	// Compute data mean
-	auto mean = std::vector<double>(D, 0.0);
-    int nD = 0;
-	for(int n = 0; n < N; n++) {
-		for(int d = 0; d < D; d++) {
-			mean[d] += X[nD + d];
-		}
-        nD += D;
-	}
-	for(int d = 0; d < D; d++) {
-		mean[d] /= (double) N;
-	}
-
-	// Subtract data mean
-    nD = 0;
-	for(int n = 0; n < N; n++) {
-		for(int d = 0; d < D; d++) {
-			X[nD + d] -= mean[d];
-		}
-        nD += D;
-	}
-}
-
 
 void TSNE::setRandomSeed(int seed)
 {
@@ -548,17 +520,24 @@ void TSNE::run()
         throw std::invalid_argument(message);
     }
 
-    std::cout << "Using: " << std::endl
-        << "data size " << m_dataSize << std::endl
-        << "in dimensions " << m_inputDimensions << std::endl
-        << "out dimensions " << m_outputDimensions << std::endl
-        << "perplexity " << m_perplexity << std::endl
-        << "gradient accuracy " << m_gradientAccuracy << std::endl;
+    std::cout << "Using:"
+        << "\ndata size " << m_dataSize
+        << "\nin dimensions " << m_inputDimensions
+        << "\nout dimensions " << m_outputDimensions
+        << "\nperplexity " << m_perplexity
+        << "\ngradient accuracy " << m_gradientAccuracy
+        << std::endl;
+
+    zeroMean(m_data);
 
     if (m_gradientAccuracy == 0.0)
+    {
         runExact();
+    }
     else
+    {
         runApproximation();
+    }
 }
 
 
@@ -582,7 +561,6 @@ void TSNE::runApproximation()
 
 	// Normalize input data (to prevent numerical problems)
 	std::cout << "Computing input similarities..." << std::endl;
-	zeroMean(m_data, m_inputDimensions);
 	// TODO: extract normalization function for vector
 	double max_X = .0;
 	for (auto & point : m_data)
@@ -688,12 +666,12 @@ void TSNE::runExact()
     int mom_switch_iter = 250;
 
     // Set learning parameters
-    double momentum = .5, final_momentum = .8;
+    double momentum = 0.5;
+    double final_momentum = 0.8;
     double eta = 200.0;
 
     // Normalize input data (to prevent numerical problems)
     std::cout << "Computing input similarities..." << std::endl;
-    zeroMean(m_data, m_inputDimensions);
     // TODO: extract normalization function for vector
     double max_X = .0;
     for (auto & point : m_data)
@@ -946,29 +924,44 @@ void TSNE::saveSVG()
 	f << "</svg>\n";
 }
 
-void TSNE::zeroMean(std::vector<std::vector<double>> & data, unsigned int dimensions)
-{
-	// Compute data mean
-	auto mean = std::vector<double>(dimensions, 0.0);
-	int nD = 0;
-	for (int n = 0; n < m_dataSize; n++) {
-		for (int d = 0; d < dimensions; d++) {
-			mean[d] += data[n][d];//X[nD + d];
-		}
-		nD += dimensions;
-	}
-	for (int d = 0; d < dimensions; d++) {
-		mean[d] /= (double)m_dataSize;
-	}
+// TODO: remove, always use vector as parameter
+void TSNE::zeroMean(double* X, int N, int D) {
 
-	// Subtract data mean
-	nD = 0;
-	for (int n = 0; n < m_dataSize; n++) {
-		for (int d = 0; d < dimensions; d++) {
-			data[n][d] -= mean[d];
-		}
-		nD += dimensions;
-	}
+    auto points = std::vector<std::vector<double>>(m_dataSize, std::vector<double>(D, 0.0));
+
+    for (auto i = 0u; i < N; ++i) {
+        for (auto j = 0u; j < D; ++j) {
+            points[i][j] = X[i*D + j];
+        }
+    }
+
+    zeroMean(points);
+
+    for (auto i = 0u; i < N; ++i) {
+        for (auto j = 0u; j < D; ++j) {
+            X[i*D + j] = points[i][j];
+        }
+    }
+}
+
+//make the mean of all data points equal 0 for each dimension -> zero mean
+void TSNE::zeroMean(std::vector<std::vector<double>> & points)
+{
+    auto dimensions = points[0].size();
+
+    for (auto d = 0u; d < dimensions; d++)
+    {
+        auto mean = 0.0;
+        for (auto i = 0u; i < points.size(); i++)
+        {
+            mean += points[i][d];
+        }
+        mean /= points.size();
+        for (auto i = 0u; i < points.size(); i++)
+        {
+            points[i][d] -= mean;
+        }
+    }
 }
 
 void TSNE::computeGaussianPerplexity(double* P)
@@ -1040,49 +1033,39 @@ void TSNE::computeGaussianPerplexity(double* P)
 }
 
 // compute squared eucl. dist. on OUTPUT!!! maptrix
-std::vector<double> TSNE::computeSquaredEuclideanDistance(double* X)
+//TODO: remove this, always use vector as parameter
+std::vector<double> TSNE::computeSquaredEuclideanDistance(double* data)
 {
-    auto distances = std::vector<double>(m_dataSize * m_dataSize, 0.0);
-    auto D = m_outputDimensions; // this is for output matrix; must change for input matrix
-    const double* XnD = X;
-    for (int n = 0; n < m_dataSize; ++n, XnD += D) {
-        const double* XmD = XnD + D;
-        double* curr_elem = &distances[n*m_dataSize + n];
-        double* curr_elem_sym = curr_elem + m_dataSize;
-        for (int m = n + 1; m < m_dataSize; ++m, XmD += D, curr_elem_sym += m_dataSize) {
-            ++curr_elem;
-            for (int d = 0; d < D; ++d) {
-                *curr_elem += (XnD[d] - XmD[d]) * (XnD[d] - XmD[d]);
-            }
-            *curr_elem_sym = *curr_elem;
+    auto points = std::vector<std::vector<double>>(m_dataSize, std::vector<double>(m_outputDimensions, 0.0));
+
+    for (auto i = 0u; i < points.size(); ++i) {
+        for (auto j = 0u; j < points[0].size(); ++j) {
+            points[i][j] = data[i*m_outputDimensions + j];
         }
     }
-    return distances;
+
+    return computeSquaredEuclideanDistance(points);
 }
 
-// Compute squared Euclidean distance matrix for INPUT!!! data
-std::vector<double> TSNE::computeSquaredEuclideanDistance(std::vector<std::vector<double>> data)
+std::vector<double> TSNE::computeSquaredEuclideanDistance(const std::vector<std::vector<double>> & points)
 {
-    assert(data.size() == m_dataSize);
-    
-    auto dimensions = data[0].size();
-    assert(dimensions == m_inputDimensions || dimensions == m_outputDimensions);
+    auto dimensions = points[0].size();
 
-    auto distances = std::vector<double>(m_dataSize * m_dataSize, 0.0);
+    auto distances = std::vector<double>(points.size() * points.size(), 0.0);
 
-    for (auto i = 0; i < m_dataSize; ++i)
+    for (auto i = 0u; i < points.size(); ++i)
     {
-        for (auto j = i + 1; j < m_dataSize; ++j)
+        for (auto j = i + 1; j < points.size(); ++j)
         {
             auto distance = 0.0;
-            for (auto d = 0; d < dimensions; ++d)
+            for (auto d = 0u; d < dimensions; ++d)
             {
-                auto diff = data[i][d] - data[j][d];
+                auto diff = points[i][d] - points[j][d];
                 distance += diff * diff;
             }
 
-            distances[i*m_dataSize + j] = distance;
-            distances[j*m_dataSize + i] = distance;
+            distances[i*points.size() + j] = distance;
+            distances[j*points.size() + i] = distance;
         }
     }
 
