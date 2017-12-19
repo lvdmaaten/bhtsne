@@ -1,9 +1,10 @@
-
 #include <vector>
 #include <chrono>
 #include <iostream>
+#include <sstream>
 #include <fstream>
-#include <stdio.h>
+#include <ctime>
+#include <experimental/filesystem>
 
 #include <bhtsne/tsne.h>
 
@@ -26,83 +27,103 @@ bool fileIsPresent()
 
 int main(int argc, char* argv[])
 {
-    auto testSizes = std::vector<int>{ 250, 500, 750, 1000 };
-    auto iteration_times = std::vector<int>{ 250, 500, 750, 1000 };
+    const auto testSizes = std::vector<int>{ 250, 500, 750, 1000 };
+    const auto iterationTimes = std::vector<int>{ 250, 500, 750, 1000 };
+    const auto warmupIterations = 2;
+    const auto testIterations = 5;
 
     std::vector<std::vector<MeasurementResult>> runtimes;
     runtimes.resize(testSizes.size());
     for (auto& each : runtimes)
-        each.resize(iteration_times.size());
+        each.resize(iterationTimes.size());
+
+    // hide library output
+    auto coutBuf = std::cout.rdbuf();
+    std::ostream newCout(coutBuf);
+    auto redirectStream = std::stringstream();
+    std::cout.rdbuf(redirectStream.rdbuf());
 
     for (auto i = 0; i < testSizes.size(); ++i)
     {
-        for (auto j = 0; j < iteration_times.size(); ++j)
+        for (auto j = 0; j < iterationTimes.size(); ++j)
         {
             auto testSize = testSizes[i];
-            auto iterations = iteration_times[j];
-
-            //TODO update to new interface
-            /*
-            auto start_prepare = std::chrono::high_resolution_clock::now();
-
-            int input_dimension = 784; //magic
-            int output_dimension = 2;
-            double perplexity = 50;
-            double gradient_accuracy = 0.5;
-            double* data;
-            int rand_seed = 0;
-            bhtsne::TSNE tsne;
-            if (!fileIsPresent())
-            {
-                std::cout << "data.dat not found" << std::endl;
-            }
-            int temp;
-            double temp2;
-            tsne.load_data(&data, &temp, &temp, &temp2, &temp2, &temp, &temp);
-            tsne.setDataSize(testSize);
-            int* landmarks = (int*)malloc(testSize * sizeof(int));
-            if (landmarks == NULL) { printf("Memory allocation failed!\n"); exit(1); }
-            for (int n = 0; n < testSize; n++) landmarks[n] = n;
-            double* result = (double*)malloc(testSize * output_dimension * sizeof(double));
-            double* costs = (double*)calloc(testSize, sizeof(double));
-            if (result == NULL || costs == NULL) { printf("Memory allocation failed!\n"); exit(1); }
-
-            auto start_execute = std::chrono::high_resolution_clock::now();
-
-            tsne.run(data, input_dimension, result, output_dimension, perplexity, gradient_accuracy, rand_seed, false, iterations);
-
-            auto end_execute = std::chrono::high_resolution_clock::now();
-
-            tsne.save_data(result, landmarks, costs, testSize, output_dimension);
-            free(data);
-            free(result);
-            free(costs);
-            free(landmarks);
-
-            auto end_save = std::chrono::high_resolution_clock::now();
+            auto iterations = iterationTimes[j];
 
             auto& current_result = runtimes[i][j];
-            current_result.preparation_time = (start_execute - start_prepare).count();
-            current_result.execution_time = (end_execute - start_execute).count();
-            current_result.save_time = (end_save - end_execute).count();
+            current_result.preparation_time = 0;
+            current_result.execution_time = 0;
+            current_result.save_time = 0;
 
-            */
+            for (auto k = 0; k < testIterations + warmupIterations; ++k)
+            {
+                newCout << "Running " << (k < warmupIterations ? "warmup" : "test") << " iteration " << (k + 1) << "/" << (testIterations + warmupIterations) << " for " << testSize << " samples and " << iterations << " iterations." << std::endl;
+                auto start_prepare = std::chrono::high_resolution_clock::now();
+
+                auto tsne = bhtsne::TSNE();
+
+                tsne.loadLegacy("data_s" + std::to_string(testSize) + "_i1000.dat");
+
+                tsne.setOutputDimensions(2);
+                tsne.setPerplexity(50);
+                tsne.setGradientAccuracy(0.2);
+                tsne.setRandomSeed(0);
+                tsne.setOutputFile("./result");
+                tsne.setIterations(iterations);
+
+                auto start_execute = std::chrono::high_resolution_clock::now();
+
+                tsne.run();
+
+                auto end_execute = std::chrono::high_resolution_clock::now();
+
+                tsne.saveLegacy();
+
+                auto end_save = std::chrono::high_resolution_clock::now();
+
+                if (k >= warmupIterations)
+                {
+                    current_result.preparation_time += (start_execute - start_prepare).count();
+                    current_result.execution_time += (end_execute - start_execute).count();
+                    current_result.save_time += (end_save - end_execute).count();
+                }
+
+                remove("result.dat");
+            }
+
+            current_result.preparation_time /= testIterations;
+            current_result.execution_time /= testIterations;
+            current_result.save_time /= testIterations;
         }
     }
 
+    newCout << "All tests done." << std::endl;
+
+    auto saveTime = std::chrono::system_clock::now();
+    auto saveTime_t = std::chrono::system_clock::to_time_t(saveTime);
+    char* timeString = new char[20];
+    std::strftime(timeString, 20, "%Y-%m-%d-%H-%M-%S", std::localtime(&saveTime_t));
+    std::experimental::filesystem::create_directory("performance");
+    auto fileName = "performance/performance_" + std::string(timeString) + (argc > 1 ? "_" + std::string(argv[1]) : "") + ".csv";
+    auto file = std::ofstream(fileName);
+    if (!file.is_open())
+    {
+        newCout << "Could not open output file " << fileName << "." << std::endl;
+    }
+
     // write header
-    std::cout << "testsize;iterations;preparation_time;execution_time;save_time" << std::endl;
+    file << "testsize;iterations;preparation_time;execution_time;save_time" << std::endl;
 
     // write contents
     for (auto i = 0; i < testSizes.size(); ++i)
     {
-        for (auto j = 0; j < iteration_times.size(); ++j)
+        for (auto j = 0; j < iterationTimes.size(); ++j)
         {
             auto testSize = testSizes[i];
-            auto iterations = iteration_times[j];
+            auto iterations = iterationTimes[j];
 
             const auto& result = runtimes[i][j];
-            std::cout
+            file
                 << testSize << ";"
                 << iterations << ";"
                 << result.preparation_time << ";"
@@ -110,4 +131,6 @@ int main(int argc, char* argv[])
                 << result.save_time << std::endl;
         }
     }
+
+    file.close();
 }

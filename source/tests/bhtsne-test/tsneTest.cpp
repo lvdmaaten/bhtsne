@@ -5,10 +5,14 @@
 #include <fstream>
 #include <initializer_list>
 
+inline bool doubleEquals(double a, double b, double epsilon = 0.0001) {
+    return std::fabs(a - b) < epsilon;
+}
+
 class PublicTSNE : public bhtsne::TSNE
 {
 public:
-    auto data() 
+    auto data()
     {
         return m_data;
     };
@@ -28,14 +32,14 @@ public:
         m_result = result;
     };
 
-    auto setInputDimensions(int dimensions)
+    auto setInputDimensions(unsigned int dimensions)
     {
         m_inputDimensions = dimensions;
     }
 
-    auto firstGaussNumber()
+    auto gaussNumber()
     {
-        return gaussNumber();
+        return TSNE::gaussNumber();
     }
 };
 
@@ -84,13 +88,6 @@ protected:
         EXPECT_EQ(0, remove(tempfile.c_str()));
     }
 
-    auto firstGaussNumber(int seed)
-    {
-        auto gen = std::mt19937(seed);
-        auto dist = std::normal_distribution<>(0,2);
-        return dist(gen);
-    }
-
     PublicTSNE m_tsne;
     std::string tempfile;
     std::ofstream filestream;
@@ -101,11 +98,11 @@ TEST(SanityChecks, Equality)
 {
     EXPECT_EQ((unsigned int) 0, 0);
     EXPECT_EQ((unsigned int) 1, 1);
-}   
+}
 
 TEST_F(TsneTest, DefaultValues)
 {
-    EXPECT_EQ(firstGaussNumber(0), m_tsne.firstGaussNumber());
+    ASSERT_DOUBLE_EQ(1.1630780958763871, m_tsne.gaussNumber());
     EXPECT_EQ(50.0, m_tsne.perplexity());
     EXPECT_EQ(0.2, m_tsne.gradientAccuracy());
     EXPECT_EQ(1000, m_tsne.iterations());
@@ -117,17 +114,17 @@ TEST_F(TsneTest, DefaultValues)
 TEST_F(TsneTest, RandomSeed)
 {
     m_tsne.setRandomSeed(1);
-    EXPECT_EQ(firstGaussNumber(1), m_tsne.firstGaussNumber());
-    m_tsne.setRandomSeed(2);
-    EXPECT_EQ(firstGaussNumber(2), m_tsne.firstGaussNumber());
+    ASSERT_DOUBLE_EQ(0.15606557998386178, m_tsne.gaussNumber());
+    m_tsne.setRandomSeed(0);
+    ASSERT_DOUBLE_EQ(1.1630780958763871, m_tsne.gaussNumber());
 }
 
 TEST_F(TsneTest, Perplexity)
 {
-    m_tsne.setPerplexity(1.0);
-    EXPECT_EQ(1.0, m_tsne.perplexity());
-    m_tsne.setPerplexity(2.0);
-    EXPECT_EQ(2.0, m_tsne.perplexity());
+    m_tsne.setPerplexity(5.0);
+    EXPECT_EQ(5.0, m_tsne.perplexity());
+    m_tsne.setPerplexity(25.0);
+    EXPECT_EQ(25.0, m_tsne.perplexity());
 }
 
 TEST_F(TsneTest, GradientAccuracy)
@@ -204,7 +201,7 @@ TEST_F(TsneTest, LoadLegacy)
     EXPECT_EQ(perplexity, m_tsne.perplexity());
     EXPECT_EQ(outputDimensions, m_tsne.outputDimensions());
     EXPECT_EQ(iterations, m_tsne.iterations());
-    EXPECT_EQ(firstGaussNumber(randomSeed), m_tsne.firstGaussNumber());
+    ASSERT_DOUBLE_EQ(-0.51696416431811998, m_tsne.gaussNumber());
     EXPECT_EQ(data, m_tsne.data()[0][0]);
 
     removeTempfile();
@@ -292,20 +289,56 @@ TEST_F(TsneTest, LoadTSNE)
 
 TEST_F(TsneTest, Run)
 {
-    m_tsne.setDataSize(2);
-    m_tsne.setInputDimensions(1);
+    auto data = std::vector<std::vector<double>>{
+            { 0,56,19,80,58 },
+            { 47,35,89,82,74 },
+            { 17,85,71,51,30 },
+            { 1,9,36,14,16 },
+            { 98,44,11,0,0 },
+            { 37,53,57,60,60 },
+            { 16,66,45,35,5 },
+            { 60,78,80,51,30 },
+            { 87,72,95,92,53 },
+            { 14,46,23,86,20 }
+    };
+    m_tsne.setDataSize(data.size());
+    m_tsne.setInputDimensions(data[0].size());
     m_tsne.setGradientAccuracy(0.2);
-    m_tsne.setPerplexity(0.1);
-    m_tsne.setOutputDimensions(1);
+    m_tsne.setPerplexity(3.0);
+    m_tsne.setOutputDimensions(2);
     m_tsne.setIterations(100);
     m_tsne.setRandomSeed(42);
-    m_tsne.setData(std::vector<std::vector<double>>{ { 42.0 }, { 17.0 } });
+    m_tsne.setData(data);
 
-    EXPECT_NO_THROW(m_tsne.run());
-    auto expected = std::vector<unsigned long long>{ 0x407D9E4445A98755, 0xC07D9E4445A98755 };
-    for (auto i = 0; i < 2; i++)
+    try {
+        m_tsne.run();
+    } catch (std::exception & e) {
+        FAIL() << "run method exception: " << e.what();
+    }
+
+    auto result = m_tsne.result();
+
+    auto expected = std::vector<std::vector<double>>{
+        { -37.969682880670781, 13.53176098293458 },
+        { 17.747120647448977, 11.769259684044014 },
+        { 31.823026258301418, -9.5819351822503673 },
+        { -9.325729922489689, -18.726748023156155 },
+        { -20.281048368449309, -1.4635189684119658 },
+        { 13.980657219661596, 15.40660294520521 },
+        { -5.1885801679382269, -12.140850978402652 },
+        { 34.539709042863528, -3.5143701898564852 },
+        { 15.971308234165035, 17.035942809420174 },
+        { -41.296780062892559, -12.316143079526352 }
+    };
+
+    for (size_t i = 0; i < m_tsne.dataSize(); i++)
     {
-        EXPECT_EQ(*reinterpret_cast<double*>(&expected[i]), m_tsne.result()[i][0]);
+        for (size_t j = 0; j < m_tsne.outputDimensions(); j++)
+        {
+            EXPECT_TRUE(doubleEquals(expected[i][j], result[i][j]))
+                << "expected != result at [" << i << "][" << j <<"]: "
+                << expected[i][j] << " != " << result[i][j] << std::endl;
+        }
     }
 }
 
@@ -318,7 +351,7 @@ TEST_F(TsneTest, SaveLegacy)
     // test save
     m_tsne.setDataSize(2);
     m_tsne.setOutputDimensions(1);
-    m_tsne.setOutputFile(tempfile); 
+    m_tsne.setOutputFile(tempfile);
     m_tsne.setResult(std::vector<std::vector<double>>{ { expectedDouble[0] }, { expectedDouble[1] }});
     EXPECT_NO_THROW(m_tsne.saveLegacy());
     // check file exists and has right size
@@ -454,10 +487,9 @@ TEST_F(TsneTest, SaveSVG)
     EXPECT_EQ(0, remove((tempfile + ".svg").c_str()));
 }
 
-
 TEST_F(TsneTest, ResultConsistency)
 {
-    std::string input = 
+    std::string input =
 R"(0,56,19,80,58
 47,35,89,82,74
 17,85,71,51,30
@@ -470,20 +502,20 @@ R"(0,56,19,80,58
 14,46,23,86,20)";
 
     std::string expected =
-R"(-85.2955,-91.8262
--92.0434,66.3882
-33.4056,19.2118
-133.19,0.989441
-96.8262,-78.9303
--68.8575,27.7304
-73.5352,-12.9528
-3.43391,61.3254
--47.9985,115.037
--46.1961,-106.973
+R"(3.16374,-91.2264
+81.7362,0.506676
+-9.78514,23.3906
+-81.2272,-9.16138
+-73.7557,63.4705
+51.512,-12.2191
+-46.786,18.4669
+23.8261,40.8484
+77.3819,48.292
+-26.0659,-82.3683
 )";
 
     m_tsne.setGradientAccuracy(0.2);
-    m_tsne.setPerplexity(3);
+    m_tsne.setPerplexity(3.0);
     m_tsne.setIterations(2000);
     m_tsne.setOutputDimensions(2);
     m_tsne.setRandomSeed(1337);
@@ -491,8 +523,56 @@ R"(-85.2955,-91.8262
     auto iss = std::istringstream(input);
     EXPECT_TRUE(m_tsne.loadFromStream(iss));
 
-    EXPECT_NO_THROW(m_tsne.run());
-    
+    try {
+        m_tsne.run();
+    } catch (std::exception & e) {
+        FAIL() << "run method exception: " << e.what();
+    }
+
+    auto oss = std::ostringstream();
+    EXPECT_NO_THROW(m_tsne.saveToStream(oss));
+
+    EXPECT_EQ(expected, oss.str());
+}
+
+TEST_F(TsneTest, ExactRun)
+{
+    std::string input =
+R"(0,56,19,80,58
+47,35,89,82,74
+17,85,71,51,30
+1,9,36,14,16
+98,44,11,0,0
+37,53,57,60,60
+16,66,45,35,5
+60,78,80,51,30
+87,72,95,92,53
+14,46,23,86,20)";
+
+    std::string expected =
+R"(-54.8785,-96.3901
+-87.6806,46.6628
+23.7272,19.651
+82.25,-55.6907
+115.188,26.6933
+-62.33,15.9121
+60.7718,-6.52401
+-2.59574,57.4055
+-56.0326,95.6331
+-18.4195,-103.353
+)";
+
+    m_tsne.setGradientAccuracy(0.0);
+    m_tsne.setPerplexity(3.0);
+    m_tsne.setIterations(2000);
+    m_tsne.setOutputDimensions(2);
+    m_tsne.setRandomSeed(1337);
+
+    auto iss = std::istringstream(input);
+    EXPECT_TRUE(m_tsne.loadFromStream(iss));
+
+    EXPECT_NO_THROW(m_tsne.runExact());
+
     auto oss = std::ostringstream();
     EXPECT_NO_THROW(m_tsne.saveToStream(oss));
 
