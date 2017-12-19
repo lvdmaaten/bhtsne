@@ -26,20 +26,22 @@ bool fileIsPresent()
 
 int main(int argc, char* argv[])
 {
-    auto testSizes = std::vector<int>{ 250, 500, 750, 1000 };
-    auto iteration_times = std::vector<int>{ 250, 500, 750, 1000 };
+    const auto testSizes = std::vector<int>{ 250, 500, 750, 1000 };
+    const auto iterationTimes = std::vector<int>{ 250, 500, 750, 1000 };
+    const auto testIterations = 5;
+    const auto warmupIterations = 3;
 
     std::vector<std::vector<MeasurementResult>> runtimes;
     runtimes.resize(testSizes.size());
     for (auto& each : runtimes)
-        each.resize(iteration_times.size());
+        each.resize(iterationTimes.size());
 
     for (auto i = 0; i < testSizes.size(); ++i)
     {
-        for (auto j = 0; j < iteration_times.size(); ++j)
+        for (auto j = 0; j < iterationTimes.size(); ++j)
         {
             auto testSize = testSizes[i];
-            auto iterations = iteration_times[j];
+            auto iterations = iterationTimes[j];
 
             //TODO update to new interface
             auto start_prepare = std::chrono::high_resolution_clock::now();
@@ -48,7 +50,7 @@ int main(int argc, char* argv[])
             
             //tsne.setDataSize(testSize);
 
-            tsne.loadLegacy("data.dat");
+            tsne.loadLegacy("data_s" + std::to_string(testSize) + "_i1000.dat");
 
             tsne.setOutputDimensions(2);
             tsne.setPerplexity(50);
@@ -82,10 +84,10 @@ int main(int argc, char* argv[])
     // write contents
     for (auto i = 0; i < testSizes.size(); ++i)
     {
-        for (auto j = 0; j < iteration_times.size(); ++j)
+        for (auto j = 0; j < iterationTimes.size(); ++j)
         {
             auto testSize = testSizes[i];
-            auto iterations = iteration_times[j];
+            auto iterations = iterationTimes[j];
 
             const auto& result = runtimes[i][j];
             std::cout
