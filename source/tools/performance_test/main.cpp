@@ -43,38 +43,49 @@ int main(int argc, char* argv[])
             auto testSize = testSizes[i];
             auto iterations = iterationTimes[j];
 
-            //TODO update to new interface
-            auto start_prepare = std::chrono::high_resolution_clock::now();
-
-            auto tsne = bhtsne::TSNE();
-            
-            //tsne.setDataSize(testSize);
-
-            tsne.loadLegacy("data_s" + std::to_string(testSize) + "_i1000.dat");
-
-            tsne.setOutputDimensions(2);
-            tsne.setPerplexity(50);
-            tsne.setGradientAccuracy(0.2);
-            tsne.setRandomSeed(0);
-            tsne.setOutputFile("./result");
-            tsne.setIterations(iterations);
-
-            auto start_execute = std::chrono::high_resolution_clock::now();
-            
-            tsne.run();
-
-            auto end_execute = std::chrono::high_resolution_clock::now();
-
-            tsne.saveLegacy();
-
-            auto end_save = std::chrono::high_resolution_clock::now();
-
             auto& current_result = runtimes[i][j];
-            current_result.preparation_time = (start_execute - start_prepare).count();
-            current_result.execution_time = (end_execute - start_execute).count();
-            current_result.save_time = (end_save - end_execute).count();
+            current_result.preparation_time = 0;
+            current_result.execution_time = 0;
+            current_result.save_time = 0;
 
-            remove("result.dat");
+            for (auto k = 0; k < testIterations + warmupIterations; ++k)
+            {
+                auto start_prepare = std::chrono::high_resolution_clock::now();
+
+                auto tsne = bhtsne::TSNE();
+
+                tsne.loadLegacy("data_s" + std::to_string(testSize) + "_i1000.dat");
+
+                tsne.setOutputDimensions(2);
+                tsne.setPerplexity(50);
+                tsne.setGradientAccuracy(0.2);
+                tsne.setRandomSeed(0);
+                tsne.setOutputFile("./result");
+                tsne.setIterations(iterations);
+
+                auto start_execute = std::chrono::high_resolution_clock::now();
+
+                tsne.run();
+
+                auto end_execute = std::chrono::high_resolution_clock::now();
+
+                tsne.saveLegacy();
+
+                auto end_save = std::chrono::high_resolution_clock::now();
+
+                if (k >= warmupIterations)
+                {
+                    current_result.preparation_time += (start_execute - start_prepare).count();
+                    current_result.execution_time += (end_execute - start_execute).count();
+                    current_result.save_time += (end_save - end_execute).count();
+                }
+
+                remove("result.dat");
+            }
+
+            current_result.preparation_time /= testIterations;
+            current_result.execution_time /= testIterations;
+            current_result.save_time /= testIterations;
         }
     }
 
