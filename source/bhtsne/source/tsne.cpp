@@ -202,12 +202,10 @@ double TSNE::evaluateError(unsigned int* row_P, unsigned int* col_P,
 }
 
 // Symmetrizes a sparse matrix
-void TSNE::symmetrizeMatrix(unsigned int** _row_P, unsigned int** _col_P, double** _val_P, int N) {
-
+void TSNE::symmetrizeMatrix(std::vector<unsigned int> & row_P, std::vector<unsigned int> & col_P, std::vector<double> & val_P) 
+{
+    auto N = m_dataSize;
     // Get sparse matrix
-    unsigned int* row_P = *_row_P;
-    unsigned int* col_P = *_col_P;
-    double* val_P = *_val_P;
 
     // Count number of elements and row counts of symmetric matrix
     auto row_counts = std::vector<int>(N, 0);
@@ -230,13 +228,10 @@ void TSNE::symmetrizeMatrix(unsigned int** _row_P, unsigned int** _col_P, double
     for(int n = 0; n < N; n++) no_elem += row_counts[n];
 
     // Allocate memory for symmetrized matrix
-    unsigned int* sym_row_P = (unsigned int*) malloc((N + 1) * sizeof(unsigned int));
-    unsigned int* sym_col_P = (unsigned int*) malloc(no_elem * sizeof(unsigned int));
-    double* sym_val_P = (double*) malloc(no_elem * sizeof(double));
-    if(sym_row_P == nullptr || sym_col_P == nullptr || sym_val_P == nullptr) {
-        printf("Memory allocation failed!\n");
-        exit(1);
-    }
+    // TODO reuse the memory in row,col and val!!
+    auto sym_row_P = std::vector<unsigned int>(N + 1);
+    auto sym_col_P = std::vector<unsigned int>(no_elem);
+    auto sym_val_P = std::vector<double>(no_elem);
 
     // Construct new row indices for symmetric matrix
     sym_row_P[0] = 0;
@@ -282,9 +277,9 @@ void TSNE::symmetrizeMatrix(unsigned int** _row_P, unsigned int** _col_P, double
     for(int i = 0; i < no_elem; i++) sym_val_P[i] /= 2.0;
 
     // Return symmetrized matrices
-    free(*_row_P); *_row_P = sym_row_P;
-    free(*_col_P); *_col_P = sym_col_P;
-    free(*_val_P); *_val_P = sym_val_P;
+    row_P = std::move(sym_row_P);
+    col_P = std::move(sym_col_P);
+    val_P = std::move(sym_val_P);
 }
 
 // with mean zero and standard deviation one
@@ -608,13 +603,17 @@ void TSNE::runApproximation()
 	}
 
 	// Compute input similarities for exact t-SNE
-    unsigned int* row_P; unsigned int* col_P; double* val_P;
+    //unsigned int* row_P; unsigned int* col_P;
+
+    std::vector<unsigned int> row_P, col_P;
+    std::vector<double> val_P;
 
 	// Compute asymmetric pairwise input similarities
-	computeGaussianPerplexity(&row_P, &col_P, &val_P);
+	computeGaussianPerplexity(row_P, col_P, val_P);
 
 	// Symmetrize input similarities
-	symmetrizeMatrix(&row_P, &col_P, &val_P, m_dataSize);
+	symmetrizeMatrix(row_P, col_P, val_P);
+
 	//normalize val_P so that sum of all val = 1
 	double sum_P = .0;
 	for (int i = 0; i < row_P[m_dataSize]; i++) sum_P += val_P[i];
@@ -632,11 +631,10 @@ void TSNE::runApproximation()
 
 	// Perform main training loop
     std::cout << " Input similarities computed. Learning embedding..." << std::endl;
-
 	for (int iter = 0; iter < m_iterations; iter++) {
 
 		// Compute approximate gradient
-        computeGradient(row_P, col_P, val_P, Y, m_outputDimensions, dY, m_gradientAccuracy);
+        computeGradient(row_P.data(), col_P.data(), val_P.data(), Y, m_outputDimensions, dY, m_gradientAccuracy);
 
 		// Update gains
 		for (int i = 0; i < m_dataSize * m_outputDimensions; i++)
@@ -664,7 +662,7 @@ void TSNE::runApproximation()
 		if (iter > 0 && (iter % 50 == 0 || iter == m_iterations - 1)) {
 			double C = .0;
 			// doing approximate computation here!
-			C = evaluateError(row_P, col_P, val_P, Y, m_outputDimensions, m_gradientAccuracy);
+			C = evaluateError(row_P.data(), col_P.data(), val_P.data(), Y, m_outputDimensions, m_gradientAccuracy);
 
 			std::cout << "Iteration " << (iter + 1) << ": error is " << C << std::endl;
 		}
@@ -672,8 +670,6 @@ void TSNE::runApproximation()
 
 	// Clean up memory
 	free(dY);
-	free(row_P); row_P = nullptr;
-	free(col_P); col_P = nullptr;
 
 	size_t offset = 0;
 	for (size_t i = 0; i < m_dataSize; ++i) {
@@ -1097,7 +1093,7 @@ std::vector<double> TSNE::computeSquaredEuclideanDistance(std::vector<std::vecto
     return distances;
 }
 
-void TSNE::computeGaussianPerplexity(unsigned int** _row_P,	unsigned int** _col_P, double** _val_P) 
+void TSNE::computeGaussianPerplexity(std::vector<unsigned int> & row_P, std::vector<unsigned int> & col_P, std::vector<double> & val_P)
 {
     assert(m_data.size() == m_dataSize);
     assert(m_data[0].size() == m_inputDimensions);
@@ -1116,16 +1112,9 @@ void TSNE::computeGaussianPerplexity(unsigned int** _row_P,	unsigned int** _col_
 	int K = (int)(3 * m_perplexity);
 
 	// Allocate the memory we need
-	*_row_P = (unsigned int*)malloc((m_dataSize + 1) * sizeof(unsigned int));
-	*_col_P = (unsigned int*)calloc(m_dataSize * K, sizeof(unsigned int));
-    *_val_P = (double*)calloc(m_dataSize * K, sizeof(double));
-    auto val_P = *_val_P;
-	if (*_row_P == nullptr || *_col_P == nullptr) {
-		printf("Memory allocation failed!\n");
-		exit(1);
-	}
-	unsigned int* row_P = *_row_P;
-	unsigned int* col_P = *_col_P;
+	row_P.resize(m_dataSize + 1);
+    col_P.resize(m_dataSize * K);
+    val_P.resize(m_dataSize * K, 0.0);
 	
 	auto cur_P = std::vector<double>(m_dataSize - 1);
 	row_P[0] = 0;
