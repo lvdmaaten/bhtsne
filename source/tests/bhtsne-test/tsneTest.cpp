@@ -523,7 +523,11 @@ R"(3.16374,-91.2264
     auto iss = std::istringstream(input);
     EXPECT_TRUE(m_tsne.loadFromStream(iss));
 
-    EXPECT_NO_THROW(m_tsne.run());
+    try {
+        m_tsne.run();
+    } catch (std::exception & e) {
+        FAIL() << "run method exception: " << e.what();
+    }
 
     auto oss = std::ostringstream();
     EXPECT_NO_THROW(m_tsne.saveToStream(oss));
