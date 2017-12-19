@@ -4,7 +4,6 @@
 #include <sstream>
 #include <fstream>
 #include <ctime>
-#include <experimental/filesystem>
 
 #include <bhtsne/tsne.h>
 
@@ -103,8 +102,7 @@ int main(int argc, char* argv[])
     auto saveTime_t = std::chrono::system_clock::to_time_t(saveTime);
     char* timeString = new char[20];
     std::strftime(timeString, 20, "%Y-%m-%d-%H-%M-%S", std::localtime(&saveTime_t));
-    std::experimental::filesystem::create_directory("performance");
-    auto fileName = "performance/performance_" + std::string(timeString) + (argc > 1 ? "_" + std::string(argv[1]) : "") + ".csv";
+    auto fileName = "performance_" + std::string(timeString) + (argc > 1 ? "_" + std::string(argv[1]) : "") + ".csv";
     auto file = std::ofstream(fileName);
     if (!file.is_open())
     {
