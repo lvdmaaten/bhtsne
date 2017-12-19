@@ -26,10 +26,16 @@ bool fileIsPresent()
 
 int main(int argc, char* argv[])
 {
+    if (argc < 3)
+    {
+        std::cout << "Please specify the warmup and test iterations. Example: performance_test.exe 3 5" << std::endl;
+        return 0;
+    }
+
     const auto testSizes = std::vector<int>{ 250, 500, 750, 1000 };
     const auto iterationTimes = std::vector<int>{ 250, 500, 750, 1000 };
-    const auto warmupIterations = 2;
-    const auto testIterations = 5;
+    const auto warmupIterations = std::atoi(argv[1]);
+    const auto testIterations = std::atoi(argv[2]);
 
     std::vector<std::vector<MeasurementResult>> runtimes;
     runtimes.resize(testSizes.size());
@@ -102,7 +108,7 @@ int main(int argc, char* argv[])
     auto saveTime_t = std::chrono::system_clock::to_time_t(saveTime);
     char* timeString = new char[20];
     std::strftime(timeString, 20, "%Y-%m-%d-%H-%M-%S", std::localtime(&saveTime_t));
-    auto fileName = "performance_" + std::string(timeString) + (argc > 1 ? "_" + std::string(argv[1]) : "") + ".csv";
+    auto fileName = "performance_" + std::string(timeString) + (argc > 3 ? "_" + std::string(argv[3]) : "") + ".csv";
     auto file = std::ofstream(fileName);
     if (!file.is_open())
     {
