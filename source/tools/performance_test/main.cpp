@@ -3,7 +3,8 @@
 #include <iostream>
 #include <sstream>
 #include <fstream>
-#include <stdio.h>
+#include <ctime>
+#include <experimental/filesystem>
 
 #include <bhtsne/tsne.h>
 
@@ -28,8 +29,8 @@ int main(int argc, char* argv[])
 {
     const auto testSizes = std::vector<int>{ 250, 500, 750, 1000 };
     const auto iterationTimes = std::vector<int>{ 250, 500, 750, 1000 };
+    const auto warmupIterations = 2;
     const auto testIterations = 5;
-    const auto warmupIterations = 3;
 
     std::vector<std::vector<MeasurementResult>> runtimes;
     runtimes.resize(testSizes.size());
@@ -98,8 +99,20 @@ int main(int argc, char* argv[])
 
     newCout << "All tests done." << std::endl;
 
+    auto saveTime = std::chrono::system_clock::now();
+    auto saveTime_t = std::chrono::system_clock::to_time_t(saveTime);
+    char* timeString = new char[20];
+    std::strftime(timeString, 20, "%Y-%m-%d-%H-%M-%S", std::localtime(&saveTime_t));
+    std::experimental::filesystem::create_directory("performance");
+    auto fileName = "performance/performance_" + std::string(timeString) + (argc > 1 ? "_" + std::string(argv[1]) : "") + ".csv";
+    auto file = std::ofstream(fileName);
+    if (!file.is_open())
+    {
+        newCout << "Could not open output file " << fileName << "." << std::endl;
+    }
+
     // write header
-    std::cout << "testsize;iterations;preparation_time;execution_time;save_time" << std::endl;
+    file << "testsize;iterations;preparation_time;execution_time;save_time" << std::endl;
 
     // write contents
     for (auto i = 0; i < testSizes.size(); ++i)
@@ -110,7 +123,7 @@ int main(int argc, char* argv[])
             auto iterations = iterationTimes[j];
 
             const auto& result = runtimes[i][j];
-            std::cout
+            file
                 << testSize << ";"
                 << iterations << ";"
                 << result.preparation_time << ";"
@@ -118,4 +131,6 @@ int main(int argc, char* argv[])
                 << result.save_time << std::endl;
         }
     }
+
+    file.close();
 }
