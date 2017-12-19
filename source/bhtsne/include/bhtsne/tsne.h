@@ -337,6 +337,7 @@ public:
     *    This function runs the barnes hut implementation of the T-SNE algorithm.
     */
     void run();
+    void runExact();
 
 
     //save methods----------------------------------------------------------------------------------
@@ -409,13 +410,12 @@ public:
 
 private:
     void computeGradient(unsigned int* inp_row_P, unsigned int* inp_col_P, double* inp_val_P, double* Y, int D, double* dC, double theta);
-    void computeExactGradient(double* P, double* Y, int D, double* dC);
-    double evaluateError(double* P, double* Y, int D);
+    void computeExactGradient(double* P, double* Y, std::vector<double>& dY);
+    double evaluateError(double* P, double* Y);
     double evaluateError(unsigned int* row_P, unsigned int* col_P, double* val_P, double* Y, int D, double theta);
     void zeroMean(double* X, int N, int D); //static?
-    void computeGaussianPerplexity(double* X, int N, int D, double* P, double perplexity);
-    void computeGaussianPerplexity(double* X, int N, int D, unsigned int** _row_P, unsigned int** _col_P, double** _val_P, double perplexity, int K);
-    void computeSquaredEuclideanDistance(double* X, int N, int D, double* DD); //static?
+    std::vector<double> computeSquaredEuclideanDistance(double* X); //for output TODO merge
+    std::vector<double> computeSquaredEuclideanDistance(std::vector<std::vector<double>> X); //for intput TODO merge
 
 
 protected:
@@ -435,12 +435,10 @@ protected:
 	std::vector<std::vector<double>> m_result;
 
     std::mt19937 m_gen;
-    std::normal_distribution<> m_dist;
 
 	void zeroMean(std::vector<std::vector<double>>& data, unsigned int dimensions);
 	void computeGaussianPerplexity(double* P);
 	void computeGaussianPerplexity(unsigned int** _row_P, unsigned int** _col_P, double** _val_P);
-	void computeSquaredEuclideanDistance(std::vector<std::vector<double>> X, double* DD);
     double gaussNumber();
 };
 
