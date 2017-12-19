@@ -608,12 +608,10 @@ void TSNE::runApproximation()
 	}
 
 	// Compute input similarities for exact t-SNE
-	unsigned int* row_P; unsigned int* col_P;
-    std::vector<double> modern_val_P;
+    unsigned int* row_P; unsigned int* col_P; double* val_P;
 
 	// Compute asymmetric pairwise input similarities
-	computeGaussianPerplexity(&row_P, &col_P, modern_val_P);
-    auto val_P = modern_val_P.data();
+	computeGaussianPerplexity(&row_P, &col_P, &val_P);
 
 	// Symmetrize input similarities
 	symmetrizeMatrix(&row_P, &col_P, &val_P, m_dataSize);
@@ -1099,7 +1097,7 @@ std::vector<double> TSNE::computeSquaredEuclideanDistance(std::vector<std::vecto
     return distances;
 }
 
-void TSNE::computeGaussianPerplexity(unsigned int** _row_P,	unsigned int** _col_P, std::vector<double> & _val_P) 
+void TSNE::computeGaussianPerplexity(unsigned int** _row_P,	unsigned int** _col_P, double** _val_P) 
 {
     assert(m_data.size() == m_dataSize);
     assert(m_data[0].size() == m_inputDimensions);
@@ -1120,8 +1118,8 @@ void TSNE::computeGaussianPerplexity(unsigned int** _row_P,	unsigned int** _col_
 	// Allocate the memory we need
 	*_row_P = (unsigned int*)malloc((m_dataSize + 1) * sizeof(unsigned int));
 	*_col_P = (unsigned int*)calloc(m_dataSize * K, sizeof(unsigned int));
-    _val_P.resize(m_dataSize * K, 0.0);
-    auto val_P = _val_P.data();
+    *_val_P = (double*)calloc(m_dataSize * K, sizeof(double));
+    auto val_P = *_val_P;
 	if (*_row_P == nullptr || *_col_P == nullptr) {
 		printf("Memory allocation failed!\n");
 		exit(1);
