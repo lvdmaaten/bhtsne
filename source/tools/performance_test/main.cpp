@@ -1,7 +1,7 @@
-
 #include <vector>
 #include <chrono>
 #include <iostream>
+#include <sstream>
 #include <fstream>
 #include <stdio.h>
 
@@ -36,6 +36,12 @@ int main(int argc, char* argv[])
     for (auto& each : runtimes)
         each.resize(iterationTimes.size());
 
+    // hide library output
+    auto coutBuf = std::cout.rdbuf();
+    std::ostream newCout(coutBuf);
+    auto redirectStream = std::stringstream();
+    std::cout.rdbuf(redirectStream.rdbuf());
+
     for (auto i = 0; i < testSizes.size(); ++i)
     {
         for (auto j = 0; j < iterationTimes.size(); ++j)
@@ -50,6 +56,7 @@ int main(int argc, char* argv[])
 
             for (auto k = 0; k < testIterations + warmupIterations; ++k)
             {
+                newCout << "Running " << (k < warmupIterations ? "warmup" : "test") << " iteration " << (k + 1) << "/" << (testIterations + warmupIterations) << " for " << testSize << " samples and " << iterations << " iterations." << std::endl;
                 auto start_prepare = std::chrono::high_resolution_clock::now();
 
                 auto tsne = bhtsne::TSNE();
@@ -88,6 +95,8 @@ int main(int argc, char* argv[])
             current_result.save_time /= testIterations;
         }
     }
+
+    newCout << "All tests done." << std::endl;
 
     // write header
     std::cout << "testsize;iterations;preparation_time;execution_time;save_time" << std::endl;
