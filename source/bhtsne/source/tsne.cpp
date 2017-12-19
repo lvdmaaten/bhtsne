@@ -544,28 +544,35 @@ bool TSNE::loadCin()
 
 
 //run method---------------------------------------------------------------------------------------
-
 void TSNE::run()
+{
+    if (m_dataSize - 1 < 3 * m_perplexity) {
+        auto message = "perplexity (perplexity=" + std::to_string(m_perplexity) +
+            ") has to be smaller than a third of the dataSize (dataSize=" + std::to_string(m_dataSize) + ")";
+        std::cerr << message << std::endl;
+        throw std::invalid_argument(message);
+    }
+
+    std::cout << "Using: " << std::endl
+        << "data size " << m_dataSize << std::endl
+        << "in dimensions " << m_inputDimensions << std::endl
+        << "out dimensions " << m_outputDimensions << std::endl
+        << "perplexity " << m_perplexity << std::endl
+        << "gradient accuracy " << m_gradientAccuracy << std::endl;
+
+    if (m_gradientAccuracy == 0.0)
+        runExact();
+    else
+        runApproximation();
+}
+
+
+void TSNE::runApproximation()
 {
 	int stop_lying_iter = 250;
 	int mom_switch_iter = 250;
 
-	// Determine whether we are using an exact algorithm
-	if (m_dataSize - 1 < 3 * m_perplexity) {
-        auto stringStream = std::ostringstream();
-        stringStream << "perplexity (perplexity=" << m_perplexity
-                     << ") has to be smaller than a third of the dataSize (dataSize=" << m_dataSize << ")";
-        std::cerr << stringStream.str() << std::endl;
-        throw std::invalid_argument(stringStream.str());
-	}
-	std::cout << "Using m_outputDimensions = " << m_outputDimensions
-		<< ", m_perplexity = " << m_perplexity
-		<< ", and m_gradientAccuracy = " << m_gradientAccuracy << std::endl;
-	bool exact = (m_gradientAccuracy == .0);
-
 	// Set learning parameters
-	float total_time = .0;
-	clock_t start, end;
 	double momentum = .5, final_momentum = .8;
 	double eta = 200.0;
 
@@ -580,7 +587,6 @@ void TSNE::run()
 
 	// Normalize input data (to prevent numerical problems)
 	std::cout << "Computing input similarities..." << std::endl;
-	start = clock();
 	zeroMean(m_data, m_inputDimensions);
 	// TODO: extract normalization function for vector
 	double max_X = .0;
@@ -602,60 +608,24 @@ void TSNE::run()
 	}
 
 	// Compute input similarities for exact t-SNE
-	double* P; unsigned int* row_P; unsigned int* col_P; double* val_P;
-	if (exact) {
+	unsigned int* row_P; unsigned int* col_P;
+    std::vector<double> modern_val_P;
 
-		// Compute similarities
-		std::cout << "Exact?";
-		P = (double*)malloc(m_dataSize * m_dataSize * sizeof(double));
-		if (P == nullptr)
-		{
-			std::cout << "Memory allocation failed!" << std::endl;
-			exit(1);
-		}
-		computeGaussianPerplexity(P);
+	// Compute asymmetric pairwise input similarities
+	computeGaussianPerplexity(&row_P, &col_P, modern_val_P);
+    auto val_P = modern_val_P.data();
 
-		// Symmetrize input similarities
-		std::cout << "Symmetrizing..." << std::endl;
-		int nN = 0;
-		for (int n = 0; n < m_dataSize; n++) {
-			int mN = (n + 1) * m_dataSize;
-			for (int m = n + 1; m < m_dataSize; m++) {
-				P[nN + m] += P[mN + n];
-				P[mN + n] = P[nN + m];
-				mN += m_dataSize;
-			}
-			nN += m_dataSize;
-		}
-		double sum_P = .0;
-		for (int i = 0; i < m_dataSize * m_dataSize; i++) sum_P += P[i];
-		for (int i = 0; i < m_dataSize * m_dataSize; i++) P[i] /= sum_P;
-	}
+	// Symmetrize input similarities
+	symmetrizeMatrix(&row_P, &col_P, &val_P, m_dataSize);
+	//normalize val_P so that sum of all val = 1
+	double sum_P = .0;
+	for (int i = 0; i < row_P[m_dataSize]; i++) sum_P += val_P[i];
+	for (int i = 0; i < row_P[m_dataSize]; i++) val_P[i] /= sum_P;
 
-	// Compute input similarities for approximate t-SNE
-	else {
-
-		// Compute asymmetric pairwise input similarities
-		computeGaussianPerplexity(&row_P, &col_P, &val_P);
-
-		// Symmetrize input similarities
-		symmetrizeMatrix(&row_P, &col_P, &val_P, m_dataSize);
-		//normalize val_P so that sum of all val = 1
-		double sum_P = .0;
-		for (int i = 0; i < row_P[m_dataSize]; i++) sum_P += val_P[i];
-		for (int i = 0; i < row_P[m_dataSize]; i++) val_P[i] /= sum_P;
-	}
-	end = clock();
 
 	// Lie about the P-values
-	if (exact) {
-		for (int i = 0; i < m_dataSize * m_dataSize; i++)
-			P[i] *= 12.0;
-	}
-	else {
-		for (int i = 0; i < row_P[m_dataSize]; i++)
-			val_P[i] *= 12.0;
-	}
+	for (int i = 0; i < row_P[m_dataSize]; i++)
+		val_P[i] *= 12.0;
 
 	double* Y = (double*)malloc(m_dataSize * m_outputDimensions * sizeof(double));
 	// Initialize solution (randomly)
@@ -663,26 +633,12 @@ void TSNE::run()
 	    Y[i] = gaussNumber() * .0001;
 
 	// Perform main training loop
-	if (exact) {
-		std::cout << "Input similarities computed in " << ((float)(end - start) / CLOCKS_PER_SEC) << " seconds!\nLearning embedding..." << std::endl;
-	}
-	else {
-		std::cout << " Input similarities computed in "
-			<< ((float)(end - start) / CLOCKS_PER_SEC) << "seconds (sparsity = "
-			<< ((double)row_P[m_dataSize] / (double)(m_dataSize * m_dataSize)) << ")!" << std::endl;
-		std::cout << "Learning embedding..." << std::endl;
-	}
-	start = clock();
+    std::cout << " Input similarities computed. Learning embedding..." << std::endl;
 
 	for (int iter = 0; iter < m_iterations; iter++) {
 
-		// Compute (approximate) gradient
-		if (exact) {
-			//computeExactGradient(P, Y, m_outputDimensions, dY);
-		}
-		else {
-			computeGradient(row_P, col_P, val_P, Y, m_outputDimensions, dY, m_gradientAccuracy);
-		}
+		// Compute approximate gradient
+        computeGradient(row_P, col_P, val_P, Y, m_outputDimensions, dY, m_gradientAccuracy);
 
 		// Update gains
 		for (int i = 0; i < m_dataSize * m_outputDimensions; i++)
@@ -701,48 +657,25 @@ void TSNE::run()
 
 		// Stop lying about the P-values after a while, and switch momentum
 		if (iter == stop_lying_iter) {
-			if (exact) {
-				for (int i = 0; i < m_dataSize * m_dataSize; i++)
-					P[i] /= 12.0;
-			}
-			else {
-				for (int i = 0; i < row_P[m_dataSize]; i++)
-					val_P[i] /= 12.0;
-			}
+			for (int i = 0; i < row_P[m_dataSize]; i++)
+				val_P[i] /= 12.0;
 		}
 		if (iter == mom_switch_iter) momentum = final_momentum;
 
 		// Print out progress
 		if (iter > 0 && (iter % 50 == 0 || iter == m_iterations - 1)) {
-			end = clock();
 			double C = .0;
-			if (exact) {
-				C = evaluateError(P, Y);
-			}
-			else {
-				// doing approximate computation here!
-				C = evaluateError(row_P, col_P, val_P, Y, m_outputDimensions, m_gradientAccuracy);
-			}
+			// doing approximate computation here!
+			C = evaluateError(row_P, col_P, val_P, Y, m_outputDimensions, m_gradientAccuracy);
 
-			if (iter == 0)
-				std::cout << "Iteration " << (iter + 1) << ": error is " << C << std::endl;
-			else {
-				total_time += (float)(end - start) / CLOCKS_PER_SEC;
-				std::cout << "Iteration " << iter << ": error is " << C << " (50 iterations in " << ((float)(end - start) / CLOCKS_PER_SEC) << " seconds)" << std::endl;
-			}
-			start = clock();
+			std::cout << "Iteration " << (iter + 1) << ": error is " << C << std::endl;
 		}
 	}
-	end = clock(); total_time += (float)(end - start) / CLOCKS_PER_SEC;
 
 	// Clean up memory
 	free(dY);
-	if (exact) free(P);
-	else {
-		free(row_P); row_P = nullptr;
-		free(col_P); col_P = nullptr;
-		free(val_P); val_P = nullptr;
-	}
+	free(row_P); row_P = nullptr;
+	free(col_P); col_P = nullptr;
 
 	size_t offset = 0;
 	for (size_t i = 0; i < m_dataSize; ++i) {
@@ -752,29 +685,13 @@ void TSNE::run()
 		}
 		m_result.push_back(point);
 	}
-
-	std::cout << "Fitting performed in " << total_time << " seconds." << std::endl;
 }
 
 
 void TSNE::runExact()
 {
-    std::cout << "Using output dimensions = " << m_outputDimensions
-        << ", perplexity = " << m_perplexity
-        << ", and m_gradientAccuracy = " << m_gradientAccuracy << std::endl;
-
-    assert(m_gradientAccuracy == 0.0);
-
     int stop_lying_iter = 250;
     int mom_switch_iter = 250;
-
-    // Determine whether we are using an exact algorithm
-    if (m_dataSize - 1 < 3 * m_perplexity) {
-        std::string message = "perplexity (perplexity=" + std::to_string(m_perplexity) + 
-            ") has to be smaller than a third of the dataSize (dataSize=" + std::to_string(m_dataSize) + ")";
-        std::cerr << message << std::endl;
-        throw std::invalid_argument(message);
-    }
 
     // Set learning parameters
     double momentum = .5, final_momentum = .8;
@@ -891,8 +808,6 @@ void TSNE::runExact()
         m_result.push_back(point);
     }
     free(Y);
-
-    std::cout << "Fitting performed." << std::endl;
 }
 
 
@@ -1184,10 +1099,13 @@ std::vector<double> TSNE::computeSquaredEuclideanDistance(std::vector<std::vecto
     return distances;
 }
 
-void TSNE::computeGaussianPerplexity(unsigned int** _row_P,	unsigned int** _col_P, double** _val_P) {
+void TSNE::computeGaussianPerplexity(unsigned int** _row_P,	unsigned int** _col_P, std::vector<double> & _val_P) 
+{
+    assert(m_data.size() == m_dataSize);
+    assert(m_data[0].size() == m_inputDimensions);
 
-	int dimensions = m_data[0].size();
-	double* X = (double*)malloc(m_data.size() * m_data[0].size() * sizeof(double));// = data;
+    //hacky conversion TODO remove
+	double* X = (double*)malloc(m_dataSize * m_inputDimensions * sizeof(double));// = data;
 	int offset = 0;
 	for (auto & point : m_data)
 	{
@@ -1199,22 +1117,18 @@ void TSNE::computeGaussianPerplexity(unsigned int** _row_P,	unsigned int** _col_
 
 	int K = (int)(3 * m_perplexity);
 
-	if (m_perplexity > K)
-    {
-        std::cerr << "Perplexity should be lower than K!" << std::endl;
-    }
-
 	// Allocate the memory we need
 	*_row_P = (unsigned int*)malloc((m_dataSize + 1) * sizeof(unsigned int));
 	*_col_P = (unsigned int*)calloc(m_dataSize * K, sizeof(unsigned int));
-	*_val_P = (double*)calloc(m_dataSize * K, sizeof(double));
-	if (*_row_P == nullptr || *_col_P == nullptr || *_val_P == nullptr) {
+    _val_P.resize(m_dataSize * K, 0.0);
+    auto val_P = _val_P.data();
+	if (*_row_P == nullptr || *_col_P == nullptr) {
 		printf("Memory allocation failed!\n");
 		exit(1);
 	}
 	unsigned int* row_P = *_row_P;
 	unsigned int* col_P = *_col_P;
-	double* val_P = *_val_P;
+	
 	auto cur_P = std::vector<double>(m_dataSize - 1);
 	row_P[0] = 0;
 	for (int n = 0; n < m_dataSize; n++)
@@ -1301,7 +1215,4 @@ void TSNE::computeGaussianPerplexity(unsigned int** _row_P,	unsigned int** _col_
 			val_P[row_P[n] + m] = cur_P[m];
 		}
 	}
-
-	// Clean up memory
-	obj_X.clear();
 }

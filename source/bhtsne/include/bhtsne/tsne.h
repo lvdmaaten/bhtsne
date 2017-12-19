@@ -337,6 +337,7 @@ public:
     *    This function runs the barnes hut implementation of the T-SNE algorithm.
     */
     void run();
+    void runApproximation();
     void runExact();
 
 
@@ -438,7 +439,7 @@ protected:
 
 	void zeroMean(std::vector<std::vector<double>>& data, unsigned int dimensions);
 	void computeGaussianPerplexity(double* P);
-	void computeGaussianPerplexity(unsigned int** _row_P, unsigned int** _col_P, double** _val_P);
+	void computeGaussianPerplexity(unsigned int** _row_P, unsigned int** _col_P, std::vector<double> & _val_P);
     double gaussNumber();
 };
 
