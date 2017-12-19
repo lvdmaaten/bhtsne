@@ -1063,61 +1063,32 @@ std::vector<double> TSNE::computeSquaredEuclideanDistance(double* X)
 // Compute squared Euclidean distance matrix for INPUT!!! data
 std::vector<double> TSNE::computeSquaredEuclideanDistance(std::vector<std::vector<double>> data)
 {
-	// hacky conversion TODO remove
-    assert(data.size() == m_dataSize);
-	double* XnD = (double*)malloc(data.size() * data[0].size() * sizeof(double));// = data;
-	int offset = 0;
-	for (auto & point : data)
-	{
-        assert(point.size() == m_inputDimensions);
-		for (auto & val : point)
-		{
-			XnD[offset++] = val;
-		}
-	}
+    auto dimensions = data[0].size();
+    assert(dimensions == m_inputDimensions || dimensions == m_outputDimensions);
 
     auto distances = std::vector<double>(m_dataSize * m_dataSize, 0.0);
-    auto D = m_inputDimensions;
-	for (int n = 0; n < m_dataSize; ++n, XnD += D) {
-		const double* XmD = XnD + D;
-		double* curr_elem = &distances[n*m_dataSize + n];
-		double* curr_elem_sym = curr_elem + m_dataSize;
-		for (int m = n + 1; m < m_dataSize; ++m, XmD += D, curr_elem_sym += m_dataSize) {
-			++curr_elem;
-			for (int d = 0; d < D; ++d) {
-				*curr_elem += (XnD[d] - XmD[d]) * (XnD[d] - XmD[d]);
-			}
-			*curr_elem_sym = *curr_elem;
-		}
-	}
-    return distances;
 
-    // auto dimensions = points.size() / m_dataSize;
-    // assert(dimensions == m_inputDimensions || dimensions == m_outputDimensions);
-    //
-    // auto distances = std::vector<double>(m_dataSize * m_dataSize, 0.0);
-    //
-    // for (auto i = 0; i < m_dataSize; ++i)
-    // {
-    //     for (auto j = 0; j < m_dataSize; ++j)
-    //     {
-    //         if (i >= j)
-    //         {
-    //             continue;
-    //         }
-    //
-    //         auto distance = 0.0;
-    //         for (auto d = 0; d < dimensions; ++d)
-    //         {
-    //             auto diff = points[i * dimensions + d] - points[j * dimensions + d];
-    //             distance += diff * diff;
-    //         }
-    //         distances[i*m_dataSize + j] = distance;
-    //         distances[j*m_dataSize + i] = distance;
-    //     }
-    // }
-    //
-    // return distances;
+    for (auto i = 0; i < m_dataSize; ++i)
+    {
+        for (auto j = 0; j < m_dataSize; ++j)
+        {
+            if (i >= j)
+            {
+                continue;
+            }
+
+            auto distance = 0.0;
+            for (auto d = 0; d < dimensions; ++d)
+            {
+                auto diff = data[i][d] - data[j][d];
+                distance += diff * diff;
+            }
+            distances[i*m_dataSize + j] = distance;
+            distances[j*m_dataSize + i] = distance;
+        }
+    }
+
+    return distances;
 }
 
 void TSNE::computeGaussianPerplexity(std::vector<unsigned int> & row_P, std::vector<unsigned int> & col_P, std::vector<double> & val_P)
