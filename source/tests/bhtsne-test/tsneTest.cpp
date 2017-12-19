@@ -487,7 +487,6 @@ TEST_F(TsneTest, SaveSVG)
     EXPECT_EQ(0, remove((tempfile + ".svg").c_str()));
 }
 
-
 TEST_F(TsneTest, ResultConsistency)
 {
     std::string input =
@@ -525,6 +524,50 @@ R"(3.16374,-91.2264
     EXPECT_TRUE(m_tsne.loadFromStream(iss));
 
     EXPECT_NO_THROW(m_tsne.run());
+
+    auto oss = std::ostringstream();
+    EXPECT_NO_THROW(m_tsne.saveToStream(oss));
+
+    EXPECT_EQ(expected, oss.str());
+}
+
+TEST_F(TsneTest, ExactRun)
+{
+    std::string input =
+R"(0,56,19,80,58
+47,35,89,82,74
+17,85,71,51,30
+1,9,36,14,16
+98,44,11,0,0
+37,53,57,60,60
+16,66,45,35,5
+60,78,80,51,30
+87,72,95,92,53
+14,46,23,86,20)";
+
+    std::string expected =
+R"(-54.8785,-96.3901
+-87.6806,46.6628
+23.7272,19.651
+82.25,-55.6907
+115.188,26.6933
+-62.33,15.9121
+60.7718,-6.52401
+-2.59574,57.4055
+-56.0326,95.6331
+-18.4195,-103.353
+)";
+
+    m_tsne.setGradientAccuracy(0.0);
+    m_tsne.setPerplexity(3.0);
+    m_tsne.setIterations(2000);
+    m_tsne.setOutputDimensions(2);
+    m_tsne.setRandomSeed(1337);
+
+    auto iss = std::istringstream(input);
+    EXPECT_TRUE(m_tsne.loadFromStream(iss));
+
+    EXPECT_NO_THROW(m_tsne.runExact());
 
     auto oss = std::ostringstream();
     EXPECT_NO_THROW(m_tsne.saveToStream(oss));
