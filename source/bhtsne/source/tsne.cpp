@@ -591,7 +591,9 @@ void TSNE::runApproximation()
 		}
 	}
 
-	// Compute input similarities for exact t-SNE
+
+    // Compute input similarities for exact t-SNE
+    // init sparse matrix P, TODO: create and use class SparseMatrix
     auto row_P = std::vector<unsigned int>();
     auto col_P = std::vector<unsigned int>();
     auto val_P = std::vector<double>();
@@ -603,33 +605,24 @@ void TSNE::runApproximation()
 	symmetrizeMatrix(row_P, col_P, val_P);
 
 	//normalize val_P so that sum of all val = 1
-	double sum_P = .0;
-	for (unsigned i = 0; i < row_P[m_dataSize]; i++)
+	double sum_P = std::accumulate(val_P.begin(), val_P.end(), 0.0);
+	for (auto & each : val_P)
     {
-        sum_P += val_P[i];
-    }
-	for (unsigned i = 0; i < row_P[m_dataSize]; i++)
-    {
-        val_P[i] /= sum_P;
-    }
-
-
-	// Lie about the P-values
-	for (unsigned i = 0; i < row_P[m_dataSize]; i++)
-    {
-        val_P[i] *= 12.0;
+        each /= sum_P;
+    	// Lie about the P-values
+        each *= 12.0;
     }
 
 	auto Y = std::vector<double>(m_dataSize * m_outputDimensions);
 	// Initialize solution (randomly)
-	for (unsigned i = 0; i < m_dataSize * m_outputDimensions; i++)
+	for (auto & each : Y)
     {
-        Y[i] = gaussNumber() * 0.0001;
+        each = gaussNumber() * 0.0001;
     }
 
 
 
-
+    //TODO: documentation for all these magic numbers
     int stop_lying_iter = 250;
     int mom_switch_iter = 250;
 
@@ -652,14 +645,22 @@ void TSNE::runApproximation()
 		// Update gains
 		for (unsigned i = 0; i < m_dataSize * m_outputDimensions; i++)
         {
-            gains[i] = std::max(0.1, (sign(dY[i]) != sign(uY[i])) ? (gains[i] + .2) : (gains[i] * .8));
+            if (sign(dY[i]) != sign(uY[i]))
+            {
+                gains[i] += 0.2;
+            }
+            else
+            {
+                gains[i] *= 0.8;
+            }
+            gains[i] = std::max(0.1, gains[i]);
         }
 
 		// Perform gradient update (with momentum and gains)
-		for (int i = 0; i < m_dataSize * m_outputDimensions; i++)
+		for (unsigned i = 0; i < m_dataSize * m_outputDimensions; i++)
         {
             uY[i] = momentum * uY[i] - eta * gains[i] * dY[i];
-            Y[i] = Y[i] + uY[i];
+            Y[i] += uY[i];
         }
 
 		// Make solution zero-mean
@@ -668,8 +669,10 @@ void TSNE::runApproximation()
 		// Stop lying about the P-values after a while, and switch momentum
 		if (iter == stop_lying_iter)
         {
-			for (int i = 0; i < row_P[m_dataSize]; i++)
-				val_P[i] /= 12.0;
+			for (auto & each : val_P)
+            {
+                each /= 12.0;
+            }
 		}
 		if (iter == mom_switch_iter)
         {
@@ -681,16 +684,16 @@ void TSNE::runApproximation()
         {
 			// doing approximate computation here!
 			double error = evaluateError(row_P.data(), col_P.data(), val_P.data(), Y.data());
-
 			std::cout << "Iteration " << (iter + 1) << ": error is " << error << std::endl;
 		}
 	}
 
+    // convert Y to vector<vector> result
 	size_t offset = 0;
 	for (size_t i = 0; i < m_dataSize; ++i)
     {
 		auto point = std::vector<double>();
-		for (size_t j = 0; j < m_outputDimensions; ++j)
+		for (size_t d = 0; d < m_outputDimensions; ++d)
         {
 			point.push_back(Y[offset++]);
 		}
