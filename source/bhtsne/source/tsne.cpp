@@ -67,7 +67,7 @@ TSNE::TSNE()
     , m_inputDimensions(0)
     , m_dataSize(0)
     , m_outputFile("result")
-    , m_gen(0) //default seed
+    , m_gen(static_cast<unsigned long>(std::chrono::high_resolution_clock::now().time_since_epoch().count()))
 {
 }
 
@@ -227,52 +227,48 @@ double TSNE::evaluateError(unsigned int * row_P, unsigned int * col_P, double * 
 // Symmetrizes a sparse matrix
 void TSNE::symmetrizeMatrix(std::vector<unsigned int> & row_P, std::vector<unsigned int> & col_P, std::vector<double> & val_P)
 {
-    auto N = m_dataSize;
-    // Get sparse matrix
-
     // Count number of elements and row counts of symmetric matrix
-    auto row_counts = std::vector<int>(N, 0);
-    for(int n = 0; n < N; n++)
+    auto row_counts = std::vector<unsigned int>(m_dataSize, 0);
+    for(unsigned n = 0; n < m_dataSize; n++)
     {
-        for(int i = row_P[n]; i < row_P[n + 1]; i++)
+        for(unsigned i = row_P[n]; i < row_P[n + 1]; i++)
         {
-
             // Check whether element (col_P[i], n) is present
-            bool present = false;
-            for(int m = row_P[col_P[i]]; m < row_P[col_P[i] + 1]; m++)
+            auto first = row_P.begin() + row_P[col_P[i]];
+            auto last = row_P.begin() + row_P[col_P[i] + 1];
+
+            if(std::find(first, last, n) == last)
             {
-                if(col_P[m] == n) present = true;
-            }
-            if(present) row_counts[n]++;
-            else {
-                row_counts[n]++;
                 row_counts[col_P[i]]++;
             }
+            row_counts[n]++;
         }
     }
-    int no_elem = 0;
-    for(int n = 0; n < N; n++) no_elem += row_counts[n];
+    unsigned no_elem = std::accumulate(row_counts.begin(), row_counts.begin() + m_dataSize, 0u);
 
     // Allocate memory for symmetrized matrix
     // TODO reuse the memory in row,col and val!!
-    auto sym_row_P = std::vector<unsigned int>(N + 1);
+    auto sym_row_P = std::vector<unsigned int>(m_dataSize + 1);
     auto sym_col_P = std::vector<unsigned int>(no_elem);
     auto sym_val_P = std::vector<double>(no_elem);
 
     // Construct new row indices for symmetric matrix
     sym_row_P[0] = 0;
-    for(int n = 0; n < N; n++) sym_row_P[n + 1] = sym_row_P[n] + (unsigned int) row_counts[n];
+    for(int n = 0; n < m_dataSize; n++)
+    {
+        sym_row_P[n + 1] = sym_row_P[n] + row_counts[n];
+    }
 
     // Fill the result matrix
-    auto offset = std::vector<int>(N, 0);
-    for(int n = 0; n < N; n++)
+    auto offset = std::vector<int>(m_dataSize, 0);
+    for(unsigned n = 0; n < m_dataSize; n++)
     {
-        for(unsigned int i = row_P[n]; i < row_P[n + 1]; i++)
+        for(unsigned i = row_P[n]; i < row_P[n + 1]; i++)
         { // considering element(n, col_P[i])
 
             // Check whether element (col_P[i], n) is present
             bool present = false;
-            for(unsigned int m = row_P[col_P[i]]; m < row_P[col_P[i] + 1]; m++)
+            for(unsigned m = row_P[col_P[i]]; m < row_P[col_P[i] + 1]; m++)
             {
                 if(col_P[m] == n)
                 {
@@ -297,17 +293,22 @@ void TSNE::symmetrizeMatrix(std::vector<unsigned int> & row_P, std::vector<unsig
             }
 
             // Update offsets
-            if(!present || (present && n <= col_P[i]))
+            if(!present || n <= col_P[i])
             {
                 offset[n]++;
                 if(col_P[i] != n)
+                {
                     offset[col_P[i]]++;
+                }
             }
         }
     }
 
     // Divide the result by two
-    for(int i = 0; i < no_elem; i++) sym_val_P[i] /= 2.0;
+    for(int i = 0; i < no_elem; i++)
+    {
+        sym_val_P[i] /= 2.0;
+    }
 
     // Return symmetrized matrices
     row_P = std::move(sym_row_P);
@@ -336,19 +337,10 @@ double bhtsne::TSNE::gaussNumber()
     return X1;
 }
 
-void TSNE::setRandomSeed(int seed)
+void TSNE::setRandomSeed(unsigned long seed)
 {
-    if (seed >= 0)
-    {
-        std::cout << "Using random seed: " << seed << std::endl;
-        m_gen.seed(seed);
-
-    }
-    else
-    {
-        std::cout << "Using current time as random seed..." << std::endl;
-        m_gen.seed(std::chrono::high_resolution_clock::now().time_since_epoch().count());
-    }
+    std::cout << "Using random seed: " << seed << std::endl;
+    m_gen.seed(seed);
 }
 
 double TSNE::perplexity() const
@@ -600,8 +592,6 @@ void TSNE::runApproximation()
 	}
 
 	// Compute input similarities for exact t-SNE
-    //unsigned int* row_P; unsigned int* col_P;
-
     auto row_P = std::vector<unsigned int>();
     auto col_P = std::vector<unsigned int>();
     auto val_P = std::vector<double>();

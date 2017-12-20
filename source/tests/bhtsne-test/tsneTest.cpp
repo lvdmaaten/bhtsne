@@ -5,10 +5,6 @@
 #include <fstream>
 #include <initializer_list>
 
-inline bool doubleEquals(double a, double b, double epsilon = 0.0001) {
-    return std::fabs(a - b) < epsilon;
-}
-
 class PublicTSNE : public bhtsne::TSNE
 {
 public:
@@ -19,7 +15,7 @@ public:
 
     auto setData(std::vector<std::vector<double>> data)
     {
-        m_data = data;
+        m_data = std::move(data);
     };
 
     auto result()
@@ -29,7 +25,7 @@ public:
 
     auto setResult(std::vector<std::vector<double>> result)
     {
-        m_result = result;
+        m_result = std::move(result);
     };
 
     auto setInputDimensions(unsigned int dimensions)
@@ -49,64 +45,56 @@ public:
 
 class BinaryWriter
 {
-private:
-    std::ofstream* filestream;
-
 public:
     BinaryWriter() = default;
-
-    explicit BinaryWriter(std::ofstream& f)
+    explicit BinaryWriter(std::ofstream * f)
+        : fileStream(f)
     {
-        filestream = &f;
     }
 
     template <typename T>
-    auto& operator<<(const T& value)
+    auto& operator<<(const T & value)
     {
-        filestream->write(reinterpret_cast<const char*>(&value), sizeof(value));
+        fileStream->write(reinterpret_cast<const char *>(&value), sizeof(value));
         return *this;
     }
+
+private:
+    std::ofstream * fileStream;
 };
 
 class TsneTest : public testing::Test
 {
 protected:
     TsneTest()
+        : m_tsne(PublicTSNE())
+        , m_tempFile(std::tmpnam(nullptr))
     {
-        m_tsne = PublicTSNE();
-        tempfile = std::tmpnam(nullptr);
     }
 
     auto createTempfile()
     {
-        filestream.open(tempfile, std::ios::out | std::ios::binary | std::ios::trunc);
-        writer = BinaryWriter(filestream);
+        m_fileStream.open(m_tempFile, std::ios::out | std::ios::binary | std::ios::trunc);
+        m_writer = BinaryWriter(&m_fileStream);
     }
 
     auto removeTempfile()
     {
-        if (filestream.is_open())
+        if (m_fileStream.is_open())
         {
-            filestream.close();
+            m_fileStream.close();
         }
-        EXPECT_EQ(0, remove(tempfile.c_str()));
+        EXPECT_EQ(0, remove(m_tempFile.c_str()));
     }
 
     PublicTSNE m_tsne;
-    std::string tempfile;
-    std::ofstream filestream;
-    BinaryWriter writer;
+    std::string m_tempFile;
+    std::ofstream m_fileStream;
+    BinaryWriter m_writer;
 };
-
-TEST(SanityChecks, Equality)
-{
-    EXPECT_EQ((unsigned int) 0, 0);
-    EXPECT_EQ((unsigned int) 1, 1);
-}
 
 TEST_F(TsneTest, DefaultValues)
 {
-    ASSERT_DOUBLE_EQ(1.1630780958763871, m_tsne.gaussNumber());
     EXPECT_EQ(50.0, m_tsne.perplexity());
     EXPECT_EQ(0.2, m_tsne.gradientAccuracy());
     EXPECT_EQ(1000, m_tsne.iterations());
@@ -192,13 +180,13 @@ TEST_F(TsneTest, LoadLegacy)
     auto data = 42.0;
 
     createTempfile();
-    writer << dataSize << inputDimensions << gradientAccuracy << perplexity << outputDimensions << iterations;
-    writer << data;
-    writer << randomSeed;
-    filestream.flush();
-    filestream.close();
+    m_writer << dataSize << inputDimensions << gradientAccuracy << perplexity << outputDimensions << iterations;
+    m_writer << data;
+    m_writer << randomSeed;
+    m_fileStream.flush();
+    m_fileStream.close();
 
-    EXPECT_TRUE(m_tsne.loadLegacy(tempfile));
+    EXPECT_TRUE(m_tsne.loadLegacy(m_tempFile));
     EXPECT_EQ(dataSize, m_tsne.dataSize());
     EXPECT_EQ(inputDimensions, m_tsne.inputDimensions());
     EXPECT_EQ(gradientAccuracy, m_tsne.gradientAccuracy());
@@ -248,16 +236,16 @@ TEST_F(TsneTest, LoadCSV)
     {
         for (auto value : sample)
         {
-            filestream << value << ',';
+            m_fileStream << value << ',';
         }
-        filestream.seekp(-1, std::ios_base::cur);
-        filestream << std::endl;
+        m_fileStream.seekp(-1, std::ios_base::cur);
+        m_fileStream << std::endl;
     }
 
-    filestream.flush();
-    filestream.close();
+    m_fileStream.flush();
+    m_fileStream.close();
 
-    EXPECT_TRUE(m_tsne.loadCSV(tempfile));
+    EXPECT_TRUE(m_tsne.loadCSV(m_tempFile));
     EXPECT_EQ(2, m_tsne.dataSize());
     EXPECT_EQ(3, m_tsne.inputDimensions());
     for (auto i = 0; i < 2; i++)
@@ -278,12 +266,12 @@ TEST_F(TsneTest, LoadTSNE)
     auto data = 42.0;
 
     createTempfile();
-    writer << dataSize << inputDimensions;
-    writer << data;
-    filestream.flush();
-    filestream.close();
+    m_writer << dataSize << inputDimensions;
+    m_writer << data;
+    m_fileStream.flush();
+    m_fileStream.close();
 
-    EXPECT_TRUE(m_tsne.loadTSNE(tempfile));
+    EXPECT_TRUE(m_tsne.loadTSNE(m_tempFile));
     EXPECT_EQ(1, m_tsne.dataSize());
     EXPECT_EQ(1, m_tsne.inputDimensions());
     EXPECT_EQ(data, m_tsne.data()[0][0]);
@@ -384,7 +372,7 @@ TEST_F(TsneTest, RunApproximation)
     {
         for (size_t j = 0; j < m_tsne.outputDimensions(); j++)
         {
-            EXPECT_TRUE(doubleEquals(expected[i][j], result[i][j]))
+            ASSERT_DOUBLE_EQ(expected[i][j], result[i][j])
                 << "expected != result at [" << i << "][" << j <<"]: "
                 << expected[i][j] << " != " << result[i][j] << std::endl;
         }
@@ -400,12 +388,12 @@ TEST_F(TsneTest, SaveLegacy)
     // test save
     m_tsne.setDataSize(2);
     m_tsne.setOutputDimensions(1);
-    m_tsne.setOutputFile(tempfile);
+    m_tsne.setOutputFile(m_tempFile);
     m_tsne.setResult(std::vector<std::vector<double>>{ { expectedDouble[0] }, { expectedDouble[1] }});
     EXPECT_NO_THROW(m_tsne.saveLegacy());
     // check file exists and has right size
     auto result = std::ifstream();
-    EXPECT_NO_THROW(result.open(tempfile + ".dat", std::ios::in | std::ios::binary | std::ios::ate));
+    EXPECT_NO_THROW(result.open(m_tempFile + ".dat", std::ios::in | std::ios::binary | std::ios::ate));
     EXPECT_TRUE(result.is_open());
     EXPECT_EQ(48, result.tellg());
     // check values in file
@@ -430,7 +418,7 @@ TEST_F(TsneTest, SaveLegacy)
     }
 
     result.close();
-    remove((tempfile + ".dat").c_str());
+    remove((m_tempFile + ".dat").c_str());
 }
 
 TEST_F(TsneTest, SaveToStream)
@@ -463,11 +451,11 @@ TEST_F(TsneTest, SaveCSV)
     m_tsne.setDataSize(2);
     m_tsne.setOutputDimensions(1);
     m_tsne.setResult(std::vector<std::vector<double>>{ { expectedDouble[0] }, { expectedDouble[1] }});
-    m_tsne.setOutputFile(tempfile);
+    m_tsne.setOutputFile(m_tempFile);
     EXPECT_NO_THROW(m_tsne.saveCSV());
     // check file exists and has right size
     auto result = std::ifstream();
-    EXPECT_NO_THROW(result.open(tempfile + ".csv", std::ios::in | std::ios::ate));
+    EXPECT_NO_THROW(result.open(m_tempFile + ".csv", std::ios::in | std::ios::ate));
     EXPECT_TRUE(result.is_open());
     // file size may change based on current os (\n vs \r\n)
     EXPECT_LE(17, result.tellg());
@@ -490,7 +478,7 @@ TEST_F(TsneTest, SaveCSV)
     EXPECT_TRUE(expectedIn.eof());
 
     result.close();
-    EXPECT_EQ(0, remove((tempfile + ".csv").c_str()));
+    EXPECT_EQ(0, remove((m_tempFile + ".csv").c_str()));
 }
 
 TEST_F(TsneTest, SaveSVG)
@@ -503,11 +491,11 @@ TEST_F(TsneTest, SaveSVG)
     m_tsne.setDataSize(2);
     m_tsne.setOutputDimensions(1);
     m_tsne.setResult(std::vector<std::vector<double>>{ { expectedDouble[0], expectedDouble[1] }, { expectedDouble[2], expectedDouble[3] }});
-    m_tsne.setOutputFile(tempfile);
+    m_tsne.setOutputFile(m_tempFile);
     EXPECT_NO_THROW(m_tsne.saveSVG());
     // check file exists
     auto result = std::ifstream();
-    EXPECT_NO_THROW(result.open(tempfile + ".svg", std::ios::in));
+    EXPECT_NO_THROW(result.open(m_tempFile + ".svg", std::ios::in));
     EXPECT_TRUE(result.is_open());
     // check values in file
     auto expectedRadius = 0.5;
@@ -533,7 +521,7 @@ TEST_F(TsneTest, SaveSVG)
     EXPECT_TRUE(expectedIn.eof());
 
     result.close();
-    EXPECT_EQ(0, remove((tempfile + ".svg").c_str()));
+    EXPECT_EQ(0, remove((m_tempFile + ".svg").c_str()));
 }
 
 TEST_F(TsneTest, ResultConsistency)

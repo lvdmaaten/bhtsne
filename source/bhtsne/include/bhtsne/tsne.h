@@ -79,7 +79,7 @@ public:
     *  @param[in] seed
     *    Random seed
     */
-    void setRandomSeed(int seed);
+    void setRandomSeed(unsigned long seed);
 
     /**
     *  @brief
