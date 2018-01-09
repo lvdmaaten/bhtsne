@@ -18,7 +18,7 @@ struct MeasurementResult
 };
 
 
-bool fileIsPresent()
+auto fileIsPresent()
 {
     auto file = std::ifstream("data.dat");
     return file.good();
@@ -37,8 +37,7 @@ int main(int argc, char* argv[])
     const auto warmupIterations = std::atoi(argv[1]);
     const auto testIterations = std::atoi(argv[2]);
 
-    std::vector<std::vector<MeasurementResult>> runtimes;
-    runtimes.resize(testSizes.size());
+    auto runtimes = std::vector<std::vector<MeasurementResult>>(testSizes.size());
     for (auto& each : runtimes)
         each.resize(iterationTimes.size());
 

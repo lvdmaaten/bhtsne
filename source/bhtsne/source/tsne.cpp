@@ -915,7 +915,7 @@ void TSNE::saveLegacy()
 
 void TSNE::saveSVG()
 {
-    double extreme = 0;
+    auto extreme = 0.0;
     for (size_t i = 0; i < m_dataSize; ++i)
 	{
         for (size_t j = 0; j < m_outputDimensions; ++j)
@@ -923,13 +923,13 @@ void TSNE::saveSVG()
             extreme = std::max(extreme, std::abs(m_result[i][j]));
         }
     }
-    double radius = 0.5;
-    double halfWidth = extreme + radius;
+    auto radius = 0.5;
+    auto halfWidth = extreme + radius;
 
     //TODO: allow setting a labelFile, e.g. by command line option
     auto labelFile = std::string();
     auto labels = std::vector<uint8_t>();
-    bool usingLabels = false;
+    auto usingLabels = false;
 	if (!labelFile.empty())
 	{
 		usingLabels = true;
@@ -960,7 +960,7 @@ void TSNE::saveSVG()
         maxLabel = std::max(label, maxLabel);
     }
 	auto colors = std::vector<std::string>();
-	for (uint8_t i = 0; i <= maxLabel; ++i)
+	for (auto i = 0; i <= maxLabel; ++i)
     {
         colors.push_back("hsl(" + std::to_string(360.0 * i / (maxLabel / 2 + 1)) + ", 100%, " + (i % 2 == 0 ? "25" : "60") + "%)");
     }
@@ -976,7 +976,7 @@ void TSNE::saveSVG()
 	f << "<svg xmlns='http://www.w3.org/2000/svg' version='1.1' width='600' height='600' viewBox='" << -halfWidth << " " << -halfWidth << " " << 2 * halfWidth << " " << 2 * halfWidth << "'>\n";
 
 	auto color = std::string("black");
-	for (unsigned i = 0; i < m_dataSize; i++)
+	for (auto i = 0u; i < m_dataSize; ++i)
 	{
 		if (usingLabels)
         {
