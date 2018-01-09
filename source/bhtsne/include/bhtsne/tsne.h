@@ -405,8 +405,8 @@ public:
 
 private:
     void computeGradient(unsigned int *inp_row_P, unsigned int *inp_col_P, double *inp_val_P, double *Y, double *dC);
-    void computeExactGradient(double* P, double* Y, std::vector<double> & dY);
-    double evaluateError(double* P, double* Y);
+    void computeExactGradient(const std::vector<double> & P, double* Y, std::vector<double> & dY);
+    double evaluateError(const std::vector<double> & P, double* Y);
     double evaluateError(unsigned int *row_P, unsigned int *col_P, double *val_P, double *Y);
     void zeroMean(double* X, int N, int D); //TODO: remove
     std::vector<double> computeSquaredEuclideanDistance(double* X); //TODO: remove
@@ -436,7 +436,7 @@ protected:
 
     static std::vector<double> computeSquaredEuclideanDistance(const std::vector<std::vector<double>> & points);
     static void zeroMean(std::vector<std::vector<double>>& points);
-    void computeGaussianPerplexity(double* P);
+    void computeGaussianPerplexity(std::vector<double> & P);
 	void computeGaussianPerplexity(std::vector<unsigned int> & row_P, std::vector<unsigned int> & col_P, std::vector<double> & val_P);
     double gaussNumber();
 };

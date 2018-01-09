@@ -84,20 +84,20 @@ void TSNE::computeGradient(unsigned int *inp_row_P, unsigned int *inp_col_P, dou
 
     double sum_Q = 0.0;
     auto neg_f = std::vector<double>(m_dataSize * m_outputDimensions, 0.0);
-    for(unsigned n = 0; n < m_dataSize; n++)
+    for (unsigned n = 0; n < m_dataSize; n++)
     {
         tree.computeNonEdgeForces(n, m_gradientAccuracy, neg_f.data() + n * m_outputDimensions, &sum_Q);
     }
 
     // Compute final t-SNE gradient
-    for(unsigned i = 0; i < m_dataSize * m_outputDimensions; i++)
+    for (unsigned i = 0; i < m_dataSize * m_outputDimensions; i++)
     {
         dC[i] = pos_f[i] - (neg_f[i] / sum_Q);
     }
 }
 
 // Compute gradient of the t-SNE cost function (exact)
-void TSNE::computeExactGradient(double* P, double* Y /*m_result*/, std::vector<double> & gradients)
+void TSNE::computeExactGradient(const std::vector<double> & P, double* Y /*m_result*/, std::vector<double> & gradients)
 {
     assert(gradients.size() == m_dataSize * m_outputDimensions);
 
@@ -112,11 +112,11 @@ void TSNE::computeExactGradient(double* P, double* Y /*m_result*/, std::vector<d
     // https://en.wikipedia.org/wiki/Q-matrix ??
     auto Q = std::vector<double>(m_dataSize * m_dataSize);
     double sum_Q = .0;
-    for(int n = 0; n < m_dataSize; n++)
+    for (unsigned n = 0; n < m_dataSize; n++)
     {
-    	for(int m = 0; m < m_dataSize; m++)
+    	for (unsigned m = 0; m < m_dataSize; m++)
         {
-            if(n != m)
+            if (n != m)
             {
                 auto matrixIndex = n*m_dataSize + m;
                 Q[matrixIndex] = 1.0 / (1.0 + distances[matrixIndex]);
@@ -126,15 +126,15 @@ void TSNE::computeExactGradient(double* P, double* Y /*m_result*/, std::vector<d
     }
 
 	// Perform the computation of the gradient
-	for(int n = 0; n < m_dataSize; n++)
+	for (int n = 0; n < m_dataSize; n++)
     {
-    	for(int m = 0; m < m_dataSize; m++)
+    	for (int m = 0; m < m_dataSize; m++)
         {
-            if(n != m)
+            if (n != m)
             {
                 auto matrixIndex = n*m_dataSize + m;
                 double mult = (P[matrixIndex] - (Q[matrixIndex] / sum_Q)) * Q[matrixIndex];
-                for(unsigned d = 0; d < m_outputDimensions; d++)
+                for (unsigned d = 0; d < m_outputDimensions; d++)
                 {
                     gradients[n*m_outputDimensions + d] +=
                             (Y[n*m_outputDimensions + d] - Y[m*m_outputDimensions + d]) * mult;
@@ -146,7 +146,7 @@ void TSNE::computeExactGradient(double* P, double* Y /*m_result*/, std::vector<d
 
 
 // Evaluate t-SNE cost function (exactly)
-double TSNE::evaluateError(double* P, double* Y)
+double TSNE::evaluateError(const std::vector<double> & P, double* Y)
 {
     // Compute the squared Euclidean distance matrix
     auto Q = std::vector<double>(m_dataSize * m_dataSize);
@@ -154,12 +154,12 @@ double TSNE::evaluateError(double* P, double* Y)
 
     // Compute Q-matrix and normalization sum
     double sum_Q = std::numeric_limits<double>::min();
-    for(int n = 0; n < m_dataSize; n++)
+    for (int n = 0; n < m_dataSize; n++)
     {
-    	for(int m = 0; m < m_dataSize; m++)
+    	for (int m = 0; m < m_dataSize; m++)
         {
             auto matrixIndex = n*m_dataSize + m;
-            if(n != m)
+            if (n != m)
             {
                 Q[matrixIndex] = 1.0 / (1.0 + distances[matrixIndex]);
                 sum_Q += Q[matrixIndex];
@@ -170,14 +170,14 @@ double TSNE::evaluateError(double* P, double* Y)
             }
         }
     }
-    for(auto& each : Q)
+    for (auto& each : Q)
     {
         each /= sum_Q;
     }
 
     // Sum t-SNE error
     double error = 0.0;
-	for(int n = 0; n < m_dataSize * m_dataSize; n++)
+	for (size_t n = 0; n < m_dataSize * m_dataSize; n++)
     {
         error += P[n] * log((P[n] + std::numeric_limits<float>::min())
                             / (Q[n] + std::numeric_limits<float>::min()));
@@ -194,21 +194,21 @@ double TSNE::evaluateError(unsigned int * row_P, unsigned int * col_P, double * 
     auto tree = SPTree(m_outputDimensions, Y, m_dataSize);
     auto buff = std::vector<double>(m_outputDimensions, 0.0);
     double sum_Q = 0.0;
-    for(unsigned i = 0; i < m_dataSize; i++)
+    for (unsigned i = 0; i < m_dataSize; i++)
     {
         tree.computeNonEdgeForces(i, m_gradientAccuracy, buff.data(), &sum_Q);
     }
 
     // Loop over all edges to compute t-SNE error
     double error = 0.0;
-    for(unsigned n = 0; n < m_dataSize; n++)
+    for (unsigned n = 0; n < m_dataSize; n++)
     {
         int ind1 = n * m_outputDimensions;
-        for(unsigned i = row_P[n]; i < row_P[n + 1]; i++)
+        for (unsigned i = row_P[n]; i < row_P[n + 1]; i++)
         {
             double Q = 0.0;
             int ind2 = col_P[i] * m_outputDimensions;
-            for(unsigned d = 0; d < m_outputDimensions; d++)
+            for (unsigned d = 0; d < m_outputDimensions; d++)
             {
                 buff[d] = Y[ind1 + d] - Y[ind2 + d];
                 Q += buff[d] * buff[d];
@@ -229,15 +229,15 @@ void TSNE::symmetrizeMatrix(std::vector<unsigned int> & row_P, std::vector<unsig
 {
     // Count number of elements and row counts of symmetric matrix
     auto row_counts = std::vector<unsigned int>(m_dataSize, 0);
-    for(unsigned n = 0; n < m_dataSize; n++)
+    for (unsigned n = 0; n < m_dataSize; n++)
     {
-        for(unsigned i = row_P[n]; i < row_P[n + 1]; i++)
+        for (unsigned i = row_P[n]; i < row_P[n + 1]; i++)
         {
             // Check whether element (col_P[i], n) is present
             auto first = row_P.begin() + row_P[col_P[i]];
             auto last = row_P.begin() + row_P[col_P[i] + 1];
 
-            if(std::find(first, last, n) == last)
+            if (std::find(first, last, n) == last)
             {
                 row_counts[col_P[i]]++;
             }
@@ -254,26 +254,26 @@ void TSNE::symmetrizeMatrix(std::vector<unsigned int> & row_P, std::vector<unsig
 
     // Construct new row indices for symmetric matrix
     sym_row_P[0] = 0;
-    for(int n = 0; n < m_dataSize; n++)
+    for (unsigned n = 0; n < m_dataSize; n++)
     {
         sym_row_P[n + 1] = sym_row_P[n] + row_counts[n];
     }
 
     // Fill the result matrix
     auto offset = std::vector<int>(m_dataSize, 0);
-    for(unsigned n = 0; n < m_dataSize; n++)
+    for (unsigned n = 0; n < m_dataSize; n++)
     {
-        for(unsigned i = row_P[n]; i < row_P[n + 1]; i++)
+        for (unsigned i = row_P[n]; i < row_P[n + 1]; i++)
         { // considering element(n, col_P[i])
 
             // Check whether element (col_P[i], n) is present
             bool present = false;
-            for(unsigned m = row_P[col_P[i]]; m < row_P[col_P[i] + 1]; m++)
+            for (unsigned m = row_P[col_P[i]]; m < row_P[col_P[i] + 1]; m++)
             {
-                if(col_P[m] == n)
+                if (col_P[m] == n)
                 {
                     present = true;
-                    if(n <= col_P[i])
+                    if (n <= col_P[i])
                     { // make sure we do not add elements twice
                         sym_col_P[sym_row_P[n]        + offset[n]]        = col_P[i];
                         sym_col_P[sym_row_P[col_P[i]] + offset[col_P[i]]] = n;
@@ -284,7 +284,7 @@ void TSNE::symmetrizeMatrix(std::vector<unsigned int> & row_P, std::vector<unsig
             }
 
             // If (col_P[i], n) is not present, there is no addition involved
-            if(!present)
+            if (!present)
             {
                 sym_col_P[sym_row_P[n]        + offset[n]]        = col_P[i];
                 sym_col_P[sym_row_P[col_P[i]] + offset[col_P[i]]] = n;
@@ -293,10 +293,10 @@ void TSNE::symmetrizeMatrix(std::vector<unsigned int> & row_P, std::vector<unsig
             }
 
             // Update offsets
-            if(!present || n <= col_P[i])
+            if (!present || n <= col_P[i])
             {
                 offset[n]++;
-                if(col_P[i] != n)
+                if (col_P[i] != n)
                 {
                     offset[col_P[i]]++;
                 }
@@ -305,7 +305,7 @@ void TSNE::symmetrizeMatrix(std::vector<unsigned int> & row_P, std::vector<unsig
     }
 
     // Divide the result by two
-    for(int i = 0; i < no_elem; i++)
+    for (unsigned i = 0; i < no_elem; i++)
     {
         sym_val_P[i] /= 2.0;
     }
@@ -456,7 +456,9 @@ bool bhtsne::TSNE::loadFromStream(std::istream & stream)
     }
 
     if (m_data.empty())
+    {
         return false;
+    }
 
     m_dataSize = m_data.size();
 
@@ -631,7 +633,7 @@ void TSNE::runApproximation()
     double final_momentum = 0.8;
     double eta = 200.0;
 
-    auto dY = std::vector<double>(m_dataSize * m_outputDimensions);
+    auto dY = std::vector<double>(m_dataSize * m_outputDimensions); //gradient?!
     auto uY = std::vector<double>(m_dataSize * m_outputDimensions, 0.0);
     auto gains = std::vector<double>(m_dataSize * m_outputDimensions, 1.0);
 
@@ -733,12 +735,7 @@ void TSNE::runExact()
     }
 
     // Compute input similarities for exact t-SNE
-    double* P = (double*)malloc(m_dataSize * m_dataSize * sizeof(double));
-    if (P == nullptr)
-    {
-        std::cout << "Memory allocation failed!" << std::endl;
-        exit(1);
-    }
+    auto P = std::vector<double>(m_dataSize * m_dataSize);
     computeGaussianPerplexity(P);
 
     // Symmetrize input similarities
@@ -756,18 +753,28 @@ void TSNE::runExact()
         nN += m_dataSize;
     }
     double sum_P = .0;
-    for (int i = 0; i < m_dataSize * m_dataSize; i++) sum_P += P[i];
-    for (int i = 0; i < m_dataSize * m_dataSize; i++) P[i] /= sum_P;
+    for (size_t i = 0; i < m_dataSize * m_dataSize; i++)
+    {
+        sum_P += P[i];
+    }
+    for (size_t i = 0; i < m_dataSize * m_dataSize; i++)
+    {
+        P[i] /= sum_P;
+    }
 
 
     // Lie about the P-values
-    for (int i = 0; i < m_dataSize * m_dataSize; i++)
+    for (size_t i = 0; i < m_dataSize * m_dataSize; i++)
+    {
         P[i] *= 12.0;
+    }
 
     double* Y = (double*)malloc(m_dataSize * m_outputDimensions * sizeof(double));
     // Initialize solution (randomly)
     for (int i = 0; i < m_dataSize * m_outputDimensions; i++)
+    {
         Y[i] = gaussNumber() * .0001;
+    }
 
     // Perform main training loop
     std::cout << "Input similarities computed. Learning embedding..." << std::endl;
@@ -782,15 +789,23 @@ void TSNE::runExact()
 
         // Update gains
         for (int i = 0; i < m_dataSize * m_outputDimensions; i++)
+        {
             gains[i] = (sign(gradients[i]) != sign(uY[i])) ? (gains[i] + .2) : (gains[i] * .8);
+        }
         for (int i = 0; i < m_dataSize * m_outputDimensions; i++)
+        {
             gains[i] = std::max(gains[i], 0.1);
+        }
 
         // Perform gradient update (with momentum and gains)
         for (int i = 0; i < m_dataSize * m_outputDimensions; i++)
+        {
             uY[i] = momentum * uY[i] - eta * gains[i] * gradients[i];
+        }
         for (int i = 0; i < m_dataSize * m_outputDimensions; i++)
+        {
             Y[i] = Y[i] + uY[i];
+        }
 
         // Make solution zero-mean
         zeroMean(Y, m_dataSize, m_outputDimensions);
@@ -798,11 +813,16 @@ void TSNE::runExact()
         // Stop lying about the P-values after a while, and switch momentum
         if (iter == stop_lying_iter)
         {
-            for (int i = 0; i < m_dataSize * m_dataSize; i++)
+            for (size_t i = 0; i < m_dataSize * m_dataSize; i++)
+            {
                 P[i] /= 12.0;
+            }
         }
 
-        if (iter == mom_switch_iter) momentum = final_momentum;
+        if (iter == mom_switch_iter)
+        {
+            momentum = final_momentum;
+        }
 
         // Print out progress
         if (iter > 0 && (iter % 50 == 0 || iter == m_iterations - 1))
@@ -811,9 +831,6 @@ void TSNE::runExact()
             std::cout << "Iteration " << (iter + 1) << ": error is " << C << std::endl;
         }
     }
-
-    // Clean up memory
-    free(P);
 
     size_t offset = 0;
     for (size_t i = 0; i < m_dataSize; ++i)
@@ -940,10 +957,14 @@ void TSNE::saveSVG()
 
 	uint8_t maxLabel = 0;
 	for (auto label : labels)
-		maxLabel = std::max(label, maxLabel);
+    {
+        maxLabel = std::max(label, maxLabel);
+    }
 	auto colors = std::vector<std::string>();
 	for (int i = 0; i <= maxLabel; ++i)
-		colors.push_back("hsl(" + std::to_string(360.0 * i / (maxLabel / 2 + 1)) + ", 100%, " + (i % 2 == 0 ? "25" : "60") + "%)");
+    {
+        colors.push_back("hsl(" + std::to_string(360.0 * i / (maxLabel / 2 + 1)) + ", 100%, " + (i % 2 == 0 ? "25" : "60") + "%)");
+    }
 
 	auto f = std::ofstream(m_outputFile + ".svg", std::ios::out | std::ios::trunc);
 	if (!f.is_open())
@@ -1018,74 +1039,87 @@ void TSNE::zeroMean(std::vector<std::vector<double>> & points)
     }
 }
 
-void TSNE::computeGaussianPerplexity(double* P)
+void TSNE::computeGaussianPerplexity(std::vector<double> & P)
 {
 	// Compute the squared Euclidean distance matrix
 	auto distances = computeSquaredEuclideanDistance(m_data);
-    auto DD = distances.data();
 	// Compute the Gaussian kernel row by row
 	int nN = 0;
 	for (int n = 0; n < m_dataSize; n++)
     {
 
 		// Initialize some variables
-		bool found = false;
 		double beta = 1.0;
-		double min_beta = -DBL_MAX;
-		double max_beta = DBL_MAX;
-		double tol = 1e-5;
-		double sum_P;
+		double min_beta = std::numeric_limits<double>::lowest();
+		double max_beta = std::numeric_limits<double>::max();
+		double tolerance_threshold = 1e-5;
+        double sum_P = 0.0;
 
 		// Iterate until we found a good perplexity
-		int iter = 0;
-		while (!found && iter < 200)
+		for (auto iter = 0; iter < 200; iter++)
         {
 
 			// Compute Gaussian kernel row
 			for (int m = 0; m < m_dataSize; m++)
-				P[nN + m] = exp(-beta * DD[nN + m]);
-			P[nN + n] = DBL_MIN;
+            {
+                P[nN + m] = exp(-beta * distances[nN + m]);
+            }
+			P[nN + n] = std::numeric_limits<double>::min();
 
 			// Compute entropy of current row
-			sum_P = DBL_MIN;
+            sum_P = std::numeric_limits<double>::min();
 			for (int m = 0; m < m_dataSize; m++)
-				sum_P += P[nN + m];
-			double H = 0.0;
+            {
+                sum_P += P[nN + m];
+            }
+
+			double H = 0.0; //TODO what is this?
 			for (int m = 0; m < m_dataSize; m++)
-				H += beta * (DD[nN + m] * P[nN + m]);
+            {
+                H += beta * (distances[nN + m] * P[nN + m]);
+            }
 			H = (H / sum_P) + log(sum_P);
 
 			// Evaluate whether the entropy is within the tolerance level
 			double Hdiff = H - log(m_perplexity);
-			if (Hdiff < tol && -Hdiff < tol)
+			if (std::abs(Hdiff) < tolerance_threshold)
             {
-				found = true;
+				break;
 			}
-			else {
+			else
+            {
 				if (Hdiff > 0)
                 {
 					min_beta = beta;
-					if (max_beta == DBL_MAX || max_beta == -DBL_MAX)
-						beta *= 2.0;
+					if (max_beta == std::numeric_limits<double>::max() || max_beta == std::numeric_limits<double>::lowest())
+                    {
+                        beta *= 2.0;
+                    }
 					else
-						beta = (beta + max_beta) / 2.0;
+                    {
+                        beta = (beta + max_beta) / 2.0;
+                    }
 				}
-				else {
+				else
+                {
 					max_beta = beta;
-					if (min_beta == -DBL_MAX || min_beta == DBL_MAX)
-						beta /= 2.0;
+					if (min_beta == std::numeric_limits<double>::lowest() || min_beta == std::numeric_limits<double>::max())
+                    {
+                        beta /= 2.0;
+                    }
 					else
-						beta = (beta + min_beta) / 2.0;
+                    {
+                        beta = (beta + min_beta) / 2.0;
+                    }
 				}
 			}
-
-			// Update iteration counter
-			iter++;
 		}
 
 		// Row normalize P
 		for (int m = 0; m < m_dataSize; m++)
-			P[nN + m] /= sum_P;
+        {
+            P[nN + m] /= sum_P;
+        }
 		nN += m_dataSize;
 	}
 }
@@ -1158,13 +1192,17 @@ void TSNE::computeGaussianPerplexity(std::vector<unsigned int> & row_P, std::vec
 	auto cur_P = std::vector<double>(m_dataSize - 1);
 	row_P[0] = 0;
 	for (int n = 0; n < m_dataSize; n++)
-		row_P[n + 1] = row_P[n] + (unsigned int)K;
+    {
+        row_P[n + 1] = row_P[n] + (unsigned int)K;
+    }
 
 	// Build ball tree on data set
 	auto tree = VpTree<DataPoint, euclidean_distance>();
 	auto obj_X = std::vector<DataPoint>(m_dataSize, DataPoint(m_inputDimensions, -1, X));
 	for (int n = 0; n < m_dataSize; n++)
-		obj_X[n] = DataPoint(m_inputDimensions, n, X + n * m_inputDimensions);
+    {
+        obj_X[n] = DataPoint(m_inputDimensions, n, X + n * m_inputDimensions);
+    }
 	tree.create(obj_X);
 
 	// Loop over all points to find nearest neighbors
@@ -1187,26 +1225,32 @@ void TSNE::computeGaussianPerplexity(std::vector<unsigned int> & row_P, std::vec
 		// Initialize some variables for binary search
 		bool found = false;
 		double beta = 1.0;
-		double min_beta = -DBL_MAX;
-		double max_beta = DBL_MAX;
+		double min_beta = std::numeric_limits<double>::lowest();
+		double max_beta = std::numeric_limits<double>::max();
 		double tol = 1e-5;
 
 		// Iterate until we found a good perplexity
 		int iter = 0; double sum_P;
 		while (!found && iter < 200)
         {
-
 			// Compute Gaussian kernel row
 			for (int m = 0; m < K; m++)
-				cur_P[m] = exp(-beta * distances[m + 1] * distances[m + 1]);
+            {
+                cur_P[m] = exp(-beta * distances[m + 1] * distances[m + 1]);
+            }
 
 			// Compute entropy of current row
-			sum_P = DBL_MIN;
+			sum_P = std::numeric_limits<double>::min();
 			for (int m = 0; m < K; m++)
-				sum_P += cur_P[m];
-			double H = .0;
+            {
+                sum_P += cur_P[m];
+            }
+
+			double H = 0.0;
 			for (int m = 0; m < K; m++)
-				H += beta * (distances[m + 1] * distances[m + 1] * cur_P[m]);
+            {
+                H += beta * (distances[m + 1] * distances[m + 1] * cur_P[m]);
+            }
 			H = (H / sum_P) + log(sum_P);
 
 			// Evaluate whether the entropy is within the tolerance level
@@ -1215,21 +1259,31 @@ void TSNE::computeGaussianPerplexity(std::vector<unsigned int> & row_P, std::vec
             {
 				found = true;
 			}
-			else {
+			else
+            {
 				if (Hdiff > 0)
                 {
 					min_beta = beta;
-					if (max_beta == DBL_MAX || max_beta == -DBL_MAX)
-						beta *= 2.0;
+					if (max_beta == std::numeric_limits<double>::max() || max_beta == std::numeric_limits<double>::lowest())
+                    {
+                        beta *= 2.0;
+                    }
 					else
-						beta = (beta + max_beta) / 2.0;
+                    {
+                        beta = (beta + max_beta) / 2.0;
+                    }
 				}
-				else {
+				else
+                {
 					max_beta = beta;
-					if (min_beta == -DBL_MAX || min_beta == DBL_MAX)
-						beta /= 2.0;
+					if (min_beta == std::numeric_limits<double>::lowest() || min_beta == std::numeric_limits<double>::max())
+                    {
+                        beta /= 2.0;
+                    }
 					else
-						beta = (beta + min_beta) / 2.0;
+                    {
+                        beta = (beta + min_beta) / 2.0;
+                    }
 				}
 			}
 
@@ -1239,7 +1293,9 @@ void TSNE::computeGaussianPerplexity(std::vector<unsigned int> & row_P, std::vec
 
 		// Row-normalize current row of P and store in matrix
 		for (unsigned int m = 0; m < K; m++)
-			cur_P[m] /= sum_P;
+        {
+            cur_P[m] /= sum_P;
+        }
 		for (unsigned int m = 0; m < K; m++)
         {
 			col_P[row_P[n] + m] = (unsigned int)indices[m + 1].index();
