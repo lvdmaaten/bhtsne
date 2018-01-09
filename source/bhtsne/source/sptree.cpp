@@ -45,11 +45,6 @@ Cell::Cell(unsigned int dimensions) {
     m_radii  = (double*) malloc(m_dimensions * sizeof(double));
 }
 
-Cell::Cell(unsigned int dimensions, double* centers, double* radii) : Cell(dimensions) {
-    for(auto d = 0; d < m_dimensions; ++d) setCenter(d, centers[d]);
-    for(auto d = 0; d < m_dimensions; ++d) setRadius(d, radii[d]);
-}
-
 // Destructs cell
 Cell::~Cell() {
     free(m_centers);
@@ -159,7 +154,7 @@ void SPTree::init(SPTree* inp_parent, unsigned int D, double* inp_data, double* 
 
     boundary = new Cell(dimension);
     for(unsigned int d = 0; d < D; d++) boundary->setCenter(d, inp_corner[d]);
-    for(unsigned int d = 0; d < D; d++) boundary->setRadius( d, inp_width[d]);
+    for(unsigned int d = 0; d < D; d++) boundary->setRadius(d, inp_width[d]);
 
     children = (SPTree**) malloc(no_children * sizeof(SPTree*));
     for(unsigned int i = 0; i < no_children; i++) children[i] = NULL;

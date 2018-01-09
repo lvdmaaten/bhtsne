@@ -43,7 +43,6 @@ class Cell {
     
 public:
     Cell(unsigned int dimensions);
-    Cell(unsigned int dimensions, double* centers, double* radii);
     ~Cell();
     
     double getCenter(unsigned int d);
