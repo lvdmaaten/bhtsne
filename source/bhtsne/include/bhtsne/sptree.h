@@ -36,20 +36,20 @@
 
 class Cell {
 
-    unsigned int dimension;
-    double* corner;
-    double* width;
+    unsigned int m_dimensions;
+    double* m_centers;
+    double* m_radii;
     
     
 public:
-    Cell(unsigned int inp_dimension);
-    Cell(unsigned int inp_dimension, double* inp_corner, double* inp_width);
+    Cell(unsigned int dimensions);
+    Cell(unsigned int dimensions, double* centers, double* radii);
     ~Cell();
     
-    double getCorner(unsigned int d);
-    double getWidth(unsigned int d);
-    void setCorner(unsigned int d, double val);
-    void setWidth(unsigned int d, double val);
+    double getCenter(unsigned int d);
+    double getRadius(unsigned int d);
+    void setCenter(unsigned int d, double val);
+    void setRadius(unsigned int d, double val);
     bool containsPoint(double point[]);
 };
 

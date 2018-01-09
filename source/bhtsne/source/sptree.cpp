@@ -38,51 +38,46 @@
 
 #include <bhtsne/sptree.h>
 
-
-
 // Constructs cell
-Cell::Cell(unsigned int inp_dimension) {
-    dimension = inp_dimension;
-    corner = (double*) malloc(dimension * sizeof(double));
-    width  = (double*) malloc(dimension * sizeof(double));
+Cell::Cell(unsigned int dimensions) {
+    m_dimensions = dimensions;
+    m_centers = (double*) malloc(m_dimensions * sizeof(double));
+    m_radii  = (double*) malloc(m_dimensions * sizeof(double));
 }
 
-Cell::Cell(unsigned int inp_dimension, double* inp_corner, double* inp_width) {
-    dimension = inp_dimension;
-    corner = (double*) malloc(dimension * sizeof(double));
-    width  = (double*) malloc(dimension * sizeof(double));
-    for(int d = 0; d < dimension; d++) setCorner(d, inp_corner[d]);
-    for(int d = 0; d < dimension; d++) setWidth( d,  inp_width[d]);
+Cell::Cell(unsigned int dimensions, double* centers, double* radii) : Cell(dimensions) {
+    for(auto d = 0; d < m_dimensions; ++d) setCenter(d, centers[d]);
+    for(auto d = 0; d < m_dimensions; ++d) setRadius(d, radii[d]);
 }
 
 // Destructs cell
 Cell::~Cell() {
-    free(corner);
-    free(width);
+    free(m_centers);
+    free(m_radii);
 }
 
-double Cell::getCorner(unsigned int d) {
-    return corner[d];
+double Cell::getCenter(unsigned int d) {
+    return m_centers[d];
 }
 
-double Cell::getWidth(unsigned int d) {
-    return width[d];
+double Cell::getRadius(unsigned int d) {
+    return m_radii[d];
 }
 
-void Cell::setCorner(unsigned int d, double val) {
-    corner[d] = val;
+void Cell::setCenter(unsigned int d, double val) {
+    m_centers[d] = val;
 }
 
-void Cell::setWidth(unsigned int d, double val) {
-    width[d] = val;
+void Cell::setRadius(unsigned int d, double val) {
+    m_radii[d] = val;
 }
 
 // Checks whether a point lies in a cell
 bool Cell::containsPoint(double point[])
 {
-    for(int d = 0; d < dimension; d++) {
-        if(corner[d] - width[d] > point[d]) return false;
-        if(corner[d] + width[d] < point[d]) return false;
+    for(auto d = 0; d < m_dimensions; ++d) {
+        if(m_centers[d] - m_radii[d] > point[d]) return false;
+        if(m_centers[d] + m_radii[d] < point[d]) return false;
     }
     return true;
 }
@@ -163,8 +158,8 @@ void SPTree::init(SPTree* inp_parent, unsigned int D, double* inp_data, double* 
     cum_size = 0;
 
     boundary = new Cell(dimension);
-    for(unsigned int d = 0; d < D; d++) boundary->setCorner(d, inp_corner[d]);
-    for(unsigned int d = 0; d < D; d++) boundary->setWidth( d, inp_width[d]);
+    for(unsigned int d = 0; d < D; d++) boundary->setCenter(d, inp_corner[d]);
+    for(unsigned int d = 0; d < D; d++) boundary->setRadius( d, inp_width[d]);
 
     children = (SPTree**) malloc(no_children * sizeof(SPTree*));
     for(unsigned int i = 0; i < no_children; i++) children[i] = NULL;
@@ -258,9 +253,9 @@ void SPTree::subdivide() {
     for(unsigned int i = 0; i < no_children; i++) {
         unsigned int div = 1;
         for(unsigned int d = 0; d < dimension; d++) {
-            new_width[d] = .5 * boundary->getWidth(d);
-            if((i / div) % 2 == 1) new_corner[d] = boundary->getCorner(d) - .5 * boundary->getWidth(d);
-            else                   new_corner[d] = boundary->getCorner(d) + .5 * boundary->getWidth(d);
+            new_width[d] = .5 * boundary->getRadius(d);
+            if((i / div) % 2 == 1) new_corner[d] = boundary->getCenter(d) - .5 * boundary->getRadius(d);
+            else                   new_corner[d] = boundary->getCenter(d) + .5 * boundary->getRadius(d);
             div *= 2;
         }
         children[i] = new SPTree(this, dimension, data, new_corner, new_width);
@@ -355,7 +350,7 @@ void SPTree::computeNonEdgeForces(unsigned int point_index, double theta, double
     double max_width = 0.0;
     double cur_width;
     for(unsigned int d = 0; d < dimension; d++) {
-        cur_width = boundary->getWidth(d);
+        cur_width = boundary->getRadius(d);
         max_width = (max_width > cur_width) ? max_width : cur_width;
     }
     if(is_leaf || max_width / sqrt(D) < theta) {
