@@ -109,20 +109,21 @@ void TSNE::computeExactGradient(const std::vector<double> & P, double * Y /*m_re
     auto distances = computeSquaredEuclideanDistance(Y);
     assert(distances.size() == m_dataSize * m_dataSize);
 
-    // Compute Q-matrix and normalization sum
-    // https://en.wikipedia.org/wiki/Q-matrix ??
+    // Compute Q-matrix and normalization sum ; Q = similarities in low dimensional output space
     auto Q = std::vector<double>(m_dataSize * m_dataSize);
-    double sum_Q = .0;
+    double sum_Q = 0.0;
     for (unsigned n = 0; n < m_dataSize; n++)
     {
     	for (unsigned m = 0; m < m_dataSize; m++)
         {
-            if (n != m)
+            if (n == m)
             {
-                auto matrixIndex = n * m_dataSize + m;
-                Q[matrixIndex] = 1.0 / (1.0 + distances[matrixIndex]);
-                sum_Q += Q[matrixIndex];
+                continue;
             }
+
+            auto matrixIndex = n * m_dataSize + m;
+            Q[matrixIndex] = 1.0 / (1.0 + distances[matrixIndex]);
+            sum_Q += Q[matrixIndex];
         }
     }
 
@@ -131,15 +132,17 @@ void TSNE::computeExactGradient(const std::vector<double> & P, double * Y /*m_re
     {
     	for (unsigned m = 0; m < m_dataSize; m++)
         {
-            if (n != m)
+            if (n == m)
             {
-                auto matrixIndex = n * m_dataSize + m;
-                double mult = (P[matrixIndex] - (Q[matrixIndex] / sum_Q)) * Q[matrixIndex];
-                for (unsigned d = 0; d < m_outputDimensions; d++)
-                {
-                    gradients[n * m_outputDimensions + d] +=
-                            (Y[n * m_outputDimensions + d] - Y[m * m_outputDimensions + d]) * mult;
-                }
+                continue;
+            }
+
+            auto matrixIndex = n * m_dataSize + m;
+            double mult = (P[matrixIndex] - (Q[matrixIndex] / sum_Q)) * Q[matrixIndex];
+            for (unsigned d = 0; d < m_outputDimensions; d++)
+            {
+                gradients[n * m_outputDimensions + d] +=
+                        (Y[n * m_outputDimensions + d] - Y[m * m_outputDimensions + d]) * mult;
             }
 		}
 	}
