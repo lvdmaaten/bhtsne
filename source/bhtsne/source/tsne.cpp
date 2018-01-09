@@ -73,7 +73,7 @@ TSNE::TSNE()
 }
 
 // Compute gradient of the t-SNE cost function (using Barnes-Hut algorithm) (approximately)
-void TSNE::computeGradient(unsigned int *inp_row_P, unsigned int *inp_col_P, double *inp_val_P, double *Y, double *dC)
+void TSNE::computeGradient(unsigned * inp_row_P, unsigned * inp_col_P, double * inp_val_P, double * Y, double * dC)
 {
 
     // Construct space-partitioning tree on current map
@@ -98,7 +98,7 @@ void TSNE::computeGradient(unsigned int *inp_row_P, unsigned int *inp_col_P, dou
 }
 
 // Compute gradient of the t-SNE cost function (exact)
-void TSNE::computeExactGradient(const std::vector<double> & P, double* Y /*m_result*/, std::vector<double> & gradients)
+void TSNE::computeExactGradient(const std::vector<double> & P, double * Y /*m_result*/, std::vector<double> & gradients)
 {
     assert(gradients.size() == m_dataSize * m_outputDimensions);
 
@@ -119,7 +119,7 @@ void TSNE::computeExactGradient(const std::vector<double> & P, double* Y /*m_res
         {
             if (n != m)
             {
-                auto matrixIndex = n*m_dataSize + m;
+                auto matrixIndex = n * m_dataSize + m;
                 Q[matrixIndex] = 1.0 / (1.0 + distances[matrixIndex]);
                 sum_Q += Q[matrixIndex];
             }
@@ -133,12 +133,12 @@ void TSNE::computeExactGradient(const std::vector<double> & P, double* Y /*m_res
         {
             if (n != m)
             {
-                auto matrixIndex = n*m_dataSize + m;
+                auto matrixIndex = n * m_dataSize + m;
                 double mult = (P[matrixIndex] - (Q[matrixIndex] / sum_Q)) * Q[matrixIndex];
                 for (unsigned d = 0; d < m_outputDimensions; d++)
                 {
-                    gradients[n*m_outputDimensions + d] +=
-                            (Y[n*m_outputDimensions + d] - Y[m*m_outputDimensions + d]) * mult;
+                    gradients[n * m_outputDimensions + d] +=
+                            (Y[n * m_outputDimensions + d] - Y[m * m_outputDimensions + d]) * mult;
                 }
             }
 		}
@@ -147,7 +147,7 @@ void TSNE::computeExactGradient(const std::vector<double> & P, double* Y /*m_res
 
 
 // Evaluate t-SNE cost function (exactly)
-double TSNE::evaluateError(const std::vector<double> & P, double* Y)
+double TSNE::evaluateError(const std::vector<double> & P, double * Y)
 {
     // Compute the squared Euclidean distance matrix
     auto Q = std::vector<double>(m_dataSize * m_dataSize);
@@ -159,7 +159,7 @@ double TSNE::evaluateError(const std::vector<double> & P, double* Y)
     {
     	for (unsigned m = 0; m < m_dataSize; m++)
         {
-            auto matrixIndex = n*m_dataSize + m;
+            auto matrixIndex = n * m_dataSize + m;
             if (n != m)
             {
                 Q[matrixIndex] = 1.0 / (1.0 + distances[matrixIndex]);
@@ -189,7 +189,7 @@ double TSNE::evaluateError(const std::vector<double> & P, double* Y)
 }
 
 // Evaluate t-SNE cost function (approximately)
-double TSNE::evaluateError(unsigned int * row_P, unsigned int * col_P, double * val_P, double * Y)
+double TSNE::evaluateError(unsigned * row_P, unsigned * col_P, double * val_P, double * Y)
 {
     // Get estimate of normalization term
     auto tree = SPTree(m_outputDimensions, Y, m_dataSize);
@@ -226,10 +226,10 @@ double TSNE::evaluateError(unsigned int * row_P, unsigned int * col_P, double * 
 }
 
 // Symmetrizes a sparse matrix
-void TSNE::symmetrizeMatrix(std::vector<unsigned int> & row_P, std::vector<unsigned int> & col_P, std::vector<double> & val_P)
+void TSNE::symmetrizeMatrix(std::vector<unsigned> & row_P, std::vector<unsigned> & col_P, std::vector<double> & val_P)
 {
     // Count number of elements and row counts of symmetric matrix
-    auto row_counts = std::vector<unsigned int>(m_dataSize, 0);
+    auto row_counts = std::vector<unsigned>(m_dataSize, 0);
     for (unsigned n = 0; n < m_dataSize; n++)
     {
         for (unsigned i = row_P[n]; i < row_P[n + 1]; i++)
@@ -249,8 +249,8 @@ void TSNE::symmetrizeMatrix(std::vector<unsigned int> & row_P, std::vector<unsig
 
     // Allocate memory for symmetrized matrix
     // TODO reuse the memory in row,col and val!!
-    auto sym_row_P = std::vector<unsigned int>(m_dataSize + 1);
-    auto sym_col_P = std::vector<unsigned int>(no_elem);
+    auto sym_row_P = std::vector<unsigned>(m_dataSize + 1);
+    auto sym_col_P = std::vector<unsigned>(no_elem);
     auto sym_val_P = std::vector<double>(no_elem);
 
     // Construct new row indices for symmetric matrix
@@ -329,7 +329,7 @@ double bhtsne::TSNE::gaussNumber()
         // V1, V2 uniformly distributed between -1 and +l.
         V1 = 2.0 * static_cast<double>(m_gen()) / m_gen.max() - 1.0;
         V2 = 2.0 * static_cast<double>(m_gen()) / m_gen.max() - 1.0;
-        S = V1*V1 + V2*V2;
+        S = V1 * V1 + V2 * V2;
     } while (S >= 1);
 
     auto X1 = V1 * std::sqrt(-2 * std::log(S) / S);
@@ -369,37 +369,37 @@ void TSNE::setGradientAccuracy(double accuracy)
 	m_gradientAccuracy = accuracy;
 }
 
-unsigned int TSNE::iterations() const
+unsigned TSNE::iterations() const
 {
 	return m_iterations;
 }
 
-void TSNE::setIterations(unsigned int iterations)
+void TSNE::setIterations(unsigned iterations)
 {
 	m_iterations = iterations;
 }
 
-unsigned int TSNE::outputDimensions() const
+unsigned TSNE::outputDimensions() const
 {
 	return m_outputDimensions;
 }
 
-void TSNE::setOutputDimensions(unsigned int dimensions)
+void TSNE::setOutputDimensions(unsigned dimensions)
 {
 	m_outputDimensions = dimensions;
 }
 
-unsigned int TSNE::inputDimensions() const
+unsigned TSNE::inputDimensions() const
 {
 	return m_inputDimensions;
 }
 
-unsigned int TSNE::dataSize() const
+unsigned TSNE::dataSize() const
 {
 	return m_dataSize;
 }
 
-void TSNE::setDataSize(unsigned int value)
+void TSNE::setDataSize(unsigned value)
 {
 	m_dataSize = value;
 }
@@ -409,7 +409,7 @@ std::string TSNE::outputFile() const
 	return m_outputFile;
 }
 
-void TSNE::setOutputFile(const std::string& file)
+void TSNE::setOutputFile(const std::string & file)
 {
 	m_outputFile = file;
 }
@@ -476,18 +476,18 @@ bool TSNE::loadLegacy(const std::string & file)
     }
 
     //read params
-	f.read(reinterpret_cast<char*>(&m_dataSize), sizeof(m_dataSize));
-	f.read(reinterpret_cast<char*>(&m_inputDimensions), sizeof(m_inputDimensions));
-	f.read(reinterpret_cast<char*>(&m_gradientAccuracy), sizeof(m_gradientAccuracy));
-	f.read(reinterpret_cast<char*>(&m_perplexity), sizeof(m_perplexity));
-	f.read(reinterpret_cast<char*>(&m_outputDimensions), sizeof(m_outputDimensions));
-	f.read(reinterpret_cast<char*>(&m_iterations), sizeof(m_iterations));
+	f.read(reinterpret_cast<char *>(&m_dataSize), sizeof(m_dataSize));
+	f.read(reinterpret_cast<char *>(&m_inputDimensions), sizeof(m_inputDimensions));
+	f.read(reinterpret_cast<char *>(&m_gradientAccuracy), sizeof(m_gradientAccuracy));
+	f.read(reinterpret_cast<char *>(&m_perplexity), sizeof(m_perplexity));
+	f.read(reinterpret_cast<char *>(&m_outputDimensions), sizeof(m_outputDimensions));
+	f.read(reinterpret_cast<char *>(&m_iterations), sizeof(m_iterations));
 
     //read data
 	for (size_t i = 0; i < m_dataSize; ++i)
     {
 		auto point = std::vector<double>(m_inputDimensions);
-		f.read(reinterpret_cast<char*>(point.data()), sizeof(double) * m_inputDimensions);
+		f.read(reinterpret_cast<char *>(point.data()), sizeof(double) * m_inputDimensions);
         m_data.emplace_back(std::move(point));
 	}
 
@@ -495,7 +495,7 @@ bool TSNE::loadLegacy(const std::string & file)
 	if (!f.eof())
     {
         int seed;
-		f.read(reinterpret_cast<char*>(&seed), sizeof(seed));
+		f.read(reinterpret_cast<char *>(&seed), sizeof(seed));
         setRandomSeed(seed);
 	}
 
@@ -523,13 +523,13 @@ bool TSNE::loadTSNE(const std::string & file)
         return false;
     }
 
-	f.read(reinterpret_cast<char*>(&m_dataSize), sizeof(m_dataSize));
-	f.read(reinterpret_cast<char*>(&m_inputDimensions), sizeof(m_inputDimensions));
+	f.read(reinterpret_cast<char *>(&m_dataSize), sizeof(m_dataSize));
+	f.read(reinterpret_cast<char *>(&m_inputDimensions), sizeof(m_inputDimensions));
 
 	for (size_t i = 0; i < m_dataSize; ++i)
     {
 		auto point = std::vector<double>(m_inputDimensions);
-		f.read(reinterpret_cast<char*>(point.data()), sizeof(double) * m_inputDimensions);
+		f.read(reinterpret_cast<char *>(point.data()), sizeof(double) * m_inputDimensions);
 		m_data.emplace_back(std::move(point));
 	}
 
@@ -597,12 +597,12 @@ void TSNE::runApproximation()
 
     // Compute input similarities for exact t-SNE
     // init sparse matrix P, TODO: create and use class SparseMatrix
-    auto row_P = std::vector<unsigned int>();
-    auto col_P = std::vector<unsigned int>();
+    auto row_P = std::vector<unsigned>();
+    auto col_P = std::vector<unsigned>();
     auto val_P = std::vector<double>();
 
 	// Compute asymmetric pairwise input similarities
-	computeGaussianPerplexity(row_P, col_P, val_P);
+    computeGaussianPerplexityApproximation(row_P, col_P, val_P);
 
 	// Symmetrize input similarities
 	symmetrizeMatrix(row_P, col_P, val_P);
@@ -737,11 +737,11 @@ void TSNE::runExact()
 
     // Compute input similarities for exact t-SNE
     auto P = std::vector<double>(m_dataSize * m_dataSize);
-    computeGaussianPerplexity(P);
+    computeGaussianPerplexityExact(P);
 
     // Symmetrize input similarities
     std::cout << "Symmetrizing..." << std::endl;
-    int nN = 0;
+    unsigned nN = 0;
     for (unsigned n = 0; n < m_dataSize; n++)
     {
         int mN = (n + 1) * m_dataSize;
@@ -753,7 +753,8 @@ void TSNE::runExact()
         }
         nN += m_dataSize;
     }
-    double sum_P = .0;
+
+    double sum_P = 0.0;
     for (size_t i = 0; i < m_dataSize * m_dataSize; i++)
     {
         sum_P += P[i];
@@ -770,11 +771,11 @@ void TSNE::runExact()
         P[i] *= 12.0;
     }
 
-    double* Y = (double*)malloc(m_dataSize * m_outputDimensions * sizeof(double));
+    double * Y = (double *)malloc(m_dataSize * m_outputDimensions * sizeof(double));
     // Initialize solution (randomly)
     for (unsigned i = 0; i < m_dataSize * m_outputDimensions; i++)
     {
-        Y[i] = gaussNumber() * .0001;
+        Y[i] = gaussNumber() * 0.0001;
     }
 
     // Perform main training loop
@@ -899,14 +900,14 @@ void TSNE::saveLegacy()
 
 	auto costs = std::vector<double>(m_dataSize, 0.0);
 
-	f.write(reinterpret_cast<char*>(&m_dataSize), sizeof(m_dataSize));
-	f.write(reinterpret_cast<char*>(&m_outputDimensions), sizeof(m_outputDimensions));
+	f.write(reinterpret_cast<char *>(&m_dataSize), sizeof(m_dataSize));
+	f.write(reinterpret_cast<char *>(&m_outputDimensions), sizeof(m_outputDimensions));
 	for (auto & point : m_result)
     {
-		f.write(reinterpret_cast<char*>(point.data()), m_outputDimensions * sizeof(double));
+		f.write(reinterpret_cast<char *>(point.data()), m_outputDimensions * sizeof(double));
 	}
-	f.write(reinterpret_cast<char*>(landmarks.data()), landmarks.size() * sizeof(int));
-	f.write(reinterpret_cast<char*>(costs.data()), costs.size() * sizeof(double));
+	f.write(reinterpret_cast<char *>(landmarks.data()), landmarks.size() * sizeof(int));
+	f.write(reinterpret_cast<char *>(costs.data()), costs.size() * sizeof(double));
 
 	std::cout << "Wrote the " << m_dataSize << " x " << m_outputDimensions
         << " data matrix successfully!" << std::endl;
@@ -940,7 +941,7 @@ void TSNE::saveSVG()
 		}
 
 		uint32_t labelCount;
-		labelInput.read(reinterpret_cast<char*>(&labelCount), sizeof(labelCount));
+		labelInput.read(reinterpret_cast<char *>(&labelCount), sizeof(labelCount));
 		std::cout << "Labels file contains " << labelCount << " labels." << std::endl;
 		if (labelCount < m_dataSize)
 		{
@@ -950,7 +951,7 @@ void TSNE::saveSVG()
 
 		labelCount = std::min(labelCount, m_dataSize);
 		labels.resize(labelCount);
-		labelInput.read(reinterpret_cast<char*>(labels.data()), labels.size());
+		labelInput.read(reinterpret_cast<char *>(labels.data()), labels.size());
 	}
 
 	uint8_t maxLabel = 0;
@@ -993,7 +994,7 @@ void TSNE::saveSVG()
 }
 
 // TODO: remove, always use vector as parameter
-void TSNE::zeroMean(double* X, int N, int D)
+void TSNE::zeroMean(double * X, int N, int D)
 {
 
     auto points = std::vector<std::vector<double>>(m_dataSize, std::vector<double>(D, 0.0));
@@ -1002,7 +1003,7 @@ void TSNE::zeroMean(double* X, int N, int D)
     {
         for (int j = 0; j < D; ++j)
         {
-            points[i][j] = X[i*D + j];
+            points[i][j] = X[i * D + j];
         }
     }
 
@@ -1012,7 +1013,7 @@ void TSNE::zeroMean(double* X, int N, int D)
     {
         for (int j = 0; j < D; ++j)
         {
-            X[i*D + j] = points[i][j];
+            X[i * D + j] = points[i][j];
         }
     }
 }
@@ -1037,12 +1038,12 @@ void TSNE::zeroMean(std::vector<std::vector<double>> & points)
     }
 }
 
-void TSNE::computeGaussianPerplexity(std::vector<double> & P)
+void TSNE::computeGaussianPerplexityExact(std::vector<double> & P)
 {
 	// Compute the squared Euclidean distance matrix
 	auto distances = computeSquaredEuclideanDistance(m_data);
 	// Compute the Gaussian kernel row by row
-	int nN = 0;
+	unsigned nN = 0;
 	for (unsigned n = 0; n < m_dataSize; n++)
     {
 
@@ -1124,7 +1125,7 @@ void TSNE::computeGaussianPerplexity(std::vector<double> & P)
 
 // compute squared eucl. dist. on OUTPUT!!! maptrix
 //TODO: remove this, always use vector as parameter
-std::vector<double> TSNE::computeSquaredEuclideanDistance(double* data)
+std::vector<double> TSNE::computeSquaredEuclideanDistance(double * data)
 {
     auto points = std::vector<std::vector<double>>(m_dataSize, std::vector<double>(m_outputDimensions, 0.0));
 
@@ -1132,7 +1133,7 @@ std::vector<double> TSNE::computeSquaredEuclideanDistance(double* data)
     {
         for (size_t j = 0; j < points[0].size(); ++j)
         {
-            points[i][j] = data[i*m_outputDimensions + j];
+            points[i][j] = data[i * m_outputDimensions + j];
         }
     }
 
@@ -1156,21 +1157,22 @@ std::vector<double> TSNE::computeSquaredEuclideanDistance(const std::vector<std:
                 distance += diff * diff;
             }
 
-            distances[i*points.size() + j] = distance;
-            distances[j*points.size() + i] = distance;
+            distances[i * points.size() + j] = distance;
+            distances[j * points.size() + i] = distance;
         }
     }
 
     return distances;
 }
 
-void TSNE::computeGaussianPerplexity(std::vector<unsigned int> & row_P, std::vector<unsigned int> & col_P, std::vector<double> & val_P)
+void TSNE::computeGaussianPerplexityApproximation(std::vector<unsigned> & row_P, std::vector<unsigned> & col_P,
+                                                  std::vector<double> & val_P)
 {
     assert(m_data.size() == m_dataSize);
     assert(m_data[0].size() == m_inputDimensions);
 
     //hacky conversion TODO remove
-	double* X = (double*)malloc(m_dataSize * m_inputDimensions * sizeof(double));// = data;
+	double * X = (double *)malloc(m_dataSize * m_inputDimensions * sizeof(double));// = data;
 	int offset = 0;
 	for (auto & point : m_data)
 	{
@@ -1180,7 +1182,7 @@ void TSNE::computeGaussianPerplexity(std::vector<unsigned int> & row_P, std::vec
 		}
 	}
 
-	int K = static_cast<int>(3 * m_perplexity);
+	unsigned K = static_cast<unsigned>(3 * m_perplexity);
 
 	// Allocate the memory we need
 	row_P.resize(m_dataSize + 1);
@@ -1191,10 +1193,10 @@ void TSNE::computeGaussianPerplexity(std::vector<unsigned int> & row_P, std::vec
 	row_P[0] = 0;
 	for (unsigned n = 0; n < m_dataSize; n++)
     {
-        row_P[n + 1] = row_P[n] + (unsigned int)K;
+        row_P[n + 1] = row_P[n] + K;
     }
 
-	// Build ball tree on data set
+	// Build ball tree on data set ; VPTree = VantagePointTree: https://en.wikipedia.org/wiki/Vantage-point_tree
 	auto tree = VpTree<DataPoint, euclidean_distance>();
 	auto obj_X = std::vector<DataPoint>(m_dataSize, DataPoint(m_inputDimensions, -1, X));
 	for (unsigned n = 0; n < m_dataSize; n++)
@@ -1231,20 +1233,20 @@ void TSNE::computeGaussianPerplexity(std::vector<unsigned int> & row_P, std::vec
 		for (unsigned iteration = 0; iteration < 200; iteration++)
         {
 			// Compute Gaussian kernel row
-			for (int m = 0; m < K; m++)
+			for (unsigned m = 0; m < K; m++)
             {
                 cur_P[m] = exp(-beta * distances[m + 1] * distances[m + 1]);
             }
 
 			// Compute entropy of current row
 			sum_P = std::numeric_limits<double>::min();
-			for (int m = 0; m < K; m++)
+			for (unsigned m = 0; m < K; m++)
             {
                 sum_P += cur_P[m];
             }
 
 			double H = 0.0;
-			for (int m = 0; m < K; m++)
+			for (unsigned m = 0; m < K; m++)
             {
                 H += beta * (distances[m + 1] * distances[m + 1] * cur_P[m]);
             }
@@ -1292,7 +1294,7 @@ void TSNE::computeGaussianPerplexity(std::vector<unsigned int> & row_P, std::vec
         }
 		for (unsigned m = 0; m < K; m++)
         {
-			col_P[row_P[n] + m] = static_cast<unsigned int>(indices[m + 1].index());
+			col_P[row_P[n] + m] = static_cast<unsigned>(indices[m + 1].index());
 			val_P[row_P[n] + m] = cur_P[m];
 		}
 	}
