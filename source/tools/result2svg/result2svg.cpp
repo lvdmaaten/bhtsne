@@ -7,7 +7,7 @@
 
 using namespace std;
 
-void fail(const string& reason)
+auto fail(const string& reason)
 {
     cout << "Error: " << reason << endl;
     exit(-1);
@@ -15,14 +15,18 @@ void fail(const string& reason)
 
 int main(int argc, char* argv[])
 {
-    string file = argc >= 2 ? argv[1] : "result.dat";
-    ifstream input;
+    auto file = argc >= 2 ? argv[1] : "result.dat";
+    auto input = ifstream();
     input.open(file, ios::in | ios::binary);
-    if(!input.is_open()) fail("Could not open input.");
+    if (!input.is_open())
+    {
+        fail("Could not open input.");
+    }
     cout << "Loaded input." << endl;
 
-    uint32_t sampleCount, dimensionCount;
+    uint32_t sampleCount;
     input.read(reinterpret_cast<char*>(&sampleCount), sizeof(sampleCount));
+    uint32_t dimensionCount;
     input.read(reinterpret_cast<char*>(&dimensionCount), sizeof(dimensionCount));
 
     cout << "Set includes " << sampleCount << " samples with " << dimensionCount << " values each." << endl;
@@ -35,15 +39,17 @@ int main(int argc, char* argv[])
     input.close();
     cout << "Closed input." << endl;
 
-    double extreme = 0;
-    for(unsigned int i = 0; i < sampleCount * dimensionCount; i++)
+    auto extreme = 0.0;
+    for (auto i = 0u; i < sampleCount * dimensionCount; ++i)
+    {
         extreme = max(extreme, abs(data[i]));
-    double radius = 0.5;
-    double halfwidth = extreme + radius;
-    string viewBox = to_string(-halfwidth) + " " + to_string(-halfwidth) + " " + to_string(2*halfwidth) + " " + to_string(2*halfwidth);
+    }
+    auto radius = 0.5;
+    auto halfwidth = extreme + radius;
+    auto viewBox = to_string(-halfwidth) + " " + to_string(-halfwidth) + " " + to_string(2*halfwidth) + " " + to_string(2*halfwidth);
 
     auto labels = vector<uint8_t>();
-    bool useLabels = false;
+    auto useLabels = false;
     if (argc > 2)
     {
         useLabels = true;
