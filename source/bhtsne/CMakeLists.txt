@@ -38,12 +38,12 @@ set(headers
     ${include_path}/vptree.h
     ${include_path}/vptree.inl
     ${include_path}/vector2d.h
+	${include_path}/vector2d.inl
 )
 
 set(sources
     ${source_path}/sptree.cpp
     ${source_path}/tsne.cpp
-    ${source_path}/vector2d.cpp
 )
 
 # Group source files

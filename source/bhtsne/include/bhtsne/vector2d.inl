@@ -4,7 +4,8 @@
 #include <cassert>
 
 
-using namespace bhtsne;
+namespace bhtsne 
+{
 
 
 template<typename T>
@@ -38,6 +39,7 @@ Vector2D<T> & Vector2D<T>::operator=(Vector2D<T> && other)
 {
     m_vector = std::move(other.m_vector);
     m_width = other.m_width;
+    return *this;
 }
 
 template<typename T>
@@ -87,16 +89,19 @@ typename std::vector<T>::iterator Vector2D<T>::end()
 
 template<typename T>
 T * Vector2D<T>::operator[](size_t i) {
-    return m_vector.data() + i * m_width;
+    return m_vector.data() + (i * m_width);
 }
 
 template<typename T>
 const T * Vector2D<T>::operator[](size_t i) const
 {
-    return m_vector.data() + i * m_width;
+    return m_vector.data() + (i * m_width);
 }
 
 template<typename T>
 T & Vector2D<T>::at(size_t i, size_t j) {
     return m_vector.at(i * m_width + j);
 }
+
+
+} //bhtsne

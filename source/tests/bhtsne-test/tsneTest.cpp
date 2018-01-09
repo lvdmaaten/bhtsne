@@ -1,31 +1,35 @@
-#include <bhtsne/tsne.h>
+
 #include <gtest/gtest.h>
+
 #include <string>
 #include <cstdio>
 #include <fstream>
 #include <initializer_list>
 
+#include <bhtsne/tsne.h>
+
+
 class PublicTSNE : public bhtsne::TSNE
 {
 public:
-    auto data()
+    auto & data()
     {
         return m_data;
     };
 
     auto setData(std::vector<std::vector<double>> data)
     {
-        m_data = std::move(data);
+        m_data = data;
     };
 
-    auto result()
+    auto & result()
     {
         return m_result;
     };
 
     auto setResult(std::vector<std::vector<double>> result)
     {
-        m_result = std::move(result);
+        m_result = result;
     };
 
     auto setInputDimensions(unsigned int dimensions)
@@ -38,7 +42,7 @@ public:
         return TSNE::gaussNumber();
     }
 
-    void zeroMean(std::vector<std::vector<double>>& data) {
+    void zeroMean(bhtsne::Vector2D<double>& data) {
         TSNE::zeroMean(data);
     }
 };
@@ -353,7 +357,7 @@ TEST_F(TsneTest, RunApproximation)
         FAIL() << "run method exception: " << e.what();
     }
 
-    auto result = m_tsne.result();
+    auto& result = m_tsne.result();
 
     auto expected = std::vector<std::vector<double>>{
         { -37.969682880670781, 13.53176098293458 },
@@ -574,7 +578,7 @@ R"(3.16374,-91.2264
 
 TEST_F(TsneTest, ZeroMean)
 {
-    auto data = std::vector<std::vector<double>>{
+    auto init = std::vector<std::vector<double>>{
             { 0,56,19,80,58 },
             { 47,35,89,82,74 },
             { 17,85,71,51,30 },
@@ -587,12 +591,14 @@ TEST_F(TsneTest, ZeroMean)
             { 14,46,23,86,20 }
     };
 
+    bhtsne::Vector2D<double> data{ init };
+
     m_tsne.zeroMean(data);
 
-    for (auto d = 0u; d < data[0].size(); d++)
+    for (auto d = 0u; d < data.width(); ++d)
     {
         auto mean = 0.0;
-        for (auto i = 0u; i < data.size(); i++)
+        for (auto i = 0u; i < data.height(); ++i)
         {
             mean += data[i][d];
         }
