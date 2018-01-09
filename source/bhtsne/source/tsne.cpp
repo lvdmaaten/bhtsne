@@ -43,6 +43,7 @@
 #include <cassert>
 
 #include <vector>
+#include <numeric>
 #include <iostream>
 #include <fstream>
 #include <sstream>
