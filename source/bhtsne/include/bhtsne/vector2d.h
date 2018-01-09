@@ -4,17 +4,22 @@
 
 namespace bhtsne {
 
-    class Vector2D {
-    public:
-        Vector2D(size_t width, size_t height, double initValue = 0.0);
 
-        double * operator[](size_t i);
+template<typename T>
+class Vector2D {
+public:
+    Vector2D(std::vector<T>& firstRow);
+    Vector2D(size_t height, size_t width, T initValue = 0.0);
 
-        double & at(size_t i, size_t j);
+    void appendRow(std::vector<T>& row);
 
-    protected:
-        std::vector<double> m_vector;
-        size_t m_width;
-    };
+    T * operator[](size_t i);
+    T & at(size_t i, size_t j);
+
+protected:
+    std::vector<T> m_vector;
+    size_t m_width;
+};
+
 
 }
