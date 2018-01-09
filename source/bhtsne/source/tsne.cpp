@@ -235,8 +235,8 @@ void TSNE::symmetrizeMatrix(std::vector<unsigned int> & row_P, std::vector<unsig
         for (unsigned i = row_P[n]; i < row_P[n + 1]; i++)
         {
             // Check whether element (col_P[i], n) is present
-            auto first = row_P.begin() + row_P[col_P[i]];
-            auto last = row_P.begin() + row_P[col_P[i] + 1];
+            auto first = col_P.begin() + row_P[col_P[i]];
+            auto last = col_P.begin() + row_P[col_P[i] + 1];
 
             if (std::find(first, last, n) == last)
             {
