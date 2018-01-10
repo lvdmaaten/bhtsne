@@ -20,7 +20,7 @@ struct MeasurementResult
 
 auto fileIsPresent()
 {
-    auto file = std::ifstream("data.dat");
+    std::ifstream file("data.dat");
     return file.good();
 }
 
@@ -44,7 +44,7 @@ int main(int argc, char* argv[])
     // hide library output
     auto coutBuf = std::cout.rdbuf();
     std::ostream newCout(coutBuf);
-    auto redirectStream = std::stringstream();
+    std::stringstream redirectStream;
     std::cout.rdbuf(redirectStream.rdbuf());
 
     for (auto i = 0; i < testSizes.size(); ++i)
@@ -108,7 +108,7 @@ int main(int argc, char* argv[])
     char* timeString = new char[20];
     std::strftime(timeString, 20, "%Y-%m-%d-%H-%M-%S", std::localtime(&saveTime_t));
     auto fileName = "performance_" + std::string(timeString) + (argc > 3 ? "_" + std::string(argv[3]) : "") + ".csv";
-    auto file = std::ofstream(fileName);
+    std::ofstream file(fileName);
     if (!file.is_open())
     {
         newCout << "Could not open output file " << fileName << "." << std::endl;
