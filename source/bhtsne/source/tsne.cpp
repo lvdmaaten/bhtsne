@@ -610,8 +610,8 @@ void TSNE::runApproximation()
     }
 
     //TODO: documentation for all these magic numbers
-    unsigned stop_lying_iteration = 251;
-    unsigned momentum_switch_iteration = 251;
+    unsigned stop_lying_iteration = 250;
+    unsigned momentum_switch_iteration = 250;
 
     // Set learning parameters
     double momentum = 0.5;
@@ -623,7 +623,7 @@ void TSNE::runApproximation()
 
 	// Perform main training loop
     std::cout << " Input similarities computed. Learning embedding..." << std::endl;
-	for (unsigned int iter = 0; iter < m_iterations; ++iter)
+	for (unsigned int iteration = 0; iteration < m_iterations; ++iteration)
     {
 		// Compute approximate gradient
         auto gradients = computeGradient(row_P.data(), col_P.data(), val_P.data());
@@ -676,7 +676,7 @@ void TSNE::runApproximation()
         {
 			// doing approximate computation here!
 			double error = evaluateError(row_P.data(), col_P.data(), val_P.data());
-			std::cout << "Iteration " << (iter + 1) << ": error is " << error << std::endl;
+			std::cout << "Iteration " << (iteration + 1) << ": error is " << error << std::endl;
 		}
 	}
 }
@@ -684,8 +684,8 @@ void TSNE::runApproximation()
 
 void TSNE::runExact()
 {
-    unsigned stop_lying_iteration = 251;
-    unsigned momentum_switch_iteration = 251;
+    unsigned stop_lying_iteration = 250;
+    unsigned momentum_switch_iteration = 250;
 
     // Set learning parameters
     double momentum = 0.5;
@@ -737,7 +737,7 @@ void TSNE::runExact()
     auto uY    = Vector2D<double>(m_dataSize, m_outputDimensions, 0.0);
     auto gains = Vector2D<double>(m_dataSize, m_outputDimensions, 1.0);
 
-    for (unsigned int iter = 0; iter < m_iterations; ++iter)
+    for (unsigned int iteration = 0; iteration < m_iterations; ++iteration)
     {
         // Compute exact gradient
         auto gradients = computeGradientExact(P);
@@ -784,7 +784,7 @@ void TSNE::runExact()
         if (iteration % 50 == 0 || iteration == m_iterations)
         {
             double C = evaluateErrorExact(P);
-            std::cout << "Iteration " << (iter + 1) << ": error is " << C << std::endl;
+            std::cout << "Iteration " << (iteration + 1) << ": error is " << C << std::endl;
         }
     }
 }
