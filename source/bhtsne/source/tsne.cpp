@@ -434,7 +434,7 @@ bool bhtsne::TSNE::loadFromStream(std::istream & stream)
     bool first = true;
     while (std::getline(stream, line))
     {
-        auto iss = std::istringstream(line);
+        std::istringstream iss(line);
         auto element = std::string();
 
         auto point = std::vector<double>();
@@ -477,7 +477,7 @@ bool bhtsne::TSNE::loadFromStream(std::istream & stream)
 
 bool TSNE::loadLegacy(const std::string & file)
 {
-	auto f = std::ifstream(file, std::ios::binary);
+    std::ifstream f(file, std::ios::binary);
 	if (!f.is_open())
     {
         std::cerr << "Could not open " << file << std::endl;
@@ -509,7 +509,7 @@ bool TSNE::loadLegacy(const std::string & file)
 
 bool TSNE::loadCSV(const std::string & file)
 {
-	auto f = std::ifstream(file);
+    std::ifstream f(file);
 	if (!f.is_open())
     {
         std::cerr << "Could not open " << file << std::endl;
@@ -521,7 +521,7 @@ bool TSNE::loadCSV(const std::string & file)
 
 bool TSNE::loadTSNE(const std::string & file)
 {
-	auto f = std::ifstream(file, std::ios::binary);
+    std::ifstream f(file, std::ios::binary);
 	if (!f.is_open())
     {
         std::cerr << "Could not open " << file << std::endl;
@@ -818,7 +818,7 @@ void TSNE::saveToCout()
 
 void TSNE::saveCSV()
 {
-    auto csv_fstream = std::ofstream(m_outputFile + ".csv");
+    std::ofstream csv_fstream(m_outputFile + ".csv");
 	if (!csv_fstream.is_open())
 	{
 		std::cerr << "can't open " << m_outputFile << ".csv" << std::endl;
@@ -830,7 +830,7 @@ void TSNE::saveCSV()
 
 void TSNE::saveLegacy()
 {
-	auto f = std::ofstream(m_outputFile + ".dat", std::ios::binary);
+    std::ofstream f(m_outputFile + ".dat", std::ios::binary);
 	if (!f.is_open())
     {
 		std::cerr << "can't open " << m_outputFile << ".dat" << std::endl;
@@ -867,7 +867,7 @@ void TSNE::saveSVG()
 	if (!labelFile.empty())
 	{
 		usingLabels = true;
-		auto labelInput = std::ifstream(labelFile, std::ios::in | std::ios::binary);
+        std::ifstream labelInput(labelFile, std::ios::in | std::ios::binary);
 		if (!labelInput.is_open())
 		{
             std::cerr << "Could not open " << labelFile << std::endl;
@@ -899,7 +899,7 @@ void TSNE::saveSVG()
         colors.push_back("hsl(" + std::to_string(360.0 * i / (maxLabel / 2 + 1)) + ", 100%, " + (i % 2 == 0 ? "25" : "60") + "%)");
     }
 
-	auto f = std::ofstream(m_outputFile + ".svg", std::ios::out | std::ios::trunc);
+    std::ofstream f(m_outputFile + ".svg", std::ios::out | std::ios::trunc);
 	if (!f.is_open())
     {
 		std::cerr << "can't open " << m_outputFile << ".svg" << std::endl;
