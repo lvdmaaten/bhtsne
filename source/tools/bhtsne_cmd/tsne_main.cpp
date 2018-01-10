@@ -24,12 +24,14 @@ int main(int argc, char * argv[])
         return 2;
     }
 
-    bool loaded = false;
+    auto loaded = false;
 
     if (params.empty())
     {
         loaded = tsne.loadCin();
-    } else {
+    }
+    else
+    {
         //determine extension
         auto inputfile = params.front();
         auto ext_pos = inputfile.rfind('.');
@@ -45,13 +47,17 @@ int main(int argc, char * argv[])
         if (ext == ".dat")
         {
             loaded = tsne.loadLegacy(inputfile);
-        } else if (ext == ".csv")
+        }
+        else if (ext == ".csv")
         {
             loaded = tsne.loadCSV(inputfile);
-        } else if (ext == ".tsne")
+        }
+        else if (ext == ".tsne")
         {
             loaded = tsne.loadTSNE(inputfile);
-        } else {
+        }
+        else
+        {
             std::cerr << "file extension of " << ext << " not supported\n";
             return 4;
         }

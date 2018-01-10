@@ -610,8 +610,8 @@ void TSNE::runApproximation()
     }
 
     //TODO: documentation for all these magic numbers
-    int stop_lying_iter = 250;
-    int mom_switch_iter = 250;
+    unsigned stop_lying_iteration = 251;
+    unsigned momentum_switch_iteration = 251;
 
     // Set learning parameters
     double momentum = 0.5;
@@ -659,20 +659,20 @@ void TSNE::runApproximation()
 		zeroMean(m_result);
 
 		// Stop lying about the P-values after a while, and switch momentum
-		if (iter == stop_lying_iter)
+		if (iteration == stop_lying_iteration)
         {
 			for (auto & each : val_P)
             {
                 each /= 12.0;
             }
 		}
-		if (iter == mom_switch_iter)
+		if (iteration == momentum_switch_iteration)
         {
             momentum = final_momentum;
         }
 
 		// Print out progress
-		if (iter % 50 == 49 || iter == m_iterations - 1)
+		if (iteration % 50 == 0 || iteration == m_iterations)
         {
 			// doing approximate computation here!
 			double error = evaluateError(row_P.data(), col_P.data(), val_P.data());
@@ -684,8 +684,8 @@ void TSNE::runApproximation()
 
 void TSNE::runExact()
 {
-    int stop_lying_iter = 250;
-    int mom_switch_iter = 250;
+    unsigned stop_lying_iteration = 251;
+    unsigned momentum_switch_iteration = 251;
 
     // Set learning parameters
     double momentum = 0.5;
@@ -767,7 +767,7 @@ void TSNE::runExact()
         zeroMean(m_result);
 
         // Stop lying about the P-values after a while, and switch momentum
-        if (iter == stop_lying_iter)
+        if (iteration == stop_lying_iteration)
         {
             for (auto & each : P)
             {
@@ -775,13 +775,13 @@ void TSNE::runExact()
             }
         }
 
-        if (iter == mom_switch_iter)
+        if (iteration == momentum_switch_iteration)
         {
             momentum = final_momentum;
         }
 
         // Print out progress
-        if (iter > 0 && (iter % 50 == 0 || iter == m_iterations - 1))
+        if (iteration % 50 == 0 || iteration == m_iterations)
         {
             double C = evaluateErrorExact(P);
             std::cout << "Iteration " << (iter + 1) << ": error is " << C << std::endl;
@@ -863,7 +863,7 @@ void TSNE::saveSVG()
     //TODO: allow setting a labelFile, e.g. by command line option
     auto labelFile = std::string();
     auto labels = std::vector<uint8_t>();
-    bool usingLabels = false;
+    auto usingLabels = false;
 	if (!labelFile.empty())
 	{
 		usingLabels = true;
@@ -894,7 +894,7 @@ void TSNE::saveSVG()
         maxLabel = std::max(label, maxLabel);
     }
 	auto colors = std::vector<std::string>();
-	for (int i = 0; i <= maxLabel; ++i)
+	for (auto i = 0; i <= maxLabel; ++i)
     {
         colors.push_back("hsl(" + std::to_string(360.0 * i / (maxLabel / 2 + 1)) + ", 100%, " + (i % 2 == 0 ? "25" : "60") + "%)");
     }
@@ -933,7 +933,7 @@ void TSNE::zeroMean(Vector2D<double> & points)
     const auto dimensions = points.width();
     const auto size = points.height();
 
-    for (auto d = 0u; d < dimensions; d++)
+    for (size_t d = 0; d < dimensions; d++)
     {
         auto mean = 0.0;
         for (auto i = 0u; i < size; ++i)
@@ -975,7 +975,7 @@ Vector2D<double> TSNE::computeGaussianPerplexityExact()
         double sum_P = 0.0;
 
 		// Iterate until we found a good perplexity
-		for (auto iter = 0; iter < 200; iter++)
+		for (unsigned iteration = 0; iteration < 200u; iteration++)
         {
 
 			// Compute Gaussian kernel row
@@ -992,8 +992,8 @@ Vector2D<double> TSNE::computeGaussianPerplexityExact()
                 sum_P += P[n][m];
             }
 
-			double H = 0.0; //TODO what is this?
-			for (int m = 0; m < m_dataSize; ++m)
+			double H = 0.0; //TODO what is H?
+			for (unsigned m = 0; m < m_dataSize; m++)
             {
                 H += beta * (distances[n][m] * P[n][m]);
             }
@@ -1055,10 +1055,10 @@ Vector2D<double> TSNE::computeSquaredEuclideanDistance(const Vector2D<double> & 
     {
         for (auto j = i + 1; j < number; ++j)
         {
-            auto distance = 0.0;
-            for (auto d = 0u; d < dimensions; ++d)
+            double distance = 0.0;
+            for (size_t d = 0; d < dimensions; ++d)
             {
-                auto diff = points[i][d] - points[j][d];
+                double diff = points[i][d] - points[j][d];
                 distance += diff * diff;
             }
 
@@ -1075,7 +1075,7 @@ void TSNE::computeGaussianPerplexity(std::vector<unsigned int> & row_P, std::vec
     assert(m_data.height() == m_dataSize);
     assert(m_data.width() == m_inputDimensions);
 
-	int K = (int)(3 * m_perplexity);
+	int K = static_cast<int>(3 * m_perplexity);
 
 	// Allocate the memory we need
 	row_P.resize(m_dataSize + 1);
@@ -1116,15 +1116,14 @@ void TSNE::computeGaussianPerplexity(std::vector<unsigned int> & row_P, std::vec
 		tree.search(obj_X[n], K + 1, &indices, &distances);
 
 		// Initialize some variables for binary search
-		bool found = false;
 		double beta = 1.0;
 		double min_beta = std::numeric_limits<double>::lowest();
 		double max_beta = std::numeric_limits<double>::max();
 		double tol = 1e-5;
 
 		// Iterate until we found a good perplexity
-		int iter = 0; double sum_P;
-		while (!found && iter < 200)
+		double sum_P = 0.0;
+		for (unsigned iteration = 0; iteration < 200; iteration++)
         {
 			// Compute Gaussian kernel row
 			for (int m = 0; m < K; ++m)
@@ -1150,7 +1149,7 @@ void TSNE::computeGaussianPerplexity(std::vector<unsigned int> & row_P, std::vec
 			double Hdiff = H - log(m_perplexity);
 			if (Hdiff < tol && -Hdiff < tol)
             {
-				found = true;
+				break;
 			}
 			else
             {
@@ -1179,9 +1178,6 @@ void TSNE::computeGaussianPerplexity(std::vector<unsigned int> & row_P, std::vec
                     }
 				}
 			}
-
-			// Update iteration counter
-			iter++;
 		}
 
 		// Row-normalize current row of P and store in matrix
@@ -1191,7 +1187,7 @@ void TSNE::computeGaussianPerplexity(std::vector<unsigned int> & row_P, std::vec
         }
 		for (unsigned int m = 0; m < K; ++m)
         {
-			col_P[row_P[n] + m] = (unsigned int)indices[m + 1].index();
+			col_P[row_P[n] + m] = static_cast<unsigned int>(indices[m + 1].index());
 			val_P[row_P[n] + m] = cur_P[m];
 		}
 	}
