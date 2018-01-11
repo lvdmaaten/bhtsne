@@ -1,43 +1,36 @@
 language: cpp
 
-sudo: required
-dist: trusty
-
 os:
   - osx
+  - linux
 
 compiler:
   - clang
+  - gcc
 
 env:
-  global:
-    - CMAKE_OPTIONS="-DOPTION_BUILD_EXAMPLES=On"
-  matrix:
-    - CMAKE_CONFIGURATION=release BUILD_DIR=build
-    - CMAKE_CONFIGURATION=debug BUILD_DIR=build-debug
+  - CMAKE_CONFIGURATION=release BUILD_DIR=build
+  - CMAKE_CONFIGURATION=debug BUILD_DIR=build-debug
+
+addons:
+  apt:
+    sources:
+    - llvm-toolchain-precise-3.8
+    - ubuntu-toolchain-r-test
+    packages:
+    - cmake
+    - g++-5
+    - clang-3.8
 
 matrix:
-  include:
-    - os: linux
-      env: COMPILER_NAME=gcc CXX=g++-5 CC=gcc-5
-      addons:
-        apt:
-          packages:
-            - g++-5
-          sources: &sources
-            - llvm-toolchain-precise-3.8
-            - ubuntu-toolchain-r-test
-    - os: linux
-      env: COMPILER_NAME=clang CXX=clang++-3.8 CC=clang-3.8
-      addons:
-        apt:
-          packages:
-            - clang-3.8
-          sources: *sources
+  exclude:
+    - os: osx
+      compiler: gcc
 
-before_install:
-  - if [ $TRAVIS_OS_NAME == linux ]; then sudo apt-get install -qq cmake cppcheck clang-tidy-3.8; fi
+install:
   - if [ $TRAVIS_OS_NAME == osx ]; then brew update && brew install cppcheck; fi
+  - if [ "$CC" = "gcc" ]; then export CXX="g++-5" CC="gcc-5"; fi
+  - if [ "$CC" = "clang" ]; then export CXX="clang++-3.8" CC="clang-3.8"; fi
 
 before_script:
   - ./configure
@@ -47,4 +40,3 @@ before_script:
 script:
   - cmake --build $BUILD_DIR
   - cmake --build $BUILD_DIR --target test
-  - cmake --build $BUILD_DIR --target check-all
