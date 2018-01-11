@@ -259,7 +259,7 @@ void TSNE::symmetrizeMatrix(SparseMatrix & similarities)
     unsigned int numberOfElements = std::accumulate(row_counts.begin(), row_counts.begin() + m_dataSize, 0u);
 
     // Allocate memory for symmetrized matrix
-    // TODO reuse the memory in similarities!!
+    // TODO reuse the memory in similarities
     auto symmetrized_similarities = SparseMatrix();
     symmetrized_similarities.rows.resize(m_dataSize + 1);
     symmetrized_similarities.columns.resize(numberOfElements);
@@ -980,7 +980,7 @@ Vector2D<double> TSNE::computeGaussianPerplexityExact()
         double sum_P = 0.0;
 
 		// Iterate until we found a good perplexity
-		for (unsigned iteration = 0; iteration < 200u; iteration++)
+		for (unsigned int iteration = 0; iteration < 200u; iteration++)
         {
 
 			// Compute Gaussian kernel row
@@ -1087,7 +1087,6 @@ void TSNE::computeGaussianPerplexity(SparseMatrix & similarities)
     similarities.columns.resize(m_dataSize * K);
     similarities.values.resize(m_dataSize * K, 0.0);
 
-	auto cur_P = std::vector<double>(m_dataSize - 1);
     similarities.rows[0] = 0;
 	for (unsigned int n = 0; n < m_dataSize; ++n)
     {
@@ -1105,11 +1104,11 @@ void TSNE::computeGaussianPerplexity(SparseMatrix & similarities)
 
 	// Loop over all points to find nearest neighbors
 	std::cout << "Building tree..." << std::endl;
-	std::vector<DataPoint> indices;
-	std::vector<double> distances;
+	auto indices = std::vector<DataPoint>();
+	auto distances = std::vector<double>();
+    auto cur_P = std::vector<double>(m_dataSize - 1);
 	for (unsigned int n = 0; n < m_dataSize; ++n)
     {
-
 		if (n % 10000 == 0)
         {
             std::cout << " - point " << n << " of " << m_dataSize << std::endl;
@@ -1124,11 +1123,11 @@ void TSNE::computeGaussianPerplexity(SparseMatrix & similarities)
 		double beta = 1.0;
 		double min_beta = std::numeric_limits<double>::lowest();
 		double max_beta = std::numeric_limits<double>::max();
-		double tol = 1e-5;
+		double tolerance_threshold = 1e-5;
 
 		// Iterate until we found a good perplexity
 		double sum_P = 0.0;
-		for (unsigned iteration = 0; iteration < 200; iteration++)
+		for (unsigned int iteration = 0; iteration < 200u; iteration++)
         {
 			// Compute Gaussian kernel row
 			for (unsigned int m = 0; m < K; ++m)
@@ -1152,7 +1151,7 @@ void TSNE::computeGaussianPerplexity(SparseMatrix & similarities)
 
 			// Evaluate whether the entropy is within the tolerance level
 			double Hdiff = H - log(m_perplexity);
-			if (std::abs(Hdiff) < tol)
+			if (std::abs(Hdiff) < tolerance_threshold)
             {
 				break;
 			}
