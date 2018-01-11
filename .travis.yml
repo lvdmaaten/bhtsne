@@ -4,11 +4,9 @@ sudo: required
 dist: trusty
 
 os:
-  - linux
   - osx
 
 compiler:
-  - gcc
   - clang
 
 env:
@@ -19,9 +17,23 @@ env:
     - CMAKE_CONFIGURATION=debug BUILD_DIR=build-debug
 
 matrix:
-  exclude:
-  - os: osx
-    compiler: gcc
+  include:
+    - os: linux
+      env: COMPILER_NAME=gcc CXX=g++-5 CC=gcc-5
+      addons:
+        apt:
+          packages:
+            - g++-5
+          sources: &sources
+            - llvm-toolchain-precise-3.8
+            - ubuntu-toolchain-r-test
+    - os: linux
+      env: COMPILER_NAME=clang CXX=clang++-3.8 CC=clang-3.8
+      addons:
+        apt:
+          packages:
+            - clang-3.8
+          sources: *sources
 
 before_install:
   - if [ $TRAVIS_OS_NAME == linux ]; then sudo apt-get install -qq cmake cppcheck clang-tidy-3.8; fi
