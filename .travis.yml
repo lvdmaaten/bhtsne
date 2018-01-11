@@ -1,20 +1,21 @@
-language: minimal
+language: c++
 
 matrix:
   include:
 
     - os: osx
       osx_image: xcode9.1
-      compiler: clang
       env: CMAKE_CONFIGURATION=release BUILD_DIR=build
 
     - os: osx
       osx_image: xcode9.1
-      compiler: clang
       env: CMAKE_CONFIGURATION=debug BUILD_DIR=build-debug
 
     - os: linux
-      env: CMAKE_CONFIGURATION=release BUILD_DIR=build CXX=g++-5 CC=gcc-5
+      compiler: gcc
+      env:
+        - CMAKE_CONFIGURATION=release BUILD_DIR=build
+        - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
       addons:
         apt:
           sources:
@@ -24,7 +25,10 @@ matrix:
           - g++-5
 
     - os: linux
-      env: CMAKE_CONFIGURATION=debug BUILD_DIR=build-debug CXX=g++-5 CC=gcc-5
+      compiler: gcc
+      env:
+        - CMAKE_CONFIGURATION=debug BUILD_DIR=build-debug
+        - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
       addons:
         apt:
           sources:
@@ -34,28 +38,16 @@ matrix:
           - g++-5
 
     - os: linux
-      env: CMAKE_CONFIGURATION=release BUILD_DIR=build CXX=clang++-3.8 CC=clang-3.8
-      addons:
-        apt:
-          sources:
-          - ubuntu-toolchain-r-test
-          - llvm-toolchain-precise-3.8
-          packages:
-          - cmake
-          - clang-3.8
+      compiler: clang
+      env: CMAKE_CONFIGURATION=release BUILD_DIR=build
 
     - os: linux
-      env: CMAKE_CONFIGURATION=debug BUILD_DIR=build-debug CXX=clang++-3.8 CC=clang-3.8
-      addons:
-        apt:
-          sources:
-          - ubuntu-toolchain-r-test
-          - llvm-toolchain-precise-3.8
-          packages:
-          - cmake
-          - clang-3.8
+      compiler: clang
+      env: CMAKE_CONFIGURATION=debug BUILD_DIR=build-debug
+
 
 before_script:
+  - eval "${MATRIX_EVAL}"
   - ./configure
   - ./configure $CMAKE_CONFIGURATION
 
