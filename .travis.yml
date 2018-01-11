@@ -30,8 +30,8 @@ addons:
     - clang-3.8
 
 install:
-  - if [ $TRAVIS_OS_NAME == linux && "$CC" = "gcc" ]; then export CXX="g++-5" CC="gcc-5"; fi
-  - if [ $TRAVIS_OS_NAME == linux && "$CC" = "clang" ]; then export CXX="clang++-3.8" CC="clang-3.8"; fi
+  - if [ $TRAVIS_OS_NAME == linux ] && [ "$CC" = "gcc" ]; then export CXX="g++-5" CC="gcc-5"; fi
+  - if [ $TRAVIS_OS_NAME == linux ] && [ "$CC" = "gcc" ]; then export CXX="clang++-3.8" CC="clang-3.8"; fi
 
 before_script:
   - ./configure
