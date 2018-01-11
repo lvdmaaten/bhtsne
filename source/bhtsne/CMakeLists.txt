@@ -39,6 +39,7 @@ set(headers
     ${include_path}/vptree.inl
     ${include_path}/vector2d.h
 	${include_path}/vector2d.inl
+	${include_path}/sparsematrix.h
 )
 
 set(sources

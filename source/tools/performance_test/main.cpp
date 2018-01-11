@@ -38,7 +38,7 @@ int main(int argc, char* argv[])
     const auto testIterations = std::atoi(argv[2]);
 
     auto runtimes = std::vector<std::vector<MeasurementResult>>(testSizes.size());
-    for (auto& each : runtimes)
+    for (auto & each : runtimes)
         each.resize(iterationTimes.size());
 
     // hide library output
@@ -47,14 +47,14 @@ int main(int argc, char* argv[])
     std::stringstream redirectStream;
     std::cout.rdbuf(redirectStream.rdbuf());
 
-    for (auto i = 0; i < testSizes.size(); ++i)
+    for (size_t i = 0; i < testSizes.size(); ++i)
     {
-        for (auto j = 0; j < iterationTimes.size(); ++j)
+        for (size_t j = 0; j < iterationTimes.size(); ++j)
         {
             auto testSize = testSizes[i];
             auto iterations = iterationTimes[j];
 
-            auto& current_result = runtimes[i][j];
+            auto & current_result = runtimes[i][j];
             current_result.preparation_time = 0;
             current_result.execution_time = 0;
             current_result.save_time = 0;
@@ -118,14 +118,14 @@ int main(int argc, char* argv[])
     file << "testsize;iterations;preparation_time;execution_time;save_time" << std::endl;
 
     // write contents
-    for (auto i = 0; i < testSizes.size(); ++i)
+    for (size_t i = 0; i < testSizes.size(); ++i)
     {
-        for (auto j = 0; j < iterationTimes.size(); ++j)
+        for (size_t j = 0; j < iterationTimes.size(); ++j)
         {
             auto testSize = testSizes[i];
             auto iterations = iterationTimes[j];
 
-            const auto& result = runtimes[i][j];
+            const auto & result = runtimes[i][j];
             file
                 << testSize << ";"
                 << iterations << ";"

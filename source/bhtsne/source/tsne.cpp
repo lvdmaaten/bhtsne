@@ -63,21 +63,20 @@ TSNE::TSNE()
     , m_outputDimensions(2)
     , m_inputDimensions(0)
     , m_dataSize(0)
-    , m_outputFile("result")
     , m_gen(static_cast<unsigned long>(std::chrono::high_resolution_clock::now().time_since_epoch().count()))
+    , m_outputFile("result")
 {
 }
 
 // Compute gradient of the t-SNE cost function (using Barnes-Hut algorithm) (approximately)
-Vector2D<double> TSNE::computeGradient(unsigned int * inp_row_P, unsigned int * inp_col_P, double * inp_val_P)
+Vector2D<double> TSNE::computeGradient(SparseMatrix & similarities)
 {
-
     // Construct space-partitioning tree on current map
     auto tree = SPTree(m_outputDimensions, m_result[0], m_dataSize);
 
     // Compute all terms required for t-SNE gradient
-    auto pos_f =Vector2D<double>(m_dataSize, m_outputDimensions, 0.0);
-    tree.computeEdgeForces(inp_row_P, inp_col_P, inp_val_P, m_dataSize, pos_f[0]);
+    auto pos_f = Vector2D<double>(m_dataSize, m_outputDimensions, 0.0);
+    tree.computeEdgeForces(similarities.rows.data(), similarities.columns.data(), similarities.values.data(), m_dataSize, pos_f[0]);
 
     double sum_Q = 0.0;
     auto neg_f = Vector2D<double>(m_dataSize, m_outputDimensions, 0.0);
@@ -169,11 +168,13 @@ double TSNE::evaluateErrorExact(const Vector2D<double> & Perplexity)
     {
     	for (unsigned int m = 0; m < m_dataSize; ++m)
         {
-            if (n != m)
+            if (n == m)
             {
-                Q[n][m] = 1.0 / (1.0 + distances[n][m]);
-                sum_Q += Q[n][m];
+                continue;
             }
+
+            Q[n][m] = 1.0 / (1.0 + distances[n][m]);
+            sum_Q += Q[n][m];
         }
     }
 
@@ -199,7 +200,7 @@ double TSNE::evaluateErrorExact(const Vector2D<double> & Perplexity)
 }
 
 // Evaluate t-SNE cost function (approximately)
-double TSNE::evaluateError(unsigned int * row_P, unsigned int * col_P, double * val_P)
+double TSNE::evaluateError(SparseMatrix & similarities)
 {
     // Get estimate of normalization term
     auto tree = SPTree(m_outputDimensions, m_result[0], m_dataSize);
@@ -214,11 +215,11 @@ double TSNE::evaluateError(unsigned int * row_P, unsigned int * col_P, double * 
     double error = 0.0;
     for (unsigned int n = 0; n < m_dataSize; ++n)
     {
-        int ind1 = n * m_outputDimensions;
-        for (unsigned int i = row_P[n]; i < row_P[n + 1]; ++i)
+        unsigned int ind1 = n * m_outputDimensions;
+        for (unsigned int i = similarities.rows[n]; i < similarities.rows[n + 1]; ++i)
         {
             double Q = 0.0;
-            int ind2 = col_P[i] * m_outputDimensions;
+            unsigned int ind2 = similarities.columns[i] * m_outputDimensions;
             for (unsigned int d = 0; d < m_outputDimensions; d++)
             {
                 buff[d] = m_result[ind1][d] - m_result[ind2][d];
@@ -226,8 +227,8 @@ double TSNE::evaluateError(unsigned int * row_P, unsigned int * col_P, double * 
             }
 
             Q = (1.0 / (1.0 + Q)) / sum_Q;
-            error += val_P[i] * log((val_P[i] + std::numeric_limits<float>::min())
-                                    / (Q + std::numeric_limits<float>::min()));
+            error += similarities.values[i] * log((similarities.values[i] + std::numeric_limits<float>::min())
+                                                  / (Q + std::numeric_limits<float>::min()));
         }
     }
 
@@ -236,95 +237,97 @@ double TSNE::evaluateError(unsigned int * row_P, unsigned int * col_P, double * 
 }
 
 // Symmetrizes a sparse matrix
-void TSNE::symmetrizeMatrix(std::vector<unsigned int> & row_P, std::vector<unsigned int> & col_P, std::vector<double> & val_P)
+void TSNE::symmetrizeMatrix(SparseMatrix & similarities)
 {
     // Count number of elements and row counts of symmetric matrix
     auto row_counts = std::vector<unsigned int>(m_dataSize, 0);
     for (unsigned int n = 0; n < m_dataSize; ++n)
     {
-        for (unsigned int i = row_P[n]; i < row_P[n + 1]; ++i)
+        for (unsigned int i = similarities.rows[n]; i < similarities.rows[n + 1]; ++i)
         {
-            // Check whether element (col_P[i], n) is present
-            auto first = col_P.begin() + row_P[col_P[i]];
-            auto last = col_P.begin() + row_P[col_P[i] + 1];
+            // Check whether element (similarities.columns[i], n) is present
+            auto first = similarities.columns.begin() + similarities.rows[similarities.columns[i]];
+            auto last = similarities.columns.begin() + similarities.rows[similarities.columns[i] + 1];
 
             if (std::find(first, last, n) == last)
             {
-                row_counts[col_P[i]]++;
+                row_counts[similarities.columns[i]]++;
             }
             row_counts[n]++;
         }
     }
-    unsigned no_elem = std::accumulate(row_counts.begin(), row_counts.begin() + m_dataSize, 0u);
+    unsigned int numberOfElements = std::accumulate(row_counts.begin(), row_counts.begin() + m_dataSize, 0u);
 
     // Allocate memory for symmetrized matrix
-    // TODO reuse the memory in row,col and val!!
-    auto sym_row_P = std::vector<unsigned int>(m_dataSize + 1);
-    auto sym_col_P = std::vector<unsigned int>(no_elem);
-    auto sym_val_P = std::vector<double>(no_elem);
+    // TODO reuse the memory in similarities!!
+    auto symmetrized_similarities = SparseMatrix();
+    symmetrized_similarities.rows.resize(m_dataSize + 1);
+    symmetrized_similarities.columns.resize(numberOfElements);
+    symmetrized_similarities.values.resize(numberOfElements);
 
     // Construct new row indices for symmetric matrix
-    sym_row_P[0] = 0;
+    symmetrized_similarities.rows[0] = 0;
     for (unsigned int n = 0; n < m_dataSize; ++n)
     {
-        sym_row_P[n + 1] = sym_row_P[n] + row_counts[n];
+        symmetrized_similarities.rows[n + 1] = symmetrized_similarities.rows[n] + row_counts[n];
     }
 
     // Fill the result matrix
     auto offset = std::vector<int>(m_dataSize, 0);
     for (unsigned int n = 0; n < m_dataSize; ++n)
     {
-        for (unsigned int i = row_P[n]; i < row_P[n + 1]; ++i)
-        { // considering element(n, col_P[i])
+        for (unsigned int i = similarities.rows[n]; i < similarities.rows[n + 1]; ++i)
+        { // considering element(n, similarities.columns[i])
 
-            // Check whether element (col_P[i], n) is present
+            // Check whether element (similarities.columns[i], n) is present
             bool present = false;
-            for (unsigned int m = row_P[col_P[i]]; m < row_P[col_P[i] + 1]; ++m)
+            for (unsigned int m = similarities.rows[similarities.columns[i]]; m < similarities.rows[similarities.columns[i] + 1]; ++m)
             {
-                if (col_P[m] == n)
+                if (similarities.columns[m] == n)
                 {
                     present = true;
-                    if (n <= col_P[i])
+                    if (n <= similarities.columns[i])
                     { // make sure we do not add elements twice
-                        sym_col_P[sym_row_P[n]        + offset[n]]        = col_P[i];
-                        sym_col_P[sym_row_P[col_P[i]] + offset[col_P[i]]] = n;
-                        sym_val_P[sym_row_P[n]        + offset[n]]        = val_P[i] + val_P[m];
-                        sym_val_P[sym_row_P[col_P[i]] + offset[col_P[i]]] = val_P[i] + val_P[m];
+                        symmetrized_similarities.columns[symmetrized_similarities.rows[n] + offset[n]] = similarities.columns[i];
+                        symmetrized_similarities.columns[symmetrized_similarities.rows[similarities.columns[i]] + offset[similarities.columns[i]]] = n;
+                        symmetrized_similarities.values[symmetrized_similarities.rows[n] + offset[n]] = similarities.values[i] + similarities.values[m];
+                        symmetrized_similarities.values[symmetrized_similarities.rows[similarities.columns[i]] + offset[similarities.columns[i]]] =
+                                similarities.values[i] + similarities.values[m];
                     }
                 }
             }
 
-            // If (col_P[i], n) is not present, there is no addition involved
+            // If (similarities.columns[i], n) is not present, there is no addition involved
             if (!present)
             {
-                sym_col_P[sym_row_P[n]        + offset[n]]        = col_P[i];
-                sym_col_P[sym_row_P[col_P[i]] + offset[col_P[i]]] = n;
-                sym_val_P[sym_row_P[n]        + offset[n]]        = val_P[i];
-                sym_val_P[sym_row_P[col_P[i]] + offset[col_P[i]]] = val_P[i];
+                symmetrized_similarities.columns[symmetrized_similarities.rows[n] + offset[n]] = similarities.columns[i];
+                symmetrized_similarities.columns[symmetrized_similarities.rows[similarities.columns[i]] + offset[similarities.columns[i]]] = n;
+                symmetrized_similarities.values[symmetrized_similarities.rows[n] + offset[n]] = similarities.values[i];
+                symmetrized_similarities.values[symmetrized_similarities.rows[similarities.columns[i]] + offset[similarities.columns[i]]] = similarities.values[i];
             }
 
             // Update offsets
-            if (!present || n <= col_P[i])
+            if (!present || n <= similarities.columns[i])
             {
                 offset[n]++;
-                if (col_P[i] != n)
+                if (similarities.columns[i] != n)
                 {
-                    offset[col_P[i]]++;
+                    offset[similarities.columns[i]]++;
                 }
             }
         }
     }
 
     // Divide the result by two
-    for (auto & each : sym_val_P)
+    for (auto & each : symmetrized_similarities.values)
     {
         each /= 2.0;
     }
 
     // Return symmetrized matrices
-    row_P = std::move(sym_row_P);
-    col_P = std::move(sym_col_P);
-    val_P = std::move(sym_val_P);
+    similarities.rows = std::move(symmetrized_similarities.rows);
+    similarities.columns = std::move(symmetrized_similarities.columns);
+    similarities.values = std::move(symmetrized_similarities.values);
 }
 
 // with mean zero and standard deviation one
@@ -340,7 +343,8 @@ double bhtsne::TSNE::gaussNumber()
         V1 = 2.0 * static_cast<double>(m_gen()) / m_gen.max() - 1.0;
         V2 = 2.0 * static_cast<double>(m_gen()) / m_gen.max() - 1.0;
         S = V1 * V1 + V2 * V2;
-    } while (S >= 1);
+    }
+    while (S >= 1);
 
     auto X1 = V1 * std::sqrt(-2 * std::log(S) / S);
     //same can be done for X2
@@ -586,23 +590,20 @@ void TSNE::runApproximation()
     normalize(m_data);
 
     // Compute input similarities for exact t-SNE
-    // init sparse matrix P, TODO: create and use class SparseMatrix
-    auto row_P = std::vector<unsigned int>();
-    auto col_P = std::vector<unsigned int>();
-    auto val_P = std::vector<double>();
+    auto inputSimilarities = SparseMatrix();
 
 	// Compute asymmetric pairwise input similarities
-	computeGaussianPerplexity(row_P, col_P, val_P);
+	computeGaussianPerplexity(inputSimilarities);
 
 	// Symmetrize input similarities
-	symmetrizeMatrix(row_P, col_P, val_P);
+	symmetrizeMatrix(inputSimilarities);
 
-	//normalize val_P so that sum of all val = 1
-	double sum_P = std::accumulate(val_P.begin(), val_P.end(), 0.0);
-	for (auto & each : val_P)
+	//normalize inputSimilarities so that sum of all values = 1
+	double sum_P = std::accumulate(inputSimilarities.values.begin(), inputSimilarities.values.end(), 0.0);
+	for (auto & each : inputSimilarities.values)
     {
         each /= sum_P;
-    	// Lie about the P-values
+    	// Lie about the inputSimilarities
         each *= 12.0;
     }
 
@@ -629,7 +630,7 @@ void TSNE::runApproximation()
 	for (unsigned int iteration = 1; iteration <= m_iterations; ++iteration)
     {
 		// Compute approximate gradient
-        auto gradients = computeGradient(row_P.data(), col_P.data(), val_P.data());
+        auto gradients = computeGradient(inputSimilarities);
 
 		// Update gains
         for (unsigned int i = 0; i < m_dataSize; ++i)
@@ -661,10 +662,10 @@ void TSNE::runApproximation()
 		// Make solution zero-mean
 		zeroMean(m_result);
 
-		// Stop lying about the P-values after a while, and switch momentum
+		// Stop lying about the inputSimilarities-values after a while, and switch momentum
 		if (iteration == stop_lying_iteration)
         {
-			for (auto & each : val_P)
+			for (auto & each : inputSimilarities.values)
             {
                 each /= 12.0;
             }
@@ -679,7 +680,7 @@ void TSNE::runApproximation()
 		if (iteration % 50 == 0 || iteration == m_iterations)
         {
 			// doing approximate computation here!
-			double error = evaluateError(row_P.data(), col_P.data(), val_P.data());
+			double error = evaluateError(inputSimilarities);
 			std::cout << "Iteration " << iteration << ": error is " << error << std::endl;
 		}
 	}
@@ -893,12 +894,12 @@ void TSNE::saveSVG()
 	}
 
 	uint8_t maxLabel = 0;
-	for (auto label : labels)
+	for (uint8_t label : labels)
     {
         maxLabel = std::max(label, maxLabel);
     }
 	auto colors = std::vector<std::string>();
-	for (auto i = 0; i <= maxLabel; ++i)
+	for (uint8_t i = 0; i <= maxLabel; ++i)
     {
         colors.push_back("hsl(" + std::to_string(360.0 * i / (maxLabel / 2 + 1)) + ", 100%, " + (i % 2 == 0 ? "25" : "60") + "%)");
     }
@@ -940,12 +941,12 @@ void TSNE::zeroMean(Vector2D<double> & points)
     for (size_t d = 0; d < dimensions; d++)
     {
         auto mean = 0.0;
-        for (auto i = 0u; i < size; ++i)
+        for (unsigned int i = 0; i < size; ++i)
         {
             mean += points[i][d];
         }
         mean /= size;
-        for (auto i = 0u; i < size; ++i)
+        for (unsigned int i = 0; i < size; ++i)
         {
             points[i][d] -= mean;
         }
@@ -1055,9 +1056,9 @@ Vector2D<double> TSNE::computeSquaredEuclideanDistance(const Vector2D<double> & 
 
     auto distances = Vector2D<double>(number, number, 0.0);
 
-    for (auto i = 0u; i < number; ++i)
+    for (unsigned int i = 0; i < number; ++i)
     {
-        for (auto j = i + 1; j < number; ++j)
+        for (unsigned int j = i + 1; j < number; ++j)
         {
             double distance = 0.0;
             for (size_t d = 0; d < dimensions; ++d)
@@ -1074,7 +1075,7 @@ Vector2D<double> TSNE::computeSquaredEuclideanDistance(const Vector2D<double> & 
     return distances;
 }
 
-void TSNE::computeGaussianPerplexity(std::vector<unsigned int> & row_P, std::vector<unsigned int> & col_P, std::vector<double> & val_P)
+void TSNE::computeGaussianPerplexity(SparseMatrix & similarities)
 {
     assert(m_data.height() == m_dataSize);
     assert(m_data.width() == m_inputDimensions);
@@ -1082,15 +1083,15 @@ void TSNE::computeGaussianPerplexity(std::vector<unsigned int> & row_P, std::vec
 	auto K = static_cast<unsigned int>(3 * m_perplexity);
 
 	// Allocate the memory we need
-	row_P.resize(m_dataSize + 1);
-    col_P.resize(m_dataSize * K);
-    val_P.resize(m_dataSize * K, 0.0);
+    similarities.rows.resize(m_dataSize + 1);
+    similarities.columns.resize(m_dataSize * K);
+    similarities.values.resize(m_dataSize * K, 0.0);
 
 	auto cur_P = std::vector<double>(m_dataSize - 1);
-	row_P[0] = 0;
+    similarities.rows[0] = 0;
 	for (unsigned int n = 0; n < m_dataSize; ++n)
     {
-        row_P[n + 1] = row_P[n] + K;
+        similarities.rows[n + 1] = similarities.rows[n] + K;
     }
 
 	// Build ball tree on data set
@@ -1190,11 +1191,8 @@ void TSNE::computeGaussianPerplexity(std::vector<unsigned int> & row_P, std::vec
 		for (unsigned int m = 0; m < K; ++m)
         {
             cur_P[m] /= sum_P;
-        }
-		for (unsigned int m = 0; m < K; ++m)
-        {
-			col_P[row_P[n] + m] = static_cast<unsigned int>(indices[m + 1].index());
-			val_P[row_P[n] + m] = cur_P[m];
+            similarities.columns[similarities.rows[n] + m] = static_cast<unsigned int>(indices[m + 1].index());
+            similarities.values[similarities.rows[n] + m] = cur_P[m];
 		}
 	}
 }
