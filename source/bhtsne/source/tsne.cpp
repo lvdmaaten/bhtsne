@@ -34,10 +34,6 @@
 #include <bhtsne/tsne.h>
 
 
-#include <cfloat>
-#include <cmath>
-#include <cstdlib>
-#include <cstdio>
 #include <cstring>
 #include <ctime>
 #include <cassert>
@@ -49,7 +45,6 @@
 #include <sstream>
 #include <string>
 #include <chrono>
-#include <stdexcept>
 #include <algorithm>
 
 #include <bhtsne/sptree.h>
@@ -74,7 +69,7 @@ TSNE::TSNE()
 }
 
 // Compute gradient of the t-SNE cost function (using Barnes-Hut algorithm) (approximately)
-Vector2D<double> TSNE::computeGradient(unsigned int *inp_row_P, unsigned int *inp_col_P, double *inp_val_P)
+Vector2D<double> TSNE::computeGradient(unsigned int * inp_row_P, unsigned int * inp_col_P, double * inp_val_P)
 {
 
     // Construct space-partitioning tree on current map
@@ -94,8 +89,12 @@ Vector2D<double> TSNE::computeGradient(unsigned int *inp_row_P, unsigned int *in
     auto res = Vector2D<double>(m_dataSize, m_outputDimensions);
     // Compute final t-SNE gradient
     for (unsigned int i = 0; i < m_dataSize; ++i)
+    {
         for (unsigned int j = 0; j < m_outputDimensions; ++j)
-            res[i][j] = pos_f[i][j] - (neg_f[i][j] / sum_Q);
+            {
+                res[i][j] = pos_f[i][j] - (neg_f[i][j] / sum_Q);
+            }
+    }
     return res;
 }
 
@@ -110,19 +109,21 @@ Vector2D<double> TSNE::computeGradientExact(const Vector2D<double> & Perplexity)
     assert(distances.width() == m_dataSize);
 
     // Compute Q-matrix and normalization sum
+    // Q = similarities of low dimensional output data
     auto Q = Vector2D<double>(m_dataSize, m_dataSize);
-    double sum_Q = .0;
+    double sum_Q = 0.0;
     //TODO compute only half of matrix
     for (unsigned int n = 0; n < m_dataSize; ++n)
     {
     	for (unsigned int m = 0; m < m_dataSize; ++m)
         {
-            if (n != m)
+            if (n == m)
             {
-                auto matrixIndex = n*m_dataSize + m;
-                Q[n][m] = 1.0 / (1.0 + distances[n][m]);
-                sum_Q += Q[n][m];
+                continue;
             }
+
+            Q[n][m] = 1.0 / (1.0 + distances[n][m]);
+            sum_Q += Q[n][m];
         }
     }
 
@@ -131,13 +132,15 @@ Vector2D<double> TSNE::computeGradientExact(const Vector2D<double> & Perplexity)
     {
     	for (unsigned int m = 0; m < m_dataSize; ++m)
         {
-            if (n != m)
+            if (n == m)
             {
-                double mult = (Perplexity[n][m] - (Q[n][m] / sum_Q)) * Q[n][m];
-                for (unsigned int d = 0; d < m_outputDimensions; ++d)
-                {
-                    gradients[n][d] += (m_result[n][d] - m_result[m][d]) * mult;
-                }
+                continue;
+            }
+
+            double mult = (Perplexity[n][m] - (Q[n][m] / sum_Q)) * Q[n][m];
+            for (unsigned int d = 0; d < m_outputDimensions; ++d)
+            {
+                gradients[n][d] += (m_result[n][d] - m_result[m][d]) * mult;
             }
 		}
 	}
@@ -175,7 +178,7 @@ double TSNE::evaluateErrorExact(const Vector2D<double> & Perplexity)
     }
 
     //TODO use vector normalization method
-    for(auto & each : Q)
+    for (auto & each : Q)
     {
         each /= sum_Q;
     }
@@ -336,7 +339,7 @@ double bhtsne::TSNE::gaussNumber()
         // V1, V2 uniformly distributed between -1 and +l.
         V1 = 2.0 * static_cast<double>(m_gen()) / m_gen.max() - 1.0;
         V2 = 2.0 * static_cast<double>(m_gen()) / m_gen.max() - 1.0;
-        S = V1*V1 + V2*V2;
+        S = V1 * V1 + V2 * V2;
     } while (S >= 1);
 
     auto X1 = V1 * std::sqrt(-2 * std::log(S) / S);
@@ -417,7 +420,7 @@ std::string TSNE::outputFile() const
 	return m_outputFile;
 }
 
-void TSNE::setOutputFile(const std::string& file)
+void TSNE::setOutputFile(const std::string & file)
 {
 	m_outputFile = file;
 }
@@ -427,7 +430,7 @@ void TSNE::setOutputFile(const std::string& file)
 
 bool bhtsne::TSNE::loadFromStream(std::istream & stream)
 {
-    auto separator = ',';
+    char separator = ',';
 
     //read data points
     auto line = std::string();
@@ -450,7 +453,7 @@ bool bhtsne::TSNE::loadFromStream(std::istream & stream)
         if (first)
         {
             first = false;
-            m_inputDimensions = point.size();
+            m_inputDimensions = static_cast<unsigned int>(point.size());
             m_data.initialize(0, point.size());
         }
 
@@ -470,7 +473,7 @@ bool bhtsne::TSNE::loadFromStream(std::istream & stream)
         return false;
     }
 
-    m_dataSize = m_data.height();
+    m_dataSize = static_cast<unsigned int>(m_data.height());
 
     return true;
 }
@@ -485,23 +488,23 @@ bool TSNE::loadLegacy(const std::string & file)
     }
 
     //read params
-	f.read(reinterpret_cast<char*>(&m_dataSize), sizeof(m_dataSize));
-	f.read(reinterpret_cast<char*>(&m_inputDimensions), sizeof(m_inputDimensions));
-	f.read(reinterpret_cast<char*>(&m_gradientAccuracy), sizeof(m_gradientAccuracy));
-	f.read(reinterpret_cast<char*>(&m_perplexity), sizeof(m_perplexity));
-	f.read(reinterpret_cast<char*>(&m_outputDimensions), sizeof(m_outputDimensions));
-	f.read(reinterpret_cast<char*>(&m_iterations), sizeof(m_iterations));
+	f.read(reinterpret_cast<char *>(&m_dataSize), sizeof(m_dataSize));
+	f.read(reinterpret_cast<char *>(&m_inputDimensions), sizeof(m_inputDimensions));
+	f.read(reinterpret_cast<char *>(&m_gradientAccuracy), sizeof(m_gradientAccuracy));
+	f.read(reinterpret_cast<char *>(&m_perplexity), sizeof(m_perplexity));
+	f.read(reinterpret_cast<char *>(&m_outputDimensions), sizeof(m_outputDimensions));
+	f.read(reinterpret_cast<char *>(&m_iterations), sizeof(m_iterations));
 
     //read data
     m_data.initialize(m_dataSize, m_inputDimensions);
-	f.read(reinterpret_cast<char*>(m_data[0]), m_dataSize * sizeof(double) * m_inputDimensions);
+	f.read(reinterpret_cast<char *>(m_data[0]), m_dataSize * sizeof(double) * m_inputDimensions);
 
     //read seed
 	if (!f.eof())
     {
         int seed;
-		f.read(reinterpret_cast<char*>(&seed), sizeof(seed));
-        setRandomSeed(seed);
+		f.read(reinterpret_cast<char *>(&seed), sizeof(seed));
+        setRandomSeed(static_cast<unsigned long>(seed));
 	}
 
 	return true;
@@ -528,12 +531,12 @@ bool TSNE::loadTSNE(const std::string & file)
         return false;
     }
 
-	f.read(reinterpret_cast<char*>(&m_dataSize), sizeof(m_dataSize));
-	f.read(reinterpret_cast<char*>(&m_inputDimensions), sizeof(m_inputDimensions));
+	f.read(reinterpret_cast<char *>(&m_dataSize), sizeof(m_dataSize));
+	f.read(reinterpret_cast<char *>(&m_inputDimensions), sizeof(m_inputDimensions));
 
     //read data
     m_data.initialize(m_dataSize, m_inputDimensions);
-    f.read(reinterpret_cast<char*>(m_data[0]), m_dataSize * sizeof(double) * m_inputDimensions);
+    f.read(reinterpret_cast<char *>(m_data[0]), m_dataSize * sizeof(double) * m_inputDimensions);
 
 	return true;
 }
@@ -610,8 +613,8 @@ void TSNE::runApproximation()
     }
 
     //TODO: documentation for all these magic numbers
-    unsigned stop_lying_iteration = 250;
-    unsigned momentum_switch_iteration = 250;
+    unsigned int stop_lying_iteration = 251;
+    unsigned int momentum_switch_iteration = 251;
 
     // Set learning parameters
     double momentum = 0.5;
@@ -623,15 +626,15 @@ void TSNE::runApproximation()
 
 	// Perform main training loop
     std::cout << " Input similarities computed. Learning embedding..." << std::endl;
-	for (unsigned int iteration = 0; iteration < m_iterations; ++iteration)
+	for (unsigned int iteration = 1; iteration <= m_iterations; ++iteration)
     {
 		// Compute approximate gradient
         auto gradients = computeGradient(row_P.data(), col_P.data(), val_P.data());
 
 		// Update gains
-        for (int i = 0; i < m_dataSize; ++i)
+        for (unsigned int i = 0; i < m_dataSize; ++i)
         {
-            for (int j = 0; j < m_outputDimensions; ++j)
+            for (unsigned int j = 0; j < m_outputDimensions; ++j)
             {
                 if (sign(gradients[i][j]) != sign(uY[i][j]))
                 {
@@ -646,9 +649,9 @@ void TSNE::runApproximation()
         }
 
 		// Perform gradient update (with momentum and gains)
-        for (int i = 0; i < m_dataSize; ++i)
+        for (unsigned int i = 0; i < m_dataSize; ++i)
         {
-            for (int j = 0; j < m_outputDimensions; ++j)
+            for (unsigned int j = 0; j < m_outputDimensions; ++j)
             {
                 uY[i][j] = momentum * uY[i][j] - eta * gains[i][j] * gradients[i][j];
                 m_result[i][j] += uY[i][j];
@@ -666,6 +669,7 @@ void TSNE::runApproximation()
                 each /= 12.0;
             }
 		}
+
 		if (iteration == momentum_switch_iteration)
         {
             momentum = final_momentum;
@@ -676,7 +680,7 @@ void TSNE::runApproximation()
         {
 			// doing approximate computation here!
 			double error = evaluateError(row_P.data(), col_P.data(), val_P.data());
-			std::cout << "Iteration " << (iteration + 1) << ": error is " << error << std::endl;
+			std::cout << "Iteration " << iteration << ": error is " << error << std::endl;
 		}
 	}
 }
@@ -684,8 +688,8 @@ void TSNE::runApproximation()
 
 void TSNE::runExact()
 {
-    unsigned stop_lying_iteration = 250;
-    unsigned momentum_switch_iteration = 250;
+    unsigned int stop_lying_iteration = 251;
+    unsigned int momentum_switch_iteration = 251;
 
     // Set learning parameters
     double momentum = 0.5;
@@ -737,7 +741,7 @@ void TSNE::runExact()
     auto uY    = Vector2D<double>(m_dataSize, m_outputDimensions, 0.0);
     auto gains = Vector2D<double>(m_dataSize, m_outputDimensions, 1.0);
 
-    for (unsigned int iteration = 0; iteration < m_iterations; ++iteration)
+    for (unsigned int iteration = 1; iteration <= m_iterations; ++iteration)
     {
         // Compute exact gradient
         auto gradients = computeGradientExact(P);
@@ -842,11 +846,11 @@ void TSNE::saveLegacy()
 
 	auto costs = std::vector<double>(m_dataSize, 0.0);
 
-	f.write(reinterpret_cast<char*>(&m_dataSize), sizeof(m_dataSize));
-	f.write(reinterpret_cast<char*>(&m_outputDimensions), sizeof(m_outputDimensions));
-	f.write(reinterpret_cast<char*>(m_result[0]), m_dataSize * m_outputDimensions * sizeof(double));
-	f.write(reinterpret_cast<char*>(landmarks.data()), landmarks.size() * sizeof(int));
-	f.write(reinterpret_cast<char*>(costs.data()), costs.size() * sizeof(double));
+	f.write(reinterpret_cast<char *>(&m_dataSize), sizeof(m_dataSize));
+	f.write(reinterpret_cast<char *>(&m_outputDimensions), sizeof(m_outputDimensions));
+	f.write(reinterpret_cast<char *>(m_result[0]), m_dataSize * m_outputDimensions * sizeof(double));
+	f.write(reinterpret_cast<char *>(landmarks.data()), landmarks.size() * sizeof(int));
+	f.write(reinterpret_cast<char *>(costs.data()), costs.size() * sizeof(double));
 
 	std::cout << "Wrote the " << m_dataSize << " x " << m_outputDimensions
         << " data matrix successfully!" << std::endl;
@@ -875,7 +879,7 @@ void TSNE::saveSVG()
 		}
 
 		uint32_t labelCount;
-		labelInput.read(reinterpret_cast<char*>(&labelCount), sizeof(labelCount));
+		labelInput.read(reinterpret_cast<char *>(&labelCount), sizeof(labelCount));
 		std::cout << "Labels file contains " << labelCount << " labels." << std::endl;
 		if (labelCount < m_dataSize)
 		{
@@ -885,7 +889,7 @@ void TSNE::saveSVG()
 
 		labelCount = std::min(labelCount, m_dataSize);
 		labels.resize(labelCount);
-		labelInput.read(reinterpret_cast<char*>(labels.data()), labels.size());
+		labelInput.read(reinterpret_cast<char *>(labels.data()), labels.size());
 	}
 
 	uint8_t maxLabel = 0;
@@ -948,14 +952,14 @@ void TSNE::zeroMean(Vector2D<double> & points)
     }
 }
 
-void TSNE::normalize(Vector2D<double>& vec)
+void TSNE::normalize(Vector2D<double> & vec)
 {
     assert(vec.size() > 0);
     double max_X = *std::max_element(vec.begin(), vec.end());
     for (auto & each : vec)
     {
         each /= max_X;
-    }    
+    }
 }
 
 Vector2D<double> TSNE::computeGaussianPerplexityExact()
@@ -965,7 +969,7 @@ Vector2D<double> TSNE::computeGaussianPerplexityExact()
     auto P = Vector2D<double>(m_dataSize, m_dataSize);
 
 	// Compute the Gaussian kernel row by row
-	for (int n = 0; n < m_dataSize; ++n)
+	for (unsigned int n = 0; n < m_dataSize; ++n)
     {
 		// Initialize some variables
 		double beta = 1.0;
@@ -979,7 +983,7 @@ Vector2D<double> TSNE::computeGaussianPerplexityExact()
         {
 
 			// Compute Gaussian kernel row
-			for (int m = 0; m < m_dataSize; ++m)
+			for (unsigned int m = 0; m < m_dataSize; ++m)
             {
                 P[n][m] = exp(-beta * distances[n][m]);
             }
@@ -987,13 +991,13 @@ Vector2D<double> TSNE::computeGaussianPerplexityExact()
 
 			// Compute entropy of current row
             sum_P = std::numeric_limits<double>::min();
-			for (int m = 0; m < m_dataSize; ++m)
+			for (unsigned int m = 0; m < m_dataSize; ++m)
             {
                 sum_P += P[n][m];
             }
 
 			double H = 0.0; //TODO what is H?
-			for (unsigned m = 0; m < m_dataSize; m++)
+			for (unsigned int m = 0; m < m_dataSize; m++)
             {
                 H += beta * (distances[n][m] * P[n][m]);
             }
@@ -1035,12 +1039,12 @@ Vector2D<double> TSNE::computeGaussianPerplexityExact()
 		}
 
 		// Row normalize P
-		for (int m = 0; m < m_dataSize; ++m)
+		for (unsigned int m = 0; m < m_dataSize; ++m)
         {
             P[n][m] /= sum_P;
         }
 	}
-    
+
     return P;
 }
 
@@ -1075,7 +1079,7 @@ void TSNE::computeGaussianPerplexity(std::vector<unsigned int> & row_P, std::vec
     assert(m_data.height() == m_dataSize);
     assert(m_data.width() == m_inputDimensions);
 
-	int K = static_cast<int>(3 * m_perplexity);
+	auto K = static_cast<unsigned int>(3 * m_perplexity);
 
 	// Allocate the memory we need
 	row_P.resize(m_dataSize + 1);
@@ -1084,15 +1088,15 @@ void TSNE::computeGaussianPerplexity(std::vector<unsigned int> & row_P, std::vec
 
 	auto cur_P = std::vector<double>(m_dataSize - 1);
 	row_P[0] = 0;
-	for (int n = 0; n < m_dataSize; ++n)
+	for (unsigned int n = 0; n < m_dataSize; ++n)
     {
-        row_P[n + 1] = row_P[n] + (unsigned int)K;
+        row_P[n + 1] = row_P[n] + K;
     }
 
 	// Build ball tree on data set
 	auto tree = VpTree<DataPoint, euclidean_distance>();
 	auto obj_X = std::vector<DataPoint>(m_dataSize, DataPoint(m_inputDimensions, -1, m_data[0]));
-	for (int n = 0; n < m_dataSize; ++n)
+	for (unsigned int n = 0; n < m_dataSize; ++n)
     {
         obj_X[n] = DataPoint(m_inputDimensions, n, m_data[n]);
     }
@@ -1102,7 +1106,7 @@ void TSNE::computeGaussianPerplexity(std::vector<unsigned int> & row_P, std::vec
 	std::cout << "Building tree..." << std::endl;
 	std::vector<DataPoint> indices;
 	std::vector<double> distances;
-	for (int n = 0; n < m_dataSize; ++n)
+	for (unsigned int n = 0; n < m_dataSize; ++n)
     {
 
 		if (n % 10000 == 0)
@@ -1126,20 +1130,20 @@ void TSNE::computeGaussianPerplexity(std::vector<unsigned int> & row_P, std::vec
 		for (unsigned iteration = 0; iteration < 200; iteration++)
         {
 			// Compute Gaussian kernel row
-			for (int m = 0; m < K; ++m)
+			for (unsigned int m = 0; m < K; ++m)
             {
                 cur_P[m] = exp(-beta * distances[m + 1] * distances[m + 1]);
             }
 
 			// Compute entropy of current row
 			sum_P = std::numeric_limits<double>::min();
-			for (int m = 0; m < K; ++m)
+			for (unsigned int m = 0; m < K; ++m)
             {
                 sum_P += cur_P[m];
             }
 
 			double H = 0.0;
-			for (int m = 0; m < K; ++m)
+			for (unsigned int m = 0; m < K; ++m)
             {
                 H += beta * (distances[m + 1] * distances[m + 1] * cur_P[m]);
             }
@@ -1147,7 +1151,7 @@ void TSNE::computeGaussianPerplexity(std::vector<unsigned int> & row_P, std::vec
 
 			// Evaluate whether the entropy is within the tolerance level
 			double Hdiff = H - log(m_perplexity);
-			if (Hdiff < tol && -Hdiff < tol)
+			if (std::abs(Hdiff) < tol)
             {
 				break;
 			}
@@ -1156,7 +1160,8 @@ void TSNE::computeGaussianPerplexity(std::vector<unsigned int> & row_P, std::vec
 				if (Hdiff > 0)
                 {
 					min_beta = beta;
-					if (max_beta == std::numeric_limits<double>::max() || max_beta == std::numeric_limits<double>::lowest())
+					if (max_beta == std::numeric_limits<double>::max()
+                        || max_beta == std::numeric_limits<double>::lowest())
                     {
                         beta *= 2.0;
                     }
@@ -1168,7 +1173,8 @@ void TSNE::computeGaussianPerplexity(std::vector<unsigned int> & row_P, std::vec
 				else
                 {
 					max_beta = beta;
-					if (min_beta == std::numeric_limits<double>::lowest() || min_beta == std::numeric_limits<double>::max())
+					if (min_beta == std::numeric_limits<double>::lowest()
+                        || min_beta == std::numeric_limits<double>::max())
                     {
                         beta /= 2.0;
                     }
