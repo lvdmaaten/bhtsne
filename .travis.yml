@@ -4,17 +4,16 @@ matrix:
   include:
 
     - os: osx
-      osx_image: xcode9.2
+      osx_image: xcode9.1
       compiler: clang
       env: CMAKE_CONFIGURATION=release BUILD_DIR=build
 
     - os: osx
-      osx_image: xcode9.2
+      osx_image: xcode9.1
       compiler: clang
       env: CMAKE_CONFIGURATION=debug BUILD_DIR=build-debug
 
     - os: linux
-      compiler: gcc
       env: CMAKE_CONFIGURATION=release BUILD_DIR=build CXX=g++-5 CC=gcc-5
       addons:
         apt:
@@ -25,7 +24,6 @@ matrix:
           - g++-5
 
     - os: linux
-      compiler: gcc
       env: CMAKE_CONFIGURATION=debug BUILD_DIR=build-debug CXX=g++-5 CC=gcc-5
       addons:
         apt:
@@ -36,7 +34,6 @@ matrix:
           - g++-5
 
     - os: linux
-      compiler: clang
       env: CMAKE_CONFIGURATION=release BUILD_DIR=build CXX=clang++-3.8 CC=clang-3.8
       addons:
         apt:
@@ -47,7 +44,6 @@ matrix:
           - g++-5
 
     - os: linux
-      compiler: clang
       env: CMAKE_CONFIGURATION=debug BUILD_DIR=build-debug CXX=clang++-3.8 CC=clang-3.8
       addons:
         apt:
