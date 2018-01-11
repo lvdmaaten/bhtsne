@@ -1,42 +1,65 @@
 language: cpp
 
-os:
-  - osx
-  - linux
-
-compiler:
-  - clang
-  - gcc
-
-env:
-  - CMAKE_CONFIGURATION=release BUILD_DIR=build
-  - CMAKE_CONFIGURATION=debug BUILD_DIR=build-debug
-
 matrix:
-  exclude:
+  include:
+
     - os: osx
+      osx_image: xcode9.2
+      compiler: clang
+      env: CMAKE_CONFIGURATION=release BUILD_DIR=build
+
+    - os: osx
+      osx_image: xcode9.2
+      compiler: clang
+      env: CMAKE_CONFIGURATION=debug BUILD_DIR=build-debug
+
+    - os: linux
       compiler: gcc
+      env: CMAKE_CONFIGURATION=release BUILD_DIR=build CXX=g++-5 CC=gcc-5
+      addons:
+        apt:
+          sources:
+          - ubuntu-toolchain-r-test
+          packages:
+          - cmake
+          - g++-5
 
-osx_image: xcode9.2
+    - os: linux
+      compiler: gcc
+      env: CMAKE_CONFIGURATION=debug BUILD_DIR=build-debug CXX=g++-5 CC=gcc-5
+      addons:
+        apt:
+          sources:
+          - ubuntu-toolchain-r-test
+          packages:
+          - cmake
+          - g++-5
 
-addons:
-  apt:
-    sources:
-    - llvm-toolchain-precise-3.8
-    - ubuntu-toolchain-r-test
-    packages:
-    - cmake
-    - g++-5
-    - clang-3.8
+    - os: linux
+      compiler: clang
+      env: CMAKE_CONFIGURATION=release BUILD_DIR=build CXX=clang++-3.8 CC=clang-3.8
+      addons:
+        apt:
+          sources:
+          - ubuntu-toolchain-r-test
+          packages:
+          - cmake
+          - g++-5
 
-install:
-  - if [ $TRAVIS_OS_NAME == linux ] && [ "$CC" = "gcc" ]; then export CXX="g++-5" CC="gcc-5"; fi
-  - if [ $TRAVIS_OS_NAME == linux ] && [ "$CC" = "gcc" ]; then export CXX="clang++-3.8" CC="clang-3.8"; fi
+    - os: linux
+      compiler: clang
+      env: CMAKE_CONFIGURATION=debug BUILD_DIR=build-debug CXX=clang++-3.8 CC=clang-3.8
+      addons:
+        apt:
+          sources:
+          - llvm-toolchain-precise-3.8
+          packages:
+          - cmake
+          - clang-3.8
 
 before_script:
   - ./configure
-  - if [ $CMAKE_CONFIGURATION == release ]; then ./configure; fi
-  - if [ $CMAKE_CONFIGURATION == debug ]; then ./configure debug; fi
+  - ./configure $CMAKE_CONFIGURATION
 
 script:
   - cmake --build $BUILD_DIR

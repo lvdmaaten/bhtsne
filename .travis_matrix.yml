@@ -1,0 +1,42 @@
+language: cpp
+
+os:
+  - osx
+  - linux
+
+compiler:
+  - clang
+  - gcc
+
+env:
+  - CMAKE_CONFIGURATION=release BUILD_DIR=build
+  - CMAKE_CONFIGURATION=debug BUILD_DIR=build-debug
+
+matrix:
+  exclude:
+    - os: osx
+      compiler: gcc
+
+osx_image: xcode9.2
+
+addons:
+  apt:
+    sources:
+    - llvm-toolchain-precise-3.8
+    - ubuntu-toolchain-r-test
+    packages:
+    - cmake
+    - g++-5
+    - clang-3.8
+
+install:
+  - if [ $TRAVIS_OS_NAME == linux ] && [ "$CC" = "gcc" ]; then export CXX="g++-5" CC="gcc-5"; fi
+  - if [ $TRAVIS_OS_NAME == linux ] && [ "$CC" = "gcc" ]; then export CXX="clang++-3.8" CC="clang-3.8"; fi
+
+before_script:
+  - ./configure
+  - ./configure $CMAKE_CONFIGURATION
+
+script:
+  - cmake --build $BUILD_DIR
+  - cmake --build $BUILD_DIR --target test
