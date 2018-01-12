@@ -12,6 +12,14 @@ matrix:
       env: CMAKE_CONFIGURATION=debug BUILD_DIR=build-debug
 
     - os: linux
+      compiler: clang
+      env: CMAKE_CONFIGURATION=release BUILD_DIR=build
+
+    - os: linux
+      compiler: clang
+      env: CMAKE_CONFIGURATION=debug BUILD_DIR=build-debug
+
+    - os: linux
       compiler: gcc
       env:
         - CMAKE_CONFIGURATION=release BUILD_DIR=build
@@ -36,14 +44,6 @@ matrix:
           packages:
           - cmake
           - g++-5
-
-    - os: linux
-      compiler: clang
-      env: CMAKE_CONFIGURATION=release BUILD_DIR=build
-
-    - os: linux
-      compiler: clang
-      env: CMAKE_CONFIGURATION=debug BUILD_DIR=build-debug
 
 
 before_script:
