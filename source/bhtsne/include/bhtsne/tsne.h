@@ -38,6 +38,7 @@
 #include <random>
 
 #include <bhtsne/vector2d.h>
+#include <bhtsne/sparsematrix.h>
 #include <bhtsne/bhtsne_api.h> // generated header for export macros
 
 
@@ -407,11 +408,11 @@ public:
 private:
     void runApproximation();
     void runExact();
-    Vector2D<double> computeGradient(unsigned int *inp_row_P, unsigned int *inp_col_P, double *inp_val_P);
+    Vector2D<double> computeGradient(SparseMatrix & similarities);
     Vector2D<double> computeGradientExact(const Vector2D<double> & Perplexity);
-    double evaluateError(unsigned int *row_P, unsigned int *col_P, double *val_P);
+    double evaluateError(SparseMatrix & similarities);
     double evaluateErrorExact(const Vector2D<double> & Perplexity);
-    void computeGaussianPerplexity(std::vector<unsigned int> & row_P, std::vector<unsigned int> & col_P, std::vector<double> & val_P);
+    void computeGaussianPerplexity(SparseMatrix & similarities);
     Vector2D<double> computeGaussianPerplexityExact();
 
 
@@ -436,7 +437,7 @@ protected:
 
     //helper
     static Vector2D<double> computeSquaredEuclideanDistance(const Vector2D<double> & points);
-    void symmetrizeMatrix(std::vector<unsigned int> & row_P, std::vector<unsigned int> & col_P, std::vector<double> & val_P);
+    void symmetrizeMatrix(SparseMatrix & similarities);
     static void zeroMean(Vector2D<double>& points);
     static void normalize(Vector2D<double>& vec);
     double gaussNumber();
