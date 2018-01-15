@@ -37,6 +37,8 @@
 #include <vector>
 #include <random>
 
+#include <bhtsne/vector2d.h>
+#include <bhtsne/sparsematrix.h>
 #include <bhtsne/bhtsne_api.h> // generated header for export macros
 
 
@@ -404,40 +406,40 @@ public:
     void saveSVG();
 
 private:
-    void computeGradient(unsigned int *inp_row_P, unsigned int *inp_col_P, double *inp_val_P, double *Y, double *dC);
-    void computeExactGradient(const std::vector<double> & P, double* Y, std::vector<double> & dY);
-    double evaluateError(const std::vector<double> & P, double* Y);
-    double evaluateError(unsigned int *row_P, unsigned int *col_P, double *val_P, double *Y);
-    void zeroMean(double* X, int N, int D); //TODO: remove
-    std::vector<double> computeSquaredEuclideanDistance(double* X); //TODO: remove
-    void symmetrizeMatrix(std::vector<unsigned int> & row_P, std::vector<unsigned int> & col_P, std::vector<double> & val_P);
+    void runApproximation();
+    void runExact();
+    Vector2D<double> computeGradient(SparseMatrix & similarities);
+    Vector2D<double> computeGradientExact(const Vector2D<double> & Perplexity);
+    double evaluateError(SparseMatrix & similarities);
+    double evaluateErrorExact(const Vector2D<double> & Perplexity);
+    void computeGaussianPerplexity(SparseMatrix & similarities);
+    Vector2D<double> computeGaussianPerplexityExact();
 
 
 protected:
     // params
-    double       m_perplexity;               ///< balance local/global data aspects, see documentation of perplexity()
-    double       m_gradientAccuracy;         ///< used as the width for the gauss sampling kernel
-    unsigned int m_iterations;               ///< defines how many iterations the algorithm does in run()
+    double       m_perplexity;         ///< balance local/global data aspects, see documentation of perplexity()
+    double       m_gradientAccuracy;   ///< used as the width for the gauss sampling kernel
+    unsigned int m_iterations;         ///< defines how many iterations the algorithm does in run()
 
     // dataset
-    unsigned int m_outputDimensions;         ///< dimensionality of the result
-    unsigned int m_inputDimensions;          ///< dimensionality of the input; set during load
-    unsigned int m_dataSize;                 ///< size of data; set during load
-	std::vector<std::vector<double>> m_data; ///< loaded data
+    unsigned int m_outputDimensions;   ///< dimensionality of the result
+    unsigned int m_inputDimensions;    ///< dimensionality of the input; set during load
+    unsigned int m_dataSize;           ///< size of data; set during load
+	Vector2D<double> m_data;           ///< loaded data
+    std::mt19937 m_gen;                ///< random number generator
 
     // output
-    std::string  m_outputFile;               ///< path and basename used to create output files
-	std::vector<std::vector<double>> m_result;
+    std::string  m_outputFile;         ///< path and basename used to create output files
+	Vector2D<double> m_result;         ///< computation results
 
-    std::mt19937 m_gen;
 
-    void runApproximation();
-    void runExact();
 
-    static std::vector<double> computeSquaredEuclideanDistance(const std::vector<std::vector<double>> & points);
-    static void zeroMean(std::vector<std::vector<double>>& points);
-    void computeGaussianPerplexity(std::vector<double> & P);
-	void computeGaussianPerplexity(std::vector<unsigned int> & row_P, std::vector<unsigned int> & col_P, std::vector<double> & val_P);
+    //helper
+    static Vector2D<double> computeSquaredEuclideanDistance(const Vector2D<double> & points);
+    void symmetrizeMatrix(SparseMatrix & similarities);
+    static void zeroMean(Vector2D<double>& points);
+    static void normalize(Vector2D<double>& vec);
     double gaussNumber();
 };
 

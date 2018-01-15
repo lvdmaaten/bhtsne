@@ -38,10 +38,10 @@
 #include <cstdlib>
 #include <algorithm>
 #include <vector>
-#include <stdio.h>
+#include <cstdio>
 #include <queue>
-#include <limits>
 #include <cmath>
+#include <cfloat>
 
 
 class DataPoint
@@ -226,7 +226,7 @@ private:
     }
     
     // Helper function that searches the tree    
-    void search(Node* node, const T& target, int k, std::priority_queue<HeapItem>& heap)
+    void search(Node* node, const T& target, unsigned int k, std::priority_queue<HeapItem>& heap)
     {
         if(node == NULL) return;     // indicates that we're done here
         

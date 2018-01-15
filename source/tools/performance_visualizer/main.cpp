@@ -7,7 +7,7 @@ int main(int argc, char* argv[])
 {
 	const auto svgFileName = "performance.svg";
 
-	auto svg = std::ofstream();
+    std::ofstream svg;
 	svg.open(svgFileName);
 
 	if (!svg.is_open())

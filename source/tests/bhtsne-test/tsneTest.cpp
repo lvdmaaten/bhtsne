@@ -1,31 +1,35 @@
-#include <bhtsne/tsne.h>
+
 #include <gtest/gtest.h>
+
 #include <string>
 #include <cstdio>
 #include <fstream>
 #include <initializer_list>
 
+#include <bhtsne/tsne.h>
+
+
 class PublicTSNE : public bhtsne::TSNE
 {
 public:
-    auto data()
+    auto & data()
     {
         return m_data;
     };
 
     auto setData(std::vector<std::vector<double>> data)
     {
-        m_data = std::move(data);
+        m_data = data;
     };
 
-    auto result()
+    auto & result()
     {
         return m_result;
     };
 
     auto setResult(std::vector<std::vector<double>> result)
     {
-        m_result = std::move(result);
+        m_result = result;
     };
 
     auto setInputDimensions(unsigned int dimensions)
@@ -38,7 +42,7 @@ public:
         return TSNE::gaussNumber();
     }
 
-    void zeroMean(std::vector<std::vector<double>>& data) {
+    void zeroMean(bhtsne::Vector2D<double>& data) {
         TSNE::zeroMean(data);
     }
 };
@@ -203,7 +207,7 @@ TEST_F(TsneTest, LoadFromStream)
 {
     auto data = std::vector<std::vector<double>>{ { 1.0, 2.0, 3.0 },{ 4.0, 5.0, 6.0 } };
 
-    auto out = std::ostringstream();
+    std::ostringstream out;
     for (auto sample : data)
     {
         for (auto value : sample)
@@ -214,7 +218,7 @@ TEST_F(TsneTest, LoadFromStream)
         out << std::endl;
     }
 
-    auto in = std::istringstream(out.str());
+    std::istringstream in(out.str());
     EXPECT_TRUE(m_tsne.loadFromStream(in));
     EXPECT_EQ(2, m_tsne.dataSize());
     EXPECT_EQ(3, m_tsne.inputDimensions());
@@ -313,12 +317,12 @@ TEST_F(TsneTest, RunExact)
     m_tsne.setOutputDimensions(2);
     m_tsne.setRandomSeed(1337);
 
-    auto iss = std::istringstream(input);
+    std::istringstream iss(input);
     EXPECT_TRUE(m_tsne.loadFromStream(iss));
 
     EXPECT_NO_THROW(m_tsne.run());
 
-    auto oss = std::ostringstream();
+    std::ostringstream oss;
     EXPECT_NO_THROW(m_tsne.saveToStream(oss));
 
     EXPECT_EQ(expected, oss.str());
@@ -353,7 +357,7 @@ TEST_F(TsneTest, RunApproximation)
         FAIL() << "run method exception: " << e.what();
     }
 
-    auto result = m_tsne.result();
+    auto& result = m_tsne.result();
 
     auto expected = std::vector<std::vector<double>>{
         { -37.969682880670781, 13.53176098293458 },
@@ -392,7 +396,7 @@ TEST_F(TsneTest, SaveLegacy)
     m_tsne.setResult(std::vector<std::vector<double>>{ { expectedDouble[0] }, { expectedDouble[1] }});
     EXPECT_NO_THROW(m_tsne.saveLegacy());
     // check file exists and has right size
-    auto result = std::ifstream();
+    std::ifstream result;
     EXPECT_NO_THROW(result.open(m_tempFile + ".dat", std::ios::in | std::ios::binary | std::ios::ate));
     EXPECT_TRUE(result.is_open());
     EXPECT_EQ(48, result.tellg());
@@ -431,10 +435,10 @@ TEST_F(TsneTest, SaveToStream)
     m_tsne.setDataSize(2);
     m_tsne.setOutputDimensions(1);
     m_tsne.setResult(std::vector<std::vector<double>>{ { expectedDouble[0] }, { expectedDouble[1] }});
-    auto result = std::ostringstream();
+    std::ostringstream result;
     EXPECT_NO_THROW(m_tsne.saveToStream(result));
     // check values in stream
-    auto expectedOut = std::ostringstream();
+    std::ostringstream expectedOut;
     expectedOut << std::setprecision(6);
     expectedOut << expectedDouble[0] << std::endl << expectedDouble[1] << std::endl;
 
@@ -454,17 +458,17 @@ TEST_F(TsneTest, SaveCSV)
     m_tsne.setOutputFile(m_tempFile);
     EXPECT_NO_THROW(m_tsne.saveCSV());
     // check file exists and has right size
-    auto result = std::ifstream();
+    std::ifstream result;
     EXPECT_NO_THROW(result.open(m_tempFile + ".csv", std::ios::in | std::ios::ate));
     EXPECT_TRUE(result.is_open());
     // file size may change based on current os (\n vs \r\n)
     EXPECT_LE(17, result.tellg());
     EXPECT_GE(19, result.tellg());
     // check values in file
-    auto expectedOut = std::ostringstream();
+    std::ostringstream expectedOut;
     expectedOut << std::setprecision(6);
     expectedOut << expectedDouble[0] << std::endl << expectedDouble[1] << std::endl;
-    auto expectedIn = std::istringstream(expectedOut.str());
+    std::istringstream expectedIn(expectedOut.str());
 
     result.seekg(0);
     auto actualLine = std::string();
@@ -494,21 +498,21 @@ TEST_F(TsneTest, SaveSVG)
     m_tsne.setOutputFile(m_tempFile);
     EXPECT_NO_THROW(m_tsne.saveSVG());
     // check file exists
-    auto result = std::ifstream();
+    std::ifstream result;
     EXPECT_NO_THROW(result.open(m_tempFile + ".svg", std::ios::in));
     EXPECT_TRUE(result.is_open());
     // check values in file
     auto expectedRadius = 0.5;
     auto expectedViewBoxMin = expectedDouble[0] - expectedRadius;
     auto expectedViewBoxSize = 2 * -expectedViewBoxMin;
-    auto expectedOut = std::ostringstream();
+    std::ostringstream expectedOut;
     expectedOut << std::setprecision(6);
     expectedOut << "<?xml version='1.0' encoding='UTF-8' ?>\n";
     expectedOut << "<svg xmlns='http://www.w3.org/2000/svg' version='1.1' width='600' height='600' viewBox='" << expectedViewBoxMin << " " << expectedViewBoxMin << " " << expectedViewBoxSize << " " << expectedViewBoxSize << "'>\n";
     expectedOut << "<circle cx='" << expectedDouble[0] << "' cy='" << expectedDouble[1] << "' fill='black' r='" << expectedRadius << "' stroke='none' opacity='0.5'/>\n";
     expectedOut << "<circle cx='" << expectedDouble[2] << "' cy='" << expectedDouble[3] << "' fill='black' r='" << expectedRadius << "' stroke='none' opacity='0.5'/>\n";
     expectedOut << "</svg>\n";
-    auto expectedIn = std::istringstream(expectedOut.str());
+    std::istringstream expectedIn(expectedOut.str());
 
     auto actualLine = std::string();
     auto expectedLine = std::string();
@@ -557,7 +561,7 @@ R"(3.16374,-91.2264
     m_tsne.setOutputDimensions(2);
     m_tsne.setRandomSeed(1337);
 
-    auto iss = std::istringstream(input);
+    std::istringstream iss(input);
     EXPECT_TRUE(m_tsne.loadFromStream(iss));
 
     try {
@@ -566,7 +570,7 @@ R"(3.16374,-91.2264
         FAIL() << "run method exception: " << e.what();
     }
 
-    auto oss = std::ostringstream();
+    std::ostringstream oss;
     EXPECT_NO_THROW(m_tsne.saveToStream(oss));
 
     EXPECT_EQ(expected, oss.str());
@@ -574,7 +578,7 @@ R"(3.16374,-91.2264
 
 TEST_F(TsneTest, ZeroMean)
 {
-    auto data = std::vector<std::vector<double>>{
+    auto init = std::vector<std::vector<double>>{
             { 0,56,19,80,58 },
             { 47,35,89,82,74 },
             { 17,85,71,51,30 },
@@ -587,12 +591,14 @@ TEST_F(TsneTest, ZeroMean)
             { 14,46,23,86,20 }
     };
 
+    bhtsne::Vector2D<double> data{ init };
+
     m_tsne.zeroMean(data);
 
-    for (auto d = 0u; d < data[0].size(); d++)
+    for (auto d = 0u; d < data.width(); ++d)
     {
         auto mean = 0.0;
-        for (auto i = 0u; i < data.size(); i++)
+        for (auto i = 0u; i < data.height(); ++i)
         {
             mean += data[i][d];
         }
