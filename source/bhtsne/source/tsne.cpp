@@ -215,14 +215,12 @@ double TSNE::evaluateError(SparseMatrix & similarities)
     double error = 0.0;
     for (unsigned int n = 0; n < m_dataSize; ++n)
     {
-        unsigned int ind1 = n * m_outputDimensions;
         for (unsigned int i = similarities.rows[n]; i < similarities.rows[n + 1]; ++i)
         {
             double Q = 0.0;
-            unsigned int ind2 = similarities.columns[i] * m_outputDimensions;
             for (unsigned int d = 0; d < m_outputDimensions; d++)
             {
-                buff[d] = m_result[ind1][d] - m_result[ind2][d];
+                buff[d] = m_result[n][d] - m_result[similarities.columns[i]][d];
                 Q += buff[d] * buff[d];
             }
 
