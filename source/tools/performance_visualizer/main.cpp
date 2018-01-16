@@ -22,13 +22,13 @@ const auto width = 600.0;
 const auto height = 400.0;
 
 const auto paddingLeft = 45.0;
-const auto paddingRight = 10.0;
+const auto paddingRight = 80.0;
 const auto paddingTop = 20.0;
-const auto paddingBottom = 20.0;
+const auto paddingBottom = 80.0;
 
 const auto maxTime = 30.0;
 
-const auto xStep = 100.0;
+auto xStep = 100.0;
 const auto timeStep = 10.0;
 
 std::ofstream svg;
@@ -65,6 +65,27 @@ void drawHorizontalLines()
 	}
 }
 
+void drawVerticalLines()
+{
+	auto pos = 0;
+	for (auto data : m_data)
+	{
+		auto x = xStep * pos++;
+		svg << "<path style='stroke:#ccc;stroke-width:1px;' "
+			<< "d='M " << x << ",0 V " << height << "'"
+			<< "/>\n";
+
+		svg << "<path style='stroke:#000;stroke-width:1px;' "
+			<< "d='M " << x << "," << height << " V " << height + 5 << "'"
+			<< "/>\n";
+
+		svg << "<text style='fill:#000;font-family:sans-serif;font-size:20px;text-anchor:start;text-align:start;' transform='rotate(45 " << x - 10 << " " << height + 5 << ")' "
+			<< "x='" << x << "' "
+			<< "y='" << height + 5 << "'"
+			<< "><tspan>" << data.commitName.substr(0, 6) << "</tspan></text>\n";
+	}
+}
+
 template<typename F>
 void drawGraph(const char color[], F &accaccessor, double scaleFactor = 1.0)
 {
@@ -75,19 +96,16 @@ void drawGraph(const char color[], F &accaccessor, double scaleFactor = 1.0)
 	auto pos = 0;
 	for (auto &data : m_data)
 	{
-		if (data.iterations == iterationsToPlot && data.testsize == testsizeToPlot)
-		{
-			auto x = xStep * pos;
-			auto y = height - accaccessor(data) * 1.0E-9 / maxTime * height * scaleFactor;
+		auto x = xStep * pos;
+		auto y = height - accaccessor(data) * 1.0E-9 / maxTime * height * scaleFactor;
 
-			line << " " << x << "," << y;
+		line << " " << x << "," << y;
 
-			circles << "<circle style='fill:" << color << "' r='3' "
-				<< "cx='" << x << "' "
-				<< "cy='" << y << "'"
-				<< "/>\n";
-			pos++;
-		}
+		circles << "<circle style='fill:" << color << "' r='3' "
+			<< "cx='" << x << "' "
+			<< "cy='" << y << "'"
+			<< "/>\n";
+		pos++;
 	}
 
 	line << "'/>\n";
@@ -133,12 +151,17 @@ int main(int argc, char* argv[])
 			auto element = std::string();
 
 			auto values = PerformanceData();
+			values.commitName = commitName;
 
 			std::getline(iss, element, ';');
 			values.testsize = std::stoi(element);
 
+			if (values.testsize != testsizeToPlot) continue;
+
 			std::getline(iss, element, ';');
 			values.iterations = std::stoi(element);
+
+			if (values.iterations != iterationsToPlot) continue;
 
 			std::getline(iss, element, ';');
 			values.preparation_time = std::stoll(element);
@@ -164,8 +187,11 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 
+	xStep = width / (m_data.size() - 1);
+
 	createSvgHeader();
 	drawHorizontalLines();
+	drawVerticalLines();
 	drawGraph("#f00", [](PerformanceData d) {return d.preparation_time; }, 1000.0);
 	drawGraph("#0f0", [](PerformanceData d) {return d.execution_time; });
 	drawGraph("#00f", [](PerformanceData d) {return d.save_time; }, 1000.0);
