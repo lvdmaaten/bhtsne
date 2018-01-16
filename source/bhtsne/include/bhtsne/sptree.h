@@ -65,7 +65,7 @@ namespace bhtsne {
         Cell boundary;
 
         // Indices in this space-partitioning tree node, corresponding center-of-mass, and list of all children
-        double* data;
+        const Vector2D<double> &data;
         double* center_of_mass;
         unsigned int index[QT_NODE_CAPACITY];
 
@@ -74,11 +74,9 @@ namespace bhtsne {
         unsigned int no_children;
 
     public:
-        SPTree(Vector2D<double> &data);
-        SPTree(unsigned int D, double* inp_data, double* inp_corner, double* inp_width);
-        SPTree(unsigned int D, double* inp_data, unsigned int N, double* inp_corner, double* inp_width);
+        SPTree(const Vector2D<double> &data);
+        SPTree(const Vector2D<double> &data, double* inp_corner, double* inp_width);
         ~SPTree();
-        void setData(double* inp_data);
         bool insert(unsigned int new_index);
         void subdivide();
         bool isCorrect();
@@ -89,7 +87,7 @@ namespace bhtsne {
         void print();
 
     private:
-        void init(unsigned int D, double* inp_data, double* inp_corner, double* inp_width);
+        void init(double* inp_corner, double* inp_width);
         void fill(unsigned int N);
         unsigned int getAllIndices(unsigned int* indices, unsigned int loc);
     };
