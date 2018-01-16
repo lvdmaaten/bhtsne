@@ -333,15 +333,15 @@ void SPTree::computeEdgeForces(unsigned int* row_P, unsigned int* col_P, double*
 
             // Compute pairwise distance and Q-value
             D = 1.0;
-            ind2 = col_P[i] * dimension;
-            for(unsigned int d = 0; d < dimension; d++) buff[d] = data[ind1 + d] - data[ind2 + d];
+            ind2 = col_P[i];
+            for(unsigned int d = 0; d < dimension; d++) buff[d] = data[ind1][d] - data[ind2][d];
             for(unsigned int d = 0; d < dimension; d++) D += buff[d] * buff[d];
             D = val_P[i] / D;
 
             // Sum positive force
-            for(unsigned int d = 0; d < dimension; d++) pos_f[ind1 + d] += D * buff[d];
+            for(unsigned int d = 0; d < dimension; d++) pos_f[ind1 * dimension + d] += D * buff[d];
         }
-        ind1 += dimension;
+        ind1++;
     }
 }
 
