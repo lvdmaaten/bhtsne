@@ -33,6 +33,7 @@
 #pragma once
 
 #include <vector>
+#include <memory>
 #include <bhtsne/vector2d.h>
 
 namespace bhtsne {
@@ -69,7 +70,7 @@ namespace bhtsne {
         unsigned int index[QT_NODE_CAPACITY];
 
         // Children
-        SPTree** children;
+        std::vector<std::unique_ptr<SPTree>> children;
         unsigned int no_children;
 
     public:

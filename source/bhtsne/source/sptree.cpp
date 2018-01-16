@@ -147,7 +147,7 @@ void SPTree::init(unsigned int D, double* inp_data, double* inp_corner, double* 
     for(unsigned int d = 0; d < D; d++) boundary.m_centers[d] = inp_corner[d];
     for(unsigned int d = 0; d < D; d++) boundary.m_radii[d] = inp_width[d];
 
-    children = (SPTree**) malloc(no_children * sizeof(SPTree*));
+    children = std::vector<std::unique_ptr<SPTree>>(no_children);
     for(unsigned int i = 0; i < no_children; i++) children[i] = NULL;
 
     center_of_mass = (double*) malloc(D * sizeof(double));
@@ -160,10 +160,6 @@ void SPTree::init(unsigned int D, double* inp_data, double* inp_corner, double* 
 // Destructor for SPTree
 SPTree::~SPTree()
 {
-    for(unsigned int i = 0; i < no_children; i++) {
-        if(children[i] != NULL) delete children[i];
-    }
-    free(children);
     free(center_of_mass);
     free(buff);
 }
@@ -237,7 +233,7 @@ void SPTree::subdivide() {
             else                   new_corner[d] = boundary.m_centers[d] + .5 * boundary.m_radii[d];
             div *= 2;
         }
-        children[i] = new SPTree(dimension, data, new_corner, new_width);
+        children[i] = std::make_unique<SPTree>(dimension, data, new_corner, new_width);
     }
     free(new_corner);
     free(new_width);
