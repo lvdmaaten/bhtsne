@@ -1092,11 +1092,12 @@ void TSNE::computeGaussianPerplexity(SparseMatrix & similarities)
     }
 
 	// Build ball tree on data set
-	auto tree = VpTree<DataPoint, euclidean_distance>();
-	auto obj_X = std::vector<DataPoint>(m_dataSize, DataPoint(m_inputDimensions, -1, m_data[0]));
+	auto tree = VpTree<DataPoint, euclideanDistance>();
+	auto obj_X = std::vector<DataPoint>(m_dataSize, DataPoint(m_inputDimensions, 0, m_data[0]));
 	for (unsigned int n = 0; n < m_dataSize; ++n)
     {
-        obj_X[n] = DataPoint(m_inputDimensions, n, m_data[n]);
+        obj_X[n].index = n;
+        obj_X[n].data.assign(m_data[n], m_data[n] + m_inputDimensions);
     }
 	tree.create(obj_X);
 
@@ -1188,7 +1189,7 @@ void TSNE::computeGaussianPerplexity(SparseMatrix & similarities)
 		for (unsigned int m = 0; m < K; ++m)
         {
             cur_P[m] /= sum_P;
-            similarities.columns[similarities.rows[n] + m] = static_cast<unsigned int>(indices[m + 1].index());
+            similarities.columns[similarities.rows[n] + m] = indices[m + 1].index;
             similarities.values[similarities.rows[n] + m] = cur_P[m];
 		}
 	}
