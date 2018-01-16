@@ -39,36 +39,19 @@
 #include <bhtsne/sptree.h>
 
 // Constructs cell
-Cell::Cell(unsigned int dimensions) {
-    m_dimensions = dimensions;
-    m_centers = (double*) malloc(m_dimensions * sizeof(double));
-    m_radii  = (double*) malloc(m_dimensions * sizeof(double));
+Cell::Cell()
+{
 }
 
-// Destructs cell
-Cell::~Cell() {
-    free(m_centers);
-    free(m_radii);
-}
-
-double Cell::getCenter(unsigned int d) {
-    return m_centers[d];
-}
-
-double Cell::getRadius(unsigned int d) {
-    return m_radii[d];
-}
-
-void Cell::setCenter(unsigned int d, double val) {
-    m_centers[d] = val;
-}
-
-void Cell::setRadius(unsigned int d, double val) {
-    m_radii[d] = val;
+Cell::Cell(unsigned int dimensions)
+    : m_dimensions(dimensions)
+    , m_centers(dimensions)
+    , m_radii(dimensions) 
+{
 }
 
 // Checks whether a point lies in a cell
-bool Cell::containsPoint(double point[])
+bool Cell::containsPoint(std::vector<double> point)
 {
     for(auto d = 0; d < m_dimensions; ++d) {
         if(m_centers[d] - m_radii[d] > point[d]) return false;
@@ -152,9 +135,9 @@ void SPTree::init(SPTree* inp_parent, unsigned int D, double* inp_data, double* 
     size = 0;
     cum_size = 0;
 
-    boundary = new Cell(dimension);
-    for(unsigned int d = 0; d < D; d++) boundary->setCenter(d, inp_corner[d]);
-    for(unsigned int d = 0; d < D; d++) boundary->setRadius(d, inp_width[d]);
+    boundary = Cell(dimension);
+    for(unsigned int d = 0; d < D; d++) boundary.m_centers[d] = inp_corner[d];
+    for(unsigned int d = 0; d < D; d++) boundary.m_radii[d] = inp_width[d];
 
     children = (SPTree**) malloc(no_children * sizeof(SPTree*));
     for(unsigned int i = 0; i < no_children; i++) children[i] = NULL;
@@ -175,7 +158,6 @@ SPTree::~SPTree()
     free(children);
     free(center_of_mass);
     free(buff);
-    delete boundary;
 }
 
 
@@ -198,7 +180,8 @@ bool SPTree::insert(unsigned int new_index)
 {
     // Ignore objects which do not belong in this quad tree
     double* point = data + new_index * dimension;
-    if(!boundary->containsPoint(point))
+    std::vector<double> point_v = std::vector<double>(point, point + dimension);
+    if(!boundary.containsPoint(point_v))
         return false;
 
     // Online update of cumulative size and center-of-mass
@@ -248,9 +231,9 @@ void SPTree::subdivide() {
     for(unsigned int i = 0; i < no_children; i++) {
         unsigned int div = 1;
         for(unsigned int d = 0; d < dimension; d++) {
-            new_width[d] = .5 * boundary->getRadius(d);
-            if((i / div) % 2 == 1) new_corner[d] = boundary->getCenter(d) - .5 * boundary->getRadius(d);
-            else                   new_corner[d] = boundary->getCenter(d) + .5 * boundary->getRadius(d);
+            new_width[d] = .5 * boundary.m_radii[d];
+            if((i / div) % 2 == 1) new_corner[d] = boundary.m_centers[d] - .5 * boundary.m_radii[d];
+            else                   new_corner[d] = boundary.m_centers[d] + .5 * boundary.m_radii[d];
             div *= 2;
         }
         children[i] = new SPTree(this, dimension, data, new_corner, new_width);
@@ -285,7 +268,8 @@ bool SPTree::isCorrect()
 {
     for(unsigned int n = 0; n < size; n++) {
         double* point = data + index[n] * dimension;
-        if(!boundary->containsPoint(point)) return false;
+        std::vector<double> point_v = std::vector<double>(point, point + dimension);
+        if (!boundary.containsPoint(point_v)) return false;
     }
     if(!is_leaf) {
         bool correct = true;
@@ -345,7 +329,7 @@ void SPTree::computeNonEdgeForces(unsigned int point_index, double theta, double
     double max_width = 0.0;
     double cur_width;
     for(unsigned int d = 0; d < dimension; d++) {
-        cur_width = boundary->getRadius(d);
+        cur_width = boundary.m_radii[d];
         max_width = (max_width > cur_width) ? max_width : cur_width;
     }
     if(is_leaf || max_width / sqrt(D) < theta) {

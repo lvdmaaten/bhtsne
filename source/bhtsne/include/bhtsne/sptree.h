@@ -30,26 +30,18 @@
  *
  */
 
-
 #pragma once
 
+#include <vector>
 
-class Cell {
-
+struct Cell {
     unsigned int m_dimensions;
-    double* m_centers;
-    double* m_radii;
-    
-    
-public:
+    std::vector<double> m_centers;
+    std::vector<double> m_radii;
+
+    Cell();
     Cell(unsigned int dimensions);
-    ~Cell();
-    
-    double getCenter(unsigned int d);
-    double getRadius(unsigned int d);
-    void setCenter(unsigned int d, double val);
-    void setRadius(unsigned int d, double val);
-    bool containsPoint(double point[]);
+    bool containsPoint(std::vector<double> point);
 };
 
 
@@ -70,7 +62,7 @@ class SPTree
     unsigned int cum_size;
         
     // Axis-aligned bounding box stored as a center with half-dimensions to represent the boundaries of this quad tree
-    Cell* boundary;
+    Cell boundary;
     
     // Indices in this space-partitioning tree node, corresponding center-of-mass, and list of all children
     double* data;
