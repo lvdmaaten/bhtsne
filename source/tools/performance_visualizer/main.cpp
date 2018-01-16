@@ -26,11 +26,15 @@ const auto paddingRight = 180.0;
 const auto paddingTop = 20.0;
 const auto paddingBottom = 80.0;
 
-auto maxTime = 0.0;
-
-auto xStep = 100.0;
 const auto timeStep = 10.0;
 const auto timeSubStep = 1.0;
+
+const auto preperationColor = std::string("#f00");
+const auto executionColor   = std::string("#0f0");
+const auto saveColor        = std::string("#00f");
+
+auto maxTime = 0.0;
+auto xStep = 100.0;
 
 std::ofstream svg;
 auto m_data = std::vector<PerformanceData>();
@@ -95,7 +99,7 @@ void drawVerticalLines()
 }
 
 template<typename F>
-void drawGraph(const char color[], F &accaccessor, double scaleFactor = 1.0)
+void drawGraph(const std::string &color, const F &accaccessor,const double scaleFactor = 1.0)
 {
 	auto circles = std::stringstream();
 	auto line = std::stringstream();
@@ -122,7 +126,7 @@ void drawGraph(const char color[], F &accaccessor, double scaleFactor = 1.0)
 	svg << circles.str();
 }
 
-void drawKey(std::string &label, std::string &color, double yOffset)
+void drawKey(const std::string &label, const std::string &color, const double yOffset)
 {
 	auto x = width + 100;
 	auto y = height / 2 + yOffset;
@@ -224,13 +228,13 @@ int main(int argc, char* argv[])
 	createSvgHeader();
 	drawHorizontalLines();
 	drawVerticalLines();
-	drawGraph("#f00", [](PerformanceData d) {return d.preparation_time; }, 1000.0);
-	drawGraph("#0f0", [](PerformanceData d) {return d.execution_time; });
-	drawGraph("#00f", [](PerformanceData d) {return d.save_time; }, 1000.0);
+	drawGraph(preperationColor, [](PerformanceData d) {return d.preparation_time; }, 1000.0);
+	drawGraph(executionColor, [](PerformanceData d) {return d.execution_time; });
+	drawGraph(saveColor, [](PerformanceData d) {return d.save_time; }, 1000.0);
 
-	drawKey(std::string("preparation in ms"), std::string("#f00"), -50.0);
-	drawKey(std::string("execution in s"), std::string("#0f0"), 0.0);
-	drawKey(std::string("save in ms"), std::string("#00f"), 50.0);
+	drawKey(std::string("preparation in ms"), preperationColor, -50.0);
+	drawKey(std::string("execution in s"), executionColor, 0.0);
+	drawKey(std::string("save in ms"), saveColor, 50.0);
 
 	svg << "</svg>";
 
