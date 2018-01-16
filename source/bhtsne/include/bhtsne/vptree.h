@@ -43,7 +43,6 @@
 #include <cmath>
 #include <cfloat>
 #include <memory>
-#include <functional>
 
 
 struct DataPoint
@@ -78,13 +77,8 @@ public:
     // Default constructor
     VpTree()
         : m_tau(0.0)
-        , m_root(nullptr)
+        , m_root(std::make_unique<Node>())
     {}
-
-    ~VpTree()
-    {
-        delete m_root;
-    }
 
     // Function to create a new VpTree from data
     void create(const std::vector<T> & items) {
@@ -103,7 +97,7 @@ public:
         m_tau = std::numeric_limits<double>::max();
 
         // Perform the search
-        search(m_root, target, k, heap);
+        search(m_root.get(), target, k, heap);
 
         // Gather final results
         results->clear();
@@ -129,23 +123,15 @@ private:
     {
         int index; // index of point in node
         double threshold; // radius(?)
-        Node * left; // points closer by than threshold
-        Node * right; // points farther away than threshold
+        std::unique_ptr<Node> left; // points closer by than threshold
+        std::unique_ptr<Node> right; // points farther away than threshold
 
         Node()
             : index(0)
             , threshold(0.0)
-            , left(nullptr)
-            , right(nullptr)
         {}
-
-        ~Node()
-        {
-            delete left;
-            delete right;
-        }
     };
-    Node * m_root;
+    std::unique_ptr<Node> m_root;
 
 
     // An item on the intermediate result queue
@@ -177,17 +163,17 @@ private:
     };
 
     // Function that (recursively) fills the tree
-    Node * buildFromPoints(int lower, int upper)
+    std::unique_ptr<Node> buildFromPoints(int lower, int upper)
     {
         assert(lower >= 0);
         if (upper == lower)
         {
-            // indicates that we're done here!
-            return nullptr;
+            // we're done here, return null pointer (default constructed unique_ptr)
+            return std::unique_ptr<Node>();
         }
 
         // Lower index is center of current node
-        auto node = new Node();
+        auto node = std::make_unique<Node>();
         node->index = lower;
 
         if (upper - lower > 1)
@@ -209,11 +195,12 @@ private:
             node->threshold = distance(m_items[lower], m_items[median]);
 
             // Recursively build tree
-            node->index = lower;
+            node->index = lower;//TODO remove?
             node->left = buildFromPoints(lower + 1, median);
             node->right = buildFromPoints(median, upper);
         }
 
+        assert(node);
         return node;
     }
 
@@ -246,7 +233,7 @@ private:
         }
 
         // Return if we arrived at a leaf
-        if(node->left == nullptr && node->right == nullptr)
+        if(node->left.get() == nullptr && node->right.get() == nullptr)
         {
             return;
         }
@@ -257,13 +244,13 @@ private:
             // if there can still be neighbors inside the ball, recursively search left child first
             if(dist - m_tau <= node->threshold)
             {
-                search(node->left, target, k, heap);
+                search(node->left.get(), target, k, heap);
             }
 
             // if there can still be neighbors outside the ball, recursively search right child
             if(dist + m_tau >= node->threshold)
             {
-                search(node->right, target, k, heap);
+                search(node->right.get(), target, k, heap);
             }
 
         // If the target lies outsize the radius of the ball
@@ -273,13 +260,13 @@ private:
             // if there can still be neighbors outside the ball, recursively search right child first
             if(dist + m_tau >= node->threshold)
             {
-                search(node->right, target, k, heap);
+                search(node->right.get(), target, k, heap);
             }
 
             // if there can still be neighbors inside the ball, recursively search left child
             if (dist - m_tau <= node->threshold)
             {
-                search(node->left, target, k, heap);
+                search(node->left.get(), target, k, heap);
             }
         }
     }
