@@ -37,7 +37,7 @@ namespace bhtsne
             }
             else if (optionValuePair.first == "--random-seed")
             {
-                tsne.setRandomSeed(std::stoi(optionValuePair.second));
+                tsne.setRandomSeed(std::stoul(optionValuePair.second));
             }
             else if (optionValuePair.first.find("--") == 0)
             {

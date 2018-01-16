@@ -14,8 +14,6 @@ int main(int argc, char * argv[])
 	auto parsedArguments = cppassist::ArgumentParser();
 	parsedArguments.parse(argc, argv);
 
-    applyCommandlineOptions(tsne, parsedArguments.options());
-
     //read correct input file
     auto params = parsedArguments.params();
     if (params.size() > 1)
@@ -67,6 +65,8 @@ int main(int argc, char * argv[])
         std::cerr << "failed to load input file\n";
         return 5;
     }
+
+    applyCommandlineOptions(tsne, parsedArguments.options());
 
 	tsne.run();
 
