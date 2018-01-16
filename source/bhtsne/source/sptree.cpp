@@ -37,7 +37,6 @@
 #include <cmath>
 #include <limits>
 #include <algorithm>
-#include <iostream>
 
 #include <bhtsne/sptree.h>
 
@@ -76,8 +75,6 @@ SPTree::SPTree(const Vector2D<double> &data) : data(data)
 {
     auto dimensions = data.width();
     auto number = data.height();
-    std::cout << "dim " << dimensions << " num " << number << std::endl;
-    std::cout << "val " << data[0][0] << " " << data[0][1] << std::endl;
     // Compute mean, width, and height of current map (boundaries of SPTree)
     std::vector<double> mean_Y = std::vector<double>(dimensions);
     std::vector<double> min_Y = std::vector<double>(dimensions);
