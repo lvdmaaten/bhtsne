@@ -35,13 +35,17 @@
 #include <cstdlib>
 #include <stdio.h>
 #include <cmath>
+#include <limits>
+#include <algorithm>
 
 #include <bhtsne/sptree.h>
 
-// Constructs cell
-Cell::Cell() = default;
+using namespace bhtsne;
 
-Cell::Cell(unsigned int dimensions)
+// Constructs cell
+SPTree::Cell::Cell() = default;
+
+SPTree::Cell::Cell(unsigned int dimensions)
     : m_dimensions(dimensions)
     , m_centers(dimensions)
     , m_radii(dimensions) 
@@ -49,7 +53,7 @@ Cell::Cell(unsigned int dimensions)
 }
 
 // Checks whether a point lies in a cell
-bool Cell::containsPoint(std::vector<double> point)
+bool SPTree::Cell::containsPoint(std::vector<double> point)
 {
     for(auto d = 0; d < m_dimensions; ++d)
     {
@@ -67,35 +71,49 @@ bool Cell::containsPoint(std::vector<double> point)
 
 
 // Default constructor for SPTree -- build tree, too!
-SPTree::SPTree(unsigned int D, double* inp_data, unsigned int N)
+SPTree::SPTree(Vector2D<double> &data)
 {
-
+    auto dimensions = data.width();
+    auto number = data.height();
     // Compute mean, width, and height of current map (boundaries of SPTree)
-    int nD = 0;
-    double* mean_Y = (double*) calloc(D,  sizeof(double));
-    double*  min_Y = (double*) malloc(D * sizeof(double)); for(unsigned int d = 0; d < D; d++)  min_Y[d] =  DBL_MAX;
-    double*  max_Y = (double*) malloc(D * sizeof(double)); for(unsigned int d = 0; d < D; d++)  max_Y[d] = -DBL_MAX;
-    for(unsigned int n = 0; n < N; n++) {
-        for(unsigned int d = 0; d < D; d++) {
-            mean_Y[d] += inp_data[n * D + d];
-            if(inp_data[nD + d] < min_Y[d]) min_Y[d] = inp_data[nD + d];
-            if(inp_data[nD + d] > max_Y[d]) max_Y[d] = inp_data[nD + d];
-        }
-        nD += D;
+    std::vector<double> mean_Y = std::vector<double>(dimensions);
+    std::vector<double> min_Y = std::vector<double>(dimensions);
+    std::vector<double> max_Y = std::vector<double>(dimensions);
+    for (auto d = 0u; d < dimensions; ++d)
+    {
+        min_Y[d] = std::numeric_limits<double>::max();
+        max_Y[d] = std::numeric_limits<double>::min();
     }
-    for(int d = 0; d < D; d++) mean_Y[d] /= (double) N;
+    for(auto n = 0u; n < number; ++n) {
+        for(auto d = 0u; d < dimensions; ++d) {
+            auto value = data[n][d];
+            mean_Y[d] += value;
+            min_Y[d] = std::min(min_Y[d], value);
+            max_Y[d] = std::max(max_Y [d], value);
+        }
+    }
+    for (auto d = 0u; d < dimensions; ++d)
+    {
+        mean_Y[d] /= number;
+    }
 
     // Construct SPTree
-    double* width = (double*) malloc(D * sizeof(double));
-    for(int d = 0; d < D; d++) width[d] = fmax(max_Y[d] - mean_Y[d], mean_Y[d] - min_Y[d]) + 1e-5;
-    init(D, inp_data, mean_Y, width);
-    fill(N);
+    auto width = std::vector<double>(dimensions);
+    auto delta = 1e-5;
+    for (int d = 0; d < dimensions; d++)
+    {
+        width[d] = std::max(max_Y[d] - mean_Y[d], mean_Y[d] - min_Y[d]) + delta;
+    }
 
-    // Clean up memory
-    free(mean_Y);
-    free(max_Y);
-    free(min_Y);
-    free(width);
+    double * inp_data = (double*) malloc(number * dimensions * sizeof(double));
+    auto offset = 0u;
+    for (auto n = data.begin(); n != data.end(); ++n)
+    {
+        inp_data[offset++] = *n;
+    }
+
+    init(dimensions, inp_data, mean_Y.data(), width.data());
+    fill(number);
 }
 
 

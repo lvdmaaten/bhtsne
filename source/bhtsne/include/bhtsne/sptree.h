@@ -33,62 +33,63 @@
 #pragma once
 
 #include <vector>
+#include <bhtsne/vector2d.h>
 
-struct Cell {
-    unsigned int m_dimensions;
-    std::vector<double> m_centers;
-    std::vector<double> m_radii;
+namespace bhtsne {
+    class SPTree
+    {
+        struct Cell {
+            unsigned int m_dimensions;
+            std::vector<double> m_centers;
+            std::vector<double> m_radii;
 
-    Cell();
-    Cell(unsigned int dimensions);
-    bool containsPoint(std::vector<double> point);
-};
+            Cell();
+            Cell(unsigned int dimensions);
+            bool containsPoint(std::vector<double> point);
+        };
 
+        // Fixed constants
+        static const unsigned int QT_NODE_CAPACITY = 1;
 
-class SPTree
-{
-    
-    // Fixed constants
-    static const unsigned int QT_NODE_CAPACITY = 1;
+        // A buffer we use when doing force computations
+        double* buff;
 
-    // A buffer we use when doing force computations
-    double* buff;
-    
-    // Properties of this node in the tree
-    unsigned int dimension;
-    bool is_leaf;
-    unsigned int size;
-    unsigned int cum_size;
-        
-    // Axis-aligned bounding box stored as a center with half-dimensions to represent the boundaries of this quad tree
-    Cell boundary;
-    
-    // Indices in this space-partitioning tree node, corresponding center-of-mass, and list of all children
-    double* data;
-    double* center_of_mass;
-    unsigned int index[QT_NODE_CAPACITY];
-    
-    // Children
-    SPTree** children;
-    unsigned int no_children;
-    
-public:
-    SPTree(unsigned int D, double* inp_data, unsigned int N);
-    SPTree(unsigned int D, double* inp_data, double* inp_corner, double* inp_width);
-    SPTree(unsigned int D, double* inp_data, unsigned int N, double* inp_corner, double* inp_width);
-    ~SPTree();
-    void setData(double* inp_data);
-    bool insert(unsigned int new_index);
-    void subdivide();
-    bool isCorrect();
-    void getAllIndices(unsigned int* indices);
-    unsigned int getDepth();
-    void computeNonEdgeForces(unsigned int point_index, double theta, double neg_f[], double* sum_Q);
-    void computeEdgeForces(unsigned int* row_P, unsigned int* col_P, double* val_P, int N, double* pos_f);
-    void print();
-    
-private:
-    void init(unsigned int D, double* inp_data, double* inp_corner, double* inp_width);
-    void fill(unsigned int N);
-    unsigned int getAllIndices(unsigned int* indices, unsigned int loc);
-};
+        // Properties of this node in the tree
+        unsigned int dimension;
+        bool is_leaf;
+        unsigned int size;
+        unsigned int cum_size;
+
+        // Axis-aligned bounding box stored as a center with half-dimensions to represent the boundaries of this quad tree
+        Cell boundary;
+
+        // Indices in this space-partitioning tree node, corresponding center-of-mass, and list of all children
+        double* data;
+        double* center_of_mass;
+        unsigned int index[QT_NODE_CAPACITY];
+
+        // Children
+        SPTree** children;
+        unsigned int no_children;
+
+    public:
+        SPTree(Vector2D<double> &data);
+        SPTree(unsigned int D, double* inp_data, double* inp_corner, double* inp_width);
+        SPTree(unsigned int D, double* inp_data, unsigned int N, double* inp_corner, double* inp_width);
+        ~SPTree();
+        void setData(double* inp_data);
+        bool insert(unsigned int new_index);
+        void subdivide();
+        bool isCorrect();
+        void getAllIndices(unsigned int* indices);
+        unsigned int getDepth();
+        void computeNonEdgeForces(unsigned int point_index, double theta, double neg_f[], double* sum_Q);
+        void computeEdgeForces(unsigned int* row_P, unsigned int* col_P, double* val_P, int N, double* pos_f);
+        void print();
+
+    private:
+        void init(unsigned int D, double* inp_data, double* inp_corner, double* inp_width);
+        void fill(unsigned int N);
+        unsigned int getAllIndices(unsigned int* indices, unsigned int loc);
+    };
+}
