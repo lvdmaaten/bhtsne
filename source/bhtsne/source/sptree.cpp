@@ -39,9 +39,7 @@
 #include <bhtsne/sptree.h>
 
 // Constructs cell
-Cell::Cell()
-{
-}
+Cell::Cell() = default;
 
 Cell::Cell(unsigned int dimensions)
     : m_dimensions(dimensions)
@@ -53,9 +51,16 @@ Cell::Cell(unsigned int dimensions)
 // Checks whether a point lies in a cell
 bool Cell::containsPoint(std::vector<double> point)
 {
-    for(auto d = 0; d < m_dimensions; ++d) {
-        if(m_centers[d] - m_radii[d] > point[d]) return false;
-        if(m_centers[d] + m_radii[d] < point[d]) return false;
+    for(auto d = 0; d < m_dimensions; ++d)
+    {
+        if (m_centers[d] - m_radii[d] > point[d])
+        {
+            return false;
+        }
+        if (m_centers[d] + m_radii[d] < point[d])
+        {
+            return false;
+        }
     }
     return true;
 }
