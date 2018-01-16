@@ -46,7 +46,7 @@ namespace bhtsne {
 
             Cell();
             Cell(unsigned int dimensions);
-            bool containsPoint(std::vector<double> point);
+            bool containsPoint(const double* point);
         };
 
         // Fixed constants

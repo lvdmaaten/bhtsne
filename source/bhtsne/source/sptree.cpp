@@ -54,7 +54,7 @@ SPTree::Cell::Cell(unsigned int dimensions)
 }
 
 // Checks whether a point lies in a cell
-bool SPTree::Cell::containsPoint(std::vector<double> point)
+bool SPTree::Cell::containsPoint(const double* point)
 {
     for(auto d = 0; d < m_dimensions; ++d)
     {
@@ -157,8 +157,7 @@ bool SPTree::insert(unsigned int new_index)
 {
     // Ignore objects which do not belong in this quad tree
     const double* point = data[new_index];
-    std::vector<double> point_v = std::vector<double>(point, point + dimension);
-    if(!boundary.containsPoint(point_v))
+    if(!boundary.containsPoint(point))
         return false;
 
     // Online update of cumulative size and center-of-mass
@@ -245,8 +244,7 @@ bool SPTree::isCorrect()
 {
     for(unsigned int n = 0; n < size; n++) {
         const double* point = data[index[n]];
-        std::vector<double> point_v = std::vector<double>(point, point + dimension);
-        if (!boundary.containsPoint(point_v)) return false;
+        if (!boundary.containsPoint(point)) return false;
     }
     if(!is_leaf) {
         bool correct = true;
