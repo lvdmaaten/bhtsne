@@ -55,7 +55,6 @@ class SPTree
     double* buff;
     
     // Properties of this node in the tree
-    SPTree* parent;
     unsigned int dimension;
     bool is_leaf;
     unsigned int size;
@@ -77,16 +76,11 @@ public:
     SPTree(unsigned int D, double* inp_data, unsigned int N);
     SPTree(unsigned int D, double* inp_data, double* inp_corner, double* inp_width);
     SPTree(unsigned int D, double* inp_data, unsigned int N, double* inp_corner, double* inp_width);
-    SPTree(SPTree* inp_parent, unsigned int D, double* inp_data, unsigned int N, double* inp_corner, double* inp_width);
-    SPTree(SPTree* inp_parent, unsigned int D, double* inp_data, double* inp_corner, double* inp_width);
     ~SPTree();
     void setData(double* inp_data);
-    SPTree* getParent();
-    void construct(Cell boundary);
     bool insert(unsigned int new_index);
     void subdivide();
     bool isCorrect();
-    void rebuildTree();
     void getAllIndices(unsigned int* indices);
     unsigned int getDepth();
     void computeNonEdgeForces(unsigned int point_index, double theta, double neg_f[], double* sum_Q);
@@ -94,8 +88,7 @@ public:
     void print();
     
 private:
-    void init(SPTree* inp_parent, unsigned int D, double* inp_data, double* inp_corner, double* inp_width);
+    void init(unsigned int D, double* inp_data, double* inp_corner, double* inp_width);
     void fill(unsigned int N);
     unsigned int getAllIndices(unsigned int* indices, unsigned int loc);
-    bool isChild(unsigned int test_index, unsigned int start, unsigned int end);
 };

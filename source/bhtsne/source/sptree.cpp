@@ -83,7 +83,7 @@ SPTree::SPTree(unsigned int D, double* inp_data, unsigned int N)
     // Construct SPTree
     double* width = (double*) malloc(D * sizeof(double));
     for(int d = 0; d < D; d++) width[d] = fmax(max_Y[d] - mean_Y[d], mean_Y[d] - min_Y[d]) + 1e-5;
-    init(NULL, D, inp_data, mean_Y, width);
+    init(D, inp_data, mean_Y, width);
     fill(N);
 
     // Clean up memory
@@ -94,10 +94,10 @@ SPTree::SPTree(unsigned int D, double* inp_data, unsigned int N)
 }
 
 
-// Constructor for SPTree with particular size and parent -- build the tree, too!
+// Constructor for SPTree with particular size -- build the tree, too!
 SPTree::SPTree(unsigned int D, double* inp_data, unsigned int N, double* inp_corner, double* inp_width)
 {
-    init(NULL, D, inp_data, inp_corner, inp_width);
+    init(D, inp_data, inp_corner, inp_width);
     fill(N);
 }
 
@@ -105,28 +105,13 @@ SPTree::SPTree(unsigned int D, double* inp_data, unsigned int N, double* inp_cor
 // Constructor for SPTree with particular size (do not fill the tree)
 SPTree::SPTree(unsigned int D, double* inp_data, double* inp_corner, double* inp_width)
 {
-    init(NULL, D, inp_data, inp_corner, inp_width);
-}
-
-
-// Constructor for SPTree with particular size and parent (do not fill tree)
-SPTree::SPTree(SPTree* inp_parent, unsigned int D, double* inp_data, double* inp_corner, double* inp_width) {
-    init(inp_parent, D, inp_data, inp_corner, inp_width);
-}
-
-
-// Constructor for SPTree with particular size and parent -- build the tree, too!
-SPTree::SPTree(SPTree* inp_parent, unsigned int D, double* inp_data, unsigned int N, double* inp_corner, double* inp_width)
-{
-    init(inp_parent, D, inp_data, inp_corner, inp_width);
-    fill(N);
+    init(D, inp_data, inp_corner, inp_width);
 }
 
 
 // Main initialization function
-void SPTree::init(SPTree* inp_parent, unsigned int D, double* inp_data, double* inp_corner, double* inp_width)
+void SPTree::init(unsigned int D, double* inp_data, double* inp_corner, double* inp_width)
 {
-    parent = inp_parent;
     dimension = D;
     no_children = 2;
     for(unsigned int d = 1; d < D; d++) no_children *= 2;
@@ -165,13 +150,6 @@ SPTree::~SPTree()
 void SPTree::setData(double* inp_data)
 {
     data = inp_data;
-}
-
-
-// Get the parent of the current tree
-SPTree* SPTree::getParent()
-{
-    return parent;
 }
 
 
@@ -236,7 +214,7 @@ void SPTree::subdivide() {
             else                   new_corner[d] = boundary.m_centers[d] + .5 * boundary.m_radii[d];
             div *= 2;
         }
-        children[i] = new SPTree(this, dimension, data, new_corner, new_width);
+        children[i] = new SPTree(dimension, data, new_corner, new_width);
     }
     free(new_corner);
     free(new_width);
