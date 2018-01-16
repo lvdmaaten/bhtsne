@@ -72,7 +72,7 @@ TSNE::TSNE()
 Vector2D<double> TSNE::computeGradient(SparseMatrix & similarities)
 {
     // Construct space-partitioning tree on current map
-    auto tree = SPTree(m_outputDimensions, m_result[0], m_dataSize);
+    auto tree = SPTree(m_result);
 
     // Compute all terms required for t-SNE gradient
     auto pos_f = Vector2D<double>(m_dataSize, m_outputDimensions, 0.0);
@@ -203,7 +203,7 @@ double TSNE::evaluateErrorExact(const Vector2D<double> & Perplexity)
 double TSNE::evaluateError(SparseMatrix & similarities)
 {
     // Get estimate of normalization term
-    auto tree = SPTree(m_outputDimensions, m_result[0], m_dataSize);
+    auto tree = SPTree(m_result);
     auto buff = std::vector<double>(m_outputDimensions, 0.0);
     double sum_Q = 0.0;
     for (unsigned int i = 0; i < m_dataSize; ++i)
