@@ -8,6 +8,7 @@
 
 struct PerformanceData
 {
+	std::string commitName;
 	int testsize;
 	int iterations;
 	long long preparation_time;
@@ -106,7 +107,12 @@ int main(int argc, char* argv[])
 	//load data
 	for (auto i = size_t(3); i < argc; ++i)
 	{
-		auto fileName = argv[i];
+		auto fileName = std::string( argv[i] );
+
+		auto posOfLastDot = fileName.find_last_of('.');
+		auto posOfLastUnderscore = fileName.find_last_of('_');
+		auto commitName = fileName.substr(posOfLastUnderscore + 1, posOfLastDot - posOfLastUnderscore - 1);
+
 		auto performanceFile = std::ifstream();
 		performanceFile.open(fileName);
 		
@@ -126,7 +132,6 @@ int main(int argc, char* argv[])
 			auto iss = std::istringstream(line);
 			auto element = std::string();
 
-			//auto values = std::vector<long>();
 			auto values = PerformanceData();
 
 			std::getline(iss, element, ';');
