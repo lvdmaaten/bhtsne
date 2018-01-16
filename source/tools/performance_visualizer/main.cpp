@@ -5,6 +5,8 @@
 #include <sstream>
 #include <string>
 #include <functional>
+#include <cmath>
+
 
 struct PerformanceData
 {

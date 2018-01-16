@@ -76,6 +76,8 @@ namespace bhtsne {
     public:
         SPTree(const Vector2D<double> &data);
         SPTree(const Vector2D<double> &data, double* inp_corner, double* inp_width);
+        SPTree(const SPTree & other) = delete;
+        SPTree(SPTree && other) = default;
         ~SPTree();
         bool insert(unsigned int new_index);
         void subdivide();
