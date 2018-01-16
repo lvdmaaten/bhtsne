@@ -22,14 +22,15 @@ const auto width = 600.0;
 const auto height = 400.0;
 
 const auto paddingLeft = 45.0;
-const auto paddingRight = 80.0;
+const auto paddingRight = 180.0;
 const auto paddingTop = 20.0;
 const auto paddingBottom = 80.0;
 
-const auto maxTime = 30.0;
+auto maxTime = 0.0;
 
 auto xStep = 100.0;
 const auto timeStep = 10.0;
+const auto timeSubStep = 1.0;
 
 std::ofstream svg;
 auto m_data = std::vector<PerformanceData>();
@@ -47,6 +48,13 @@ void createSvgHeader()
 
 void drawHorizontalLines()
 {
+	for (auto time = 0.0; time <= maxTime; time += timeSubStep) 
+	{
+		auto y = height - (time * height / maxTime);
+		svg << "<path style='stroke:#eee;stroke-width:1px;' "
+			<< "d='M 0," << y << " H " << width << "'"
+			<< "/>\n";
+	}
 	for (auto time = 0.0; time <= maxTime; time += timeStep)
 	{
 		auto y = height - (time * height / maxTime);
@@ -114,6 +122,25 @@ void drawGraph(const char color[], F &accaccessor, double scaleFactor = 1.0)
 	svg << circles.str();
 }
 
+void drawKey(std::string &label, std::string &color, double yOffset)
+{
+	auto x = width + 100;
+	auto y = height / 2 + yOffset;
+	svg << "<text style='fill:#000;font-family:sans-serif;font-size:20px;text-anchor:middle;text-align:center;' "
+		<< "x='" << x << "' "
+		<< "y='" << y << "'"
+		<< "><tspan>" << label << "</tspan></text>\n";
+
+	svg << "<path style='stroke:" << color << ";stroke-width:1px;' "
+		<< "d='M " << x - 10 << "," << y + 10 << " H " << x + 10 << "'"
+		<< "/>\n";
+
+	svg << "<circle style='fill:" << color << "' r='3' "
+		<< "cx='" << x << "' "
+		<< "cy='" << y + 10 << "'"
+		<< "/>\n";
+}
+
 int main(int argc, char* argv[])
 {
 	if (argc < 4) {
@@ -165,17 +192,22 @@ int main(int argc, char* argv[])
 
 			std::getline(iss, element, ';');
 			values.preparation_time = std::stoll(element);
+			maxTime = std::fmax(maxTime, std::ceil(static_cast<double>(values.preparation_time) / 1'000'000));
 
 			std::getline(iss, element, ';');
 			values.execution_time = std::stoll(element);
+			maxTime = std::fmax(maxTime, std::ceil(static_cast<double>(values.execution_time) / 1'000'000'000));
 
 			std::getline(iss, element, '\n');
 			values.save_time = std::stoll(element);
+			maxTime = std::fmax(maxTime, std::ceil(static_cast<double>(values.save_time) / 1'000'000));
 
 			m_data.emplace_back(std::move(values));
 		}
 
 	}
+
+	std::cout << "maxTime: " << maxTime << std::endl;
 
 	//save svg
 	svg = std::ofstream();
@@ -195,6 +227,10 @@ int main(int argc, char* argv[])
 	drawGraph("#f00", [](PerformanceData d) {return d.preparation_time; }, 1000.0);
 	drawGraph("#0f0", [](PerformanceData d) {return d.execution_time; });
 	drawGraph("#00f", [](PerformanceData d) {return d.save_time; }, 1000.0);
+
+	drawKey(std::string("preparation in ms"), std::string("#f00"), -50.0);
+	drawKey(std::string("execution in s"), std::string("#0f0"), 0.0);
+	drawKey(std::string("save in ms"), std::string("#00f"), 50.0);
 
 	svg << "</svg>";
 
