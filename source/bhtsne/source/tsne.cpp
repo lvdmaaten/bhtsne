@@ -48,7 +48,7 @@
 #include <algorithm>
 
 #include <bhtsne/sptree.h>
-#include <bhtsne/vptree.h>
+#include <bhtsne/vantagepointtree.h>
 
 #include <bhtsne/bhtsne-version.h> // includes BHTSNE_VERSION macro
 
@@ -1092,17 +1092,17 @@ void TSNE::computeGaussianPerplexity(SparseMatrix & similarities)
     }
 
 	// Build ball tree on data set
-	auto tree = VpTree<DataPoint, euclideanDistance>();
+	auto vantagePointTree = VantagePointTree<DataPoint, euclideanDistance>();
 	auto obj_X = std::vector<DataPoint>(m_dataSize, DataPoint(m_inputDimensions, 0, m_data[0]));
 	for (unsigned int n = 0; n < m_dataSize; ++n)
     {
         obj_X[n].index = n;
         obj_X[n].data.assign(m_data[n], m_data[n] + m_inputDimensions);
     }
-	tree.create(obj_X);
+	vantagePointTree.create(obj_X);
 
 	// Loop over all points to find nearest neighbors
-	std::cout << "Building tree..." << std::endl;
+	std::cout << "building vantage point tree..." << std::endl;
 	auto indices = std::vector<DataPoint>();
 	auto distances = std::vector<double>();
     auto cur_P = std::vector<double>(m_dataSize - 1);
@@ -1114,9 +1114,7 @@ void TSNE::computeGaussianPerplexity(SparseMatrix & similarities)
         }
 
 		// Find nearest neighbors
-		indices.clear();
-		distances.clear();
-		tree.search(obj_X[n], K + 1, &indices, &distances);
+		vantagePointTree.search(obj_X[n], K + 1, indices, distances);
 
 		// Initialize some variables for binary search
 		double beta = 1.0;

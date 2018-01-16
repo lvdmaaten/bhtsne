@@ -35,14 +35,11 @@
 
 #pragma once
 
-#include <cstdlib>
 #include <algorithm>
 #include <vector>
-#include <cstdio>
 #include <queue>
-#include <cmath>
-#include <cfloat>
 #include <memory>
+#include <random>
 
 
 struct DataPoint
@@ -70,83 +67,86 @@ double euclideanDistance(const DataPoint & a, const DataPoint & b) {
 }
 
 
-template<typename T, double distance(const T &, const T &)>
-class VpTree
+template<typename T, double calcDistance(const T &, const T &)>
+class VantagePointTree
 {
 public:
     // Default constructor
-    VpTree()
-        : m_tau(0.0)
+    VantagePointTree()
+        : m_maxDistance(0.0)
+        , m_randomNumberGenerator(std::random_device()())
         , m_root(std::make_unique<Node>())
     {}
 
-    // Function to create a new VpTree from data
+    // Function to create a new VantagePointTree from data
     void create(const std::vector<T> & items) {
         m_items = items;
-        m_root = buildFromPoints(0, items.size());
+        m_root = buildFromPoints(0, static_cast<unsigned int>(items.size()));
     }
 
     // Function that uses the tree to find the k nearest neighbors of target
-    void search(const T & target, int k, std::vector<T> * results, std::vector<double> * distances)
+    void search(const T & target, unsigned int k, std::vector<T> & results, std::vector<double> & distances)
     {
 
         // Use a priority queue to store intermediate results on
         std::priority_queue<HeapItem> heap;
 
-        // Variable that tracks the distance to the farthest point in our results
-        m_tau = std::numeric_limits<double>::max();
+        m_maxDistance = std::numeric_limits<double>::max();
 
         // Perform the search
-        search(m_root.get(), target, k, heap);
+        search(*m_root, target, k, heap);
 
         // Gather final results
-        results->clear();
-        distances->clear();
+        results.clear();
+        distances.clear();
         while(!heap.empty())
         {
-            results->push_back(m_items[heap.top().index]);
-            distances->push_back(heap.top().dist);
+            results.push_back(m_items[heap.top().index]);
+            distances.push_back(heap.top().distance);
             heap.pop();
         }
 
-        // Results are in reverse order
-        std::reverse(results->begin(), results->end());
-        std::reverse(distances->begin(), distances->end());
+        // Results are in reverse order TODO is this really necessary?
+        std::reverse(results.begin(), results.end());
+        std::reverse(distances.begin(), distances.end());
     }
 
 private:
     std::vector<T> m_items;
-    double m_tau;
+    double m_maxDistance;
+    std::mt19937 m_randomNumberGenerator;
+
 
     // Single node of a VP tree (has a point and radius; left children are closer to point than the radius)
     struct Node
     {
-        int index; // index of point in node
+        unsigned int index; // index of point in node
         double threshold; // radius(?)
-        std::unique_ptr<Node> left; // points closer by than threshold
-        std::unique_ptr<Node> right; // points farther away than threshold
+        std::unique_ptr<Node> leftChild; // points closer by than threshold
+        std::unique_ptr<Node> rightChild; // points farther away than threshold
 
-        Node()
-            : index(0)
+        explicit Node(unsigned int index = 0)
+            : index(index)
             , threshold(0.0)
         {}
     };
+
     std::unique_ptr<Node> m_root;
 
 
     // An item on the intermediate result queue
     struct HeapItem {
-        HeapItem(int index, double dist)
+        HeapItem(unsigned int index, double distance)
             : index(index)
-            , dist(dist)
+            , distance(distance)
         {}
 
-        int index;
-        double dist;
+        unsigned int index;
+        double distance;
 
         bool operator<(const HeapItem & other) const
         {
-            return dist < other.dist;
+            return distance < other.distance;
         }
     };
 
@@ -158,14 +158,13 @@ private:
             : item(item)
         {}
         bool operator()(const T & a, const T & b) {
-            return distance(item, a) < distance(item, b);
+            return calcDistance(item, a) < calcDistance(item, b);
         }
     };
 
     // Function that (recursively) fills the tree
-    std::unique_ptr<Node> buildFromPoints(int lower, int upper)
+    std::unique_ptr<Node> buildFromPoints(unsigned int lower, unsigned int upper)
     {
-        assert(lower >= 0);
         if (upper == lower)
         {
             // we're done here, return null pointer (default constructed unique_ptr)
@@ -173,84 +172,69 @@ private:
         }
 
         // Lower index is center of current node
-        auto node = std::make_unique<Node>();
-        node->index = lower;
+        auto node = std::make_unique<Node>(lower);
 
         if (upper - lower > 1)
         {      // if we did not arrive at leaf yet
 
             // Choose an arbitrary point and move it to the start
-            // TODO
-            int i = (int) ((double)rand() / RAND_MAX * (upper - lower - 1)) + lower;
-            std::swap(m_items[lower], m_items[i]);
+            auto uniformDistribution = std::uniform_int_distribution<int>(lower, upper - 1);
+            auto random_index = uniformDistribution(m_randomNumberGenerator);
+            std::swap(m_items[lower], m_items[random_index]);
 
             // Partition around the median distance
-            int median = (lower + upper) / 2;
+            unsigned int median = (lower + upper) / 2;
             std::nth_element(m_items.begin() + lower + 1,
                              m_items.begin() + median,
                              m_items.begin() + upper,
                              DistanceComparator(m_items[lower]));
 
             // Threshold of the new node will be the distance to the median
-            node->threshold = distance(m_items[lower], m_items[median]);
+            node->threshold = calcDistance(m_items[lower], m_items[median]);
 
             // Recursively build tree
-            node->index = lower;//TODO remove?
-            node->left = buildFromPoints(lower + 1, median);
-            node->right = buildFromPoints(median, upper);
+            node->leftChild = buildFromPoints(lower + 1, median);
+            node->rightChild = buildFromPoints(median, upper);
         }
 
-        assert(node);
         return node;
     }
 
     // Helper function that searches the tree
-    void search(Node * node, const T & target, unsigned int k, std::priority_queue<HeapItem> & heap)
+    void search(const Node & node, const T & target, unsigned int k, std::priority_queue<HeapItem> & heap)
     {
-        if(node == nullptr)
-        {
-            // indicates that we're done here
-            return;
-        }
-
         // Compute distance between target and current node
-        double dist = distance(m_items[node->index], target);
+        double distance = calcDistance(m_items[node.index], target);
 
         // If current node within radius tau
-        if(dist < m_tau)
+        if(distance < m_maxDistance)
         {
             if(heap.size() == k)
             {
                 // remove furthest node from result list (if we already have k results)
                 heap.pop();
             }
-            heap.push(HeapItem(node->index, dist)); // add current node to result list
+            heap.push(HeapItem(node.index, distance)); // add current node to result list
             if(heap.size() == k)
             {
                 // update value of tau (farthest point in result list)
-                m_tau = heap.top().dist;
+                m_maxDistance = heap.top().distance;
             }
-        }
-
-        // Return if we arrived at a leaf
-        if(node->left.get() == nullptr && node->right.get() == nullptr)
-        {
-            return;
         }
 
         // If the target lies within the radius of ball
-        if(dist < node->threshold)
+        if(distance < node.threshold)
         {
             // if there can still be neighbors inside the ball, recursively search left child first
-            if(dist - m_tau <= node->threshold)
+            if(distance - m_maxDistance <= node.threshold && node.leftChild)
             {
-                search(node->left.get(), target, k, heap);
+                search(*node.leftChild, target, k, heap);
             }
 
             // if there can still be neighbors outside the ball, recursively search right child
-            if(dist + m_tau >= node->threshold)
+            if(distance + m_maxDistance >= node.threshold && node.rightChild)
             {
-                search(node->right.get(), target, k, heap);
+                search(*node.rightChild, target, k, heap);
             }
 
         // If the target lies outsize the radius of the ball
@@ -258,15 +242,15 @@ private:
         else
         {
             // if there can still be neighbors outside the ball, recursively search right child first
-            if(dist + m_tau >= node->threshold)
+            if(distance + m_maxDistance >= node.threshold && node.rightChild)
             {
-                search(node->right.get(), target, k, heap);
+                search(*node.rightChild, target, k, heap);
             }
 
             // if there can still be neighbors inside the ball, recursively search left child
-            if (dist - m_tau <= node->threshold)
+            if (distance - m_maxDistance <= node.threshold && node.leftChild)
             {
-                search(node->left.get(), target, k, heap);
+                search(*node.leftChild, target, k, heap);
             }
         }
     }
