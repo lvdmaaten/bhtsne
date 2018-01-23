@@ -50,7 +50,7 @@ namespace bhtsne {
         };
 
         // Fixed constants
-        static const unsigned int QT_NODE_CAPACITY = 1;
+        static const auto QT_NODE_CAPACITY = 1u;
 
         // A buffer we use when doing force computations
         double* buff;
@@ -58,7 +58,6 @@ namespace bhtsne {
         // Properties of this node in the tree
         unsigned int m_dimensions;
         bool m_isLeaf;
-        unsigned int m_Size;
         unsigned int m_cumulativeSize;
 
         // Axis-aligned bounding box stored as a center with half-dimensions to represent the boundaries of this quad tree
@@ -67,7 +66,7 @@ namespace bhtsne {
         // Indices in this space-partitioning tree node, corresponding center-of-mass, and list of all children
         const Vector2D<double> &data;
         std::vector<double> m_centerOfMass;
-        unsigned int index[QT_NODE_CAPACITY];
+        std::vector<double> m_pointIndices;
 
         // Children
         std::vector<std::unique_ptr<SPTree>> m_children;

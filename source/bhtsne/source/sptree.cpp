@@ -124,7 +124,6 @@ void SPTree::init(double* inp_corner, double* inp_width)
     m_numberOfChildren = 2;
     for(unsigned int d = 1; d < m_dimensions; d++) m_numberOfChildren *= 2;
     m_isLeaf = true;
-    m_Size = 0;
     m_cumulativeSize = 0;
 
     boundary = Cell(m_dimensions);
@@ -136,6 +135,8 @@ void SPTree::init(double* inp_corner, double* inp_width)
 
     m_centerOfMass = std::vector<double>(m_dimensions);
     for(unsigned int d = 0; d < m_dimensions; d++) m_centerOfMass[d] = .0;
+
+    m_pointIndices = std::vector<double>();
 
     buff = (double*) malloc(m_dimensions * sizeof(double));
 }
@@ -152,30 +153,31 @@ SPTree::~SPTree()
 bool SPTree::insert(unsigned int new_index)
 {
     // Ignore objects which do not belong in this quad tree
-    const double* point = data[new_index];
-    if(!boundary.containsPoint(point))
+    const auto point = data[new_index];
+    if (!boundary.containsPoint(point))
         return false;
 
     // Online update of cumulative size and center-of-mass
     m_cumulativeSize++;
-    double mult1 = (double) (m_cumulativeSize - 1) / (double) m_cumulativeSize;
-    double mult2 = 1.0 / (double) m_cumulativeSize;
-    for(unsigned int d = 0; d < m_dimensions; d++) m_centerOfMass[d] *= mult1;
-    for(unsigned int d = 0; d < m_dimensions; d++) m_centerOfMass[d] += mult2 * point[d];
+    auto avgAdjustment = (m_cumulativeSize - 1.0) / m_cumulativeSize;
+    for (auto d = 0u; d < m_dimensions; d++)
+    {
+        m_centerOfMass[d] *= avgAdjustment;
+        m_centerOfMass[d] += point[d] / m_cumulativeSize;
+    }
 
     // If there is space in this quad tree and it is a leaf, add the object here
-    if(m_isLeaf && m_Size < QT_NODE_CAPACITY) {
-        index[m_Size] = new_index;
-        m_Size++;
+    if(m_isLeaf && m_pointIndices.size() < QT_NODE_CAPACITY) {
+        m_pointIndices.push_back(new_index);
         return true;
     }
 
     // Don't add duplicates for now (this is not very nice)
     bool any_duplicate = false;
-    for(unsigned int n = 0; n < m_Size; n++) {
+    for(unsigned int n = 0; n < m_pointIndices.size(); n++) {
         bool duplicate = true;
         for(unsigned int d = 0; d < m_dimensions; d++) {
-            if(point[d] != data[index[n]][d]) { duplicate = false; break; }
+            if(point[d] != data[m_pointIndices[n]][d]) { duplicate = false; break; }
         }
         any_duplicate = any_duplicate | duplicate;
     }
@@ -214,16 +216,15 @@ void SPTree::subdivide() {
     free(new_width);
 
     // Move existing points to correct children
-    for(unsigned int i = 0; i < m_Size; i++) {
+    for(unsigned int i = 0; i < m_pointIndices.size(); i++) {
         bool success = false;
         for(unsigned int j = 0; j < m_numberOfChildren; j++) {
-            if(!success) success = m_children[j]->insert(index[i]);
+            if(!success) success = m_children[j]->insert(m_pointIndices[i]);
         }
-        index[i] = -1;
     }
 
     // Empty parent node
-    m_Size = 0;
+    m_pointIndices.empty();
     m_isLeaf = false;
 }
 
@@ -238,8 +239,8 @@ void SPTree::fill(unsigned int N)
 // Checks whether the specified tree is correct
 bool SPTree::isCorrect()
 {
-    for(unsigned int n = 0; n < m_Size; n++) {
-        const double* point = data[index[n]];
+    for(unsigned int n = 0; n < m_pointIndices.size(); n++) {
+        const double* point = data[m_pointIndices[n]];
         if (!boundary.containsPoint(point)) return false;
     }
     if(!m_isLeaf) {
@@ -264,8 +265,8 @@ unsigned int SPTree::getAllIndices(unsigned int* indices, unsigned int loc)
 {
 
     // Gather indices in current quadrant
-    for(unsigned int i = 0; i < m_Size; i++) indices[loc + i] = index[i];
-    loc += m_Size;
+    for(unsigned int i = 0; i < m_pointIndices.size(); i++) indices[loc + i] = m_pointIndices[i];
+    loc += m_pointIndices.size();
 
     // Gather indices in children
     if(!m_isLeaf) {
@@ -288,7 +289,7 @@ void SPTree::computeNonEdgeForces(unsigned int point_index, double theta, double
 {
 
     // Make sure that we spend no time on empty nodes or self-interactions
-    if(m_cumulativeSize == 0 || (m_isLeaf && m_Size == 1 && index[0] == point_index)) return;
+    if(m_cumulativeSize == 0 || (m_isLeaf && m_pointIndices.size() == 1 && m_pointIndices[0] == point_index)) return;
 
     // Compute distance between point and center-of-mass
     double D = .0;
@@ -355,11 +356,11 @@ void SPTree::print()
 
     if(m_isLeaf) {
         printf("Leaf node; data = [");
-        for(int i = 0; i < m_Size; i++) {
-            const double* point = data[index[i]];
+        for(int i = 0; i < m_pointIndices.size(); i++) {
+            const double* point = data[m_pointIndices[i]];
             for(int d = 0; d < m_dimensions; d++) printf("%f, ", point[d]);
-            printf(" (index = %d)", index[i]);
-            if(i < m_Size - 1) printf("\n");
+            printf(" (index = %d)", m_pointIndices[i]);
+            if(i < m_pointIndices.size() - 1) printf("\n");
             else printf("]\n");
         }
     }
