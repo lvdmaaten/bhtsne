@@ -411,12 +411,6 @@ unsigned int TSNE::dataSize() const
 	return m_dataSize;
 }
 
-//TODO remove?
-void TSNE::setDataSize(unsigned int value)
-{
-	m_dataSize = value;
-}
-
 std::string TSNE::outputFile() const
 {
 	return m_outputFile;

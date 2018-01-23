@@ -15,17 +15,22 @@ public:
     auto & data()
     {
         return m_data;
-    };
+    }
 
     auto setData(std::vector<std::vector<double>> data)
     {
         m_data = data;
-    };
+    }
+
+    void setDataSize(unsigned int s)
+    {
+        m_dataSize = s;
+    }
 
     auto & result()
     {
         return m_result;
-    };
+    }
 
     auto setResult(std::vector<std::vector<double>> result)
     {
@@ -154,14 +159,6 @@ TEST_F(TsneTest, InputDimensions)
     EXPECT_EQ(1, m_tsne.inputDimensions());
     m_tsne.setInputDimensions(2);
     EXPECT_EQ(2, m_tsne.inputDimensions());
-}
-
-TEST_F(TsneTest, DataSize)
-{
-    m_tsne.setDataSize(1);
-    EXPECT_EQ(1, m_tsne.dataSize());
-    m_tsne.setDataSize(2);
-    EXPECT_EQ(2, m_tsne.dataSize());
 }
 
 TEST_F(TsneTest, OutputFile)
