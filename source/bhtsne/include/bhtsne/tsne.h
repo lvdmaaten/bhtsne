@@ -54,7 +54,7 @@ namespace bhtsne
 *    the t-distributed stochastic neighbor embedding algorithm
 *
 *    Default parameters are:
-*    - randomSeed          0
+*    - randomSeed          random
 *    - perplexity          50
 *    - gradientAccuracy    0.2
 *    - iterations          1000
@@ -204,7 +204,6 @@ public:
     *    The loading method (e.g. loadCSV()) deduces this value from the given dataset file.
     */
     unsigned int dataSize() const;
-    void setDataSize(unsigned int value);
 
     /**
     *  @brief
