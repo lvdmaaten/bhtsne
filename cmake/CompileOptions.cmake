@@ -80,11 +80,14 @@ if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "MSVC")
         #>
 
         $<$<CONFIG:Release>:
-        /Gw           # -> whole program global optimization
-        /GS-          # -> buffer security check: no
-        /GL           # -> whole program optimization: enable link-time code generation (disables Zi)
+        #/Gw           # -> whole program global optimization
+        #/GS-          # -> buffer security check: no
+        #/GL           # -> whole program optimization: enable link-time code generation (disables Zi)
         /GF           # -> enable string pooling
         >
+
+		# strict float handling for reproducable clross plattform results
+		/fp:strict
 
         # No manual c++11 enable for MSVC as all supported MSVC versions for cmake-init have C++11 implicitly enabled (MSVC >=2013)
     )
