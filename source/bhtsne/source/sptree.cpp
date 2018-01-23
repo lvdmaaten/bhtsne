@@ -307,7 +307,7 @@ void SPTree::computeNonEdgeForces(unsigned int pointIndex, double theta, double 
 
 
 // Computes edge forces
-void SPTree::computeEdgeForces(std::vector<unsigned int> rows, std::vector<unsigned int> columns, std::vector<double> values, Vector2D<double>& forces)
+void SPTree::computeEdgeForces(const std::vector<unsigned int>& rows, const std::vector<unsigned int>& columns, const std::vector<double>& values, Vector2D<double>& forces)
 {
     // Loop over all edges in the graph
     auto sumOfSquaredDistances = 0.0;
@@ -332,32 +332,5 @@ void SPTree::computeEdgeForces(std::vector<unsigned int> rows, std::vector<unsig
                 forces[n][d] += force * distances[d];
             }
         }
-    }
-}
-
-
-// Print out tree
-void SPTree::print()
-{
-    if(m_cumulativeSize == 0) {
-        printf("Empty node\n");
-        return;
-    }
-
-    if(m_isLeaf) {
-        printf("Leaf node; data = [");
-        for(int i = 0; i < m_pointIndices.size(); i++) {
-            const double* point = data[m_pointIndices[i]];
-            for(int d = 0; d < m_dimensions; d++) printf("%f, ", point[d]);
-            printf(" (index = %d)", m_pointIndices[i]);
-            if(i < m_pointIndices.size() - 1) printf("\n");
-            else printf("]\n");
-        }
-    }
-    else {
-        printf("Intersection node with center-of-mass = [");
-        for(int d = 0; d < m_dimensions; d++) printf("%f, ", m_centerOfMass[d]);
-        printf("]; children are:\n");
-        for(int i = 0; i < m_numberOfChildren; i++) m_children[i]->print();
     }
 }

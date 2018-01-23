@@ -81,8 +81,7 @@ namespace bhtsne {
         bool insert(unsigned int new_index);
         void subdivide();
         void computeNonEdgeForces(unsigned int point_index, double theta, double neg_f[], double& sum_Q);
-        void computeEdgeForces(std::vector<unsigned int> rows, std::vector<unsigned int> columns, std::vector<double> values, Vector2D<double>& forces);
-        void print();
+        void computeEdgeForces(const std::vector<unsigned int>& rows, const std::vector<unsigned int>& columns, const std::vector<double>& values, Vector2D<double>& forces);
 
     private:
         void init(std::vector<double> centers, std::vector<double> radii);
