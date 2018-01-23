@@ -89,7 +89,7 @@ namespace bhtsne {
 
     private:
         void init(std::vector<double> centers, std::vector<double> radii);
-        void fill(unsigned int N);
+        void fill(unsigned int numberOfPoints);
         unsigned int getAllIndices(unsigned int* indices, unsigned int loc);
     };
 }

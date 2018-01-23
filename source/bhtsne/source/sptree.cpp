@@ -74,7 +74,7 @@ bool SPTree::Cell::containsPoint(const double* point)
 SPTree::SPTree(const Vector2D<double> &data) : data(data)
 {
     auto dimensions = data.width();
-    auto number = data.height();
+    auto numberOfPoints = data.height();
     // Compute mean, width, and height of current map (boundaries of SPTree)
     std::vector<double> mean_Y = std::vector<double>(dimensions);
     std::vector<double> min_Y = std::vector<double>(dimensions);
@@ -84,7 +84,7 @@ SPTree::SPTree(const Vector2D<double> &data) : data(data)
         min_Y[d] = std::numeric_limits<double>::max();
         max_Y[d] = std::numeric_limits<double>::min();
     }
-    for(auto n = 0u; n < number; ++n) {
+    for(auto n = 0u; n < numberOfPoints; ++n) {
         for(auto d = 0u; d < dimensions; ++d) {
             auto value = data[n][d];
             mean_Y[d] += value;
@@ -94,7 +94,7 @@ SPTree::SPTree(const Vector2D<double> &data) : data(data)
     }
     for (auto d = 0u; d < dimensions; ++d)
     {
-        mean_Y[d] /= number;
+        mean_Y[d] /= numberOfPoints;
     }
 
     // Construct SPTree
@@ -106,7 +106,7 @@ SPTree::SPTree(const Vector2D<double> &data) : data(data)
     }
 
     init(mean_Y, width);
-    fill(number);
+    fill(numberOfPoints);
 }
 
 
@@ -129,9 +129,7 @@ void SPTree::init(std::vector<double> centers, std::vector<double> radii)
     boundary = Cell(m_dimensions, centers, radii);
 
     m_children = std::vector<std::unique_ptr<SPTree>>(m_numberOfChildren);
-
     m_centerOfMass = std::vector<double>(m_dimensions, .0);
-
     m_pointIndices = std::vector<double>();
 
     buff = (double*) malloc(m_dimensions * sizeof(double));
@@ -170,21 +168,36 @@ bool SPTree::insert(unsigned int new_index)
 
     // Don't add duplicates for now (this is not very nice)
     auto any_duplicate = false;
-    for(auto n = 0u; n < m_pointIndices.size(); ++n) {
+    for(auto it = m_pointIndices.begin(); it != m_pointIndices.end(); it++) {
         bool duplicate = true;
         for(unsigned int d = 0; d < m_dimensions; d++) {
-            if(point[d] != data[m_pointIndices[n]][d]) { duplicate = false; break; }
+            if(point[d] != data[*it][d])
+            {
+                duplicate = false;
+                break;
+            }
         }
-        any_duplicate = any_duplicate | duplicate;
+        if (duplicate)
+        {
+            any_duplicate = true;
+            break;
+        }
     }
     if(any_duplicate) return true;
 
     // Otherwise, we need to subdivide the current cell
-    if(m_isLeaf) subdivide();
+    if (m_isLeaf)
+    {
+        subdivide();
+    }
 
     // Find out where the point can be inserted
-    for(unsigned int i = 0; i < m_numberOfChildren; i++) {
-        if(m_children[i]->insert(new_index)) return true;
+    for(auto it = m_children.begin(); it != m_children.end(); it++)
+    {
+        if ((*it)->insert(new_index))
+        {
+            return true;
+        }
     }
 
     // Otherwise, the point cannot be inserted (this should never happen)
@@ -198,22 +211,36 @@ void SPTree::subdivide() {
     // Create new children
     auto centers = std::vector<double>(m_dimensions);
     auto radii  = std::vector<double>(m_dimensions);
-    for(unsigned int i = 0; i < m_numberOfChildren; i++) {
-        unsigned int div = 1;
-        for(unsigned int d = 0; d < m_dimensions; d++) {
-            radii[d] = .5 * boundary.m_radii[d];
-            if((i / div) % 2 == 1) centers[d] = boundary.m_centers[d] - .5 * boundary.m_radii[d];
-            else                   centers[d] = boundary.m_centers[d] + .5 * boundary.m_radii[d];
-            div *= 2;
+    for(auto i = 0u; i < m_numberOfChildren; ++i)
+    {
+        auto level = 1u;
+        for(auto d = 0u; d < m_dimensions; ++d)
+        {
+            auto halfRadius = boundary.m_radii[d] / 2;
+            radii[d] = halfRadius;
+            if ((i / level) % 2 == 1)
+            {
+                centers[d] = boundary.m_centers[d] - halfRadius;
+            }
+            else
+            {
+                centers[d] = boundary.m_centers[d] + halfRadius;
+            }
+            level *= 2;
         }
         m_children[i] = std::make_unique<SPTree>(data, centers, radii);
     }
 
     // Move existing points to correct children
-    for(unsigned int i = 0; i < m_pointIndices.size(); i++) {
+    for(auto i = 0u; i < m_pointIndices.size(); ++i)
+    {
         bool success = false;
-        for(unsigned int j = 0; j < m_numberOfChildren; j++) {
-            if(!success) success = m_children[j]->insert(m_pointIndices[i]);
+        for(auto j = 0u; j < m_numberOfChildren; ++j)
+        {
+            if (!success)
+            {
+                success = m_children[j]->insert(m_pointIndices[i]);
+            }
         }
     }
 
@@ -224,9 +251,12 @@ void SPTree::subdivide() {
 
 
 // Build SPTree on dataset
-void SPTree::fill(unsigned int N)
+void SPTree::fill(unsigned int numberOfPoints)
 {
-    for(unsigned int i = 0; i < N; i++) insert(i);
+    for (auto i = 0u; i < numberOfPoints; ++i)
+    {
+        insert(i);
+    }
 }
 
 
