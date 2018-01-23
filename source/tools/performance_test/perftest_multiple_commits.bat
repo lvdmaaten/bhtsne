@@ -29,7 +29,7 @@ for /F "tokens=*" %%A in (..\commits.txt) do (
 	echo|set /p="Compiling... "
 	devenv /Build Release bhtsne.sln > nul
 	echo Done
-	xcopy ..\..\data\* Release\ > nul
+	xcopy ..\..\data\* Release\data\ > nul
 	cd Release
 	echo|set /p="Running tests... "
 	performance_test.exe 0 1 %%A

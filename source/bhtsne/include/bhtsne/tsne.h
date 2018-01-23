@@ -221,12 +221,12 @@ public:
     *  @brief
     *    Set output file
     *
-    *  @param[in] name
+    *  @param[in] file
     *    Output file
     *
     *  @see outputFile()
     */
-    void setOutputFile(const std::string & name);
+    void setOutputFile(const std::string & file);
 
 
     // load methods---------------------------------------------------------------------------------

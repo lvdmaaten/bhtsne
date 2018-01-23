@@ -34,21 +34,21 @@
 #include <bhtsne/tsne.h>
 
 
+#include <cassert>
 #include <cstring>
 #include <ctime>
-#include <cassert>
 
-#include <vector>
-#include <numeric>
-#include <iostream>
+#include <algorithm>
+#include <chrono>
 #include <fstream>
+#include <iostream>
+#include <numeric>
 #include <sstream>
 #include <string>
-#include <chrono>
-#include <algorithm>
+#include <vector>
 
+#include "vantagepointtree.h"
 #include <bhtsne/sptree.h>
-#include <bhtsne/vantagepointtree.h>
 
 #include <bhtsne/bhtsne-version.h> // includes BHTSNE_VERSION macro
 
@@ -743,8 +743,12 @@ void TSNE::runExact()
 
         // Update gains
         for (size_t i = 0; i < m_dataSize; ++i)
+        {
             for (size_t j = 0; j < m_outputDimensions; ++j)
+            {
                 gains[i][j] = (sign(gradients[i][j]) != sign(uY[i][j])) ? (gains[i][j] + .2) : (gains[i][j] * .8);
+            }
+        }
 
         for (auto & each : gains)
         {
@@ -753,12 +757,20 @@ void TSNE::runExact()
 
         // Perform gradient update (with momentum and gains)
         for (size_t i = 0; i < m_dataSize; ++i)
+        {
             for (size_t j = 0; j < m_outputDimensions; ++j)
+            {
                 uY[i][j] = momentum * uY[i][j] - eta * gains[i][j] * gradients[i][j];
+            }
+        }
 
         for (size_t i = 0; i < m_dataSize; ++i)
+        {
             for (size_t j = 0; j < m_outputDimensions; ++j)
+            {
                 m_result[i][j] += uY[i][j];
+            }
+        }
 
         // Make solution zero-mean
         zeroMean(m_result);
@@ -1002,33 +1014,30 @@ Vector2D<double> TSNE::computeGaussianPerplexityExact()
             {
 				break;
 			}
-			else
+			if (Hdiff > 0)
             {
-				if (Hdiff > 0)
+                min_beta = beta;
+                if (max_beta == std::numeric_limits<double>::max() || max_beta == std::numeric_limits<double>::lowest())
                 {
-					min_beta = beta;
-					if (max_beta == std::numeric_limits<double>::max() || max_beta == std::numeric_limits<double>::lowest())
-                    {
-                        beta *= 2.0;
-                    }
-					else
-                    {
-                        beta = (beta + max_beta) / 2.0;
-                    }
-				}
-				else
+                    beta *= 2.0;
+                }
+                else
                 {
-					max_beta = beta;
-					if (min_beta == std::numeric_limits<double>::lowest() || min_beta == std::numeric_limits<double>::max())
-                    {
-                        beta /= 2.0;
-                    }
-					else
-                    {
-                        beta = (beta + min_beta) / 2.0;
-                    }
-				}
-			}
+                    beta = (beta + max_beta) / 2.0;
+                }
+            }
+            else
+            {
+                max_beta = beta;
+                if (min_beta == std::numeric_limits<double>::lowest() || min_beta == std::numeric_limits<double>::max())
+                {
+                    beta /= 2.0;
+                }
+                else
+                {
+                    beta = (beta + min_beta) / 2.0;
+                }
+            }
 		}
 
 		// Row normalize P
@@ -1086,7 +1095,7 @@ void TSNE::computeGaussianPerplexity(SparseMatrix & similarities)
     }
 
 	// Build ball tree on data set
-	auto vantagePointTree = VantagePointTree<DataPoint, euclideanDistance>();
+	auto vantagePointTree = VantagePointTree();
 	auto obj_X = std::vector<DataPoint>(m_dataSize, DataPoint(m_inputDimensions, 0, m_data[0]));
 	for (unsigned int n = 0; n < m_dataSize; ++n)
     {
@@ -1146,35 +1155,32 @@ void TSNE::computeGaussianPerplexity(SparseMatrix & similarities)
             {
 				break;
 			}
-			else
+            if (Hdiff > 0)
             {
-				if (Hdiff > 0)
+                min_beta = beta;
+                if (max_beta == std::numeric_limits<double>::max()
+                    || max_beta == std::numeric_limits<double>::lowest())
                 {
-					min_beta = beta;
-					if (max_beta == std::numeric_limits<double>::max()
-                        || max_beta == std::numeric_limits<double>::lowest())
-                    {
-                        beta *= 2.0;
-                    }
-					else
-                    {
-                        beta = (beta + max_beta) / 2.0;
-                    }
-				}
-				else
+                    beta *= 2.0;
+                }
+                else
                 {
-					max_beta = beta;
-					if (min_beta == std::numeric_limits<double>::lowest()
-                        || min_beta == std::numeric_limits<double>::max())
-                    {
-                        beta /= 2.0;
-                    }
-					else
-                    {
-                        beta = (beta + min_beta) / 2.0;
-                    }
-				}
-			}
+                    beta = (beta + max_beta) / 2.0;
+                }
+            }
+            else
+            {
+                max_beta = beta;
+                if (min_beta == std::numeric_limits<double>::lowest()
+                    || min_beta == std::numeric_limits<double>::max())
+                {
+                    beta /= 2.0;
+                }
+                else
+                {
+                    beta = (beta + min_beta) / 2.0;
+                }
+            }
 		}
 
 		// Row-normalize current row of P and store in matrix
