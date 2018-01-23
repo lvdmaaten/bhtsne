@@ -61,7 +61,7 @@ namespace bhtsne {
         Cell m_boundary;
 
         // Indices in this space-partitioning tree node, corresponding center-of-mass, and list of all children
-        const Vector2D<double> &m_data;
+        const Vector2D<double> & m_data;
         std::vector<double> m_centerOfMass;
         std::vector<double> m_pointIndices;
 
@@ -70,13 +70,13 @@ namespace bhtsne {
         unsigned int m_numberOfChildren;
 
     public:
-        SPTree(const Vector2D<double> &data);
-        SPTree(const Vector2D<double> &data, std::vector<double> centers, std::vector<double> radii);
+        SPTree(const Vector2D<double> & data);
+        SPTree(const Vector2D<double> & data, std::vector<double> centers, std::vector<double> radii);
         SPTree(const SPTree & other) = delete;
         SPTree(SPTree && other) = default;
         bool insert(unsigned int new_index);
         void computeNonEdgeForces(unsigned int pointIndex, double theta, double forces[], double& forceSum);
-        void computeEdgeForces(const std::vector<unsigned int>& rows, const std::vector<unsigned int>& columns, const std::vector<double>& values, Vector2D<double>& forces);
+        void computeEdgeForces(const std::vector<unsigned int> & rows, const std::vector<unsigned int> & columns, const std::vector<double> & values, Vector2D<double> & forces);
 
     private:
         void init(std::vector<double> centers, std::vector<double> radii);

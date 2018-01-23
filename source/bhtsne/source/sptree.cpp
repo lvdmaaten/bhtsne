@@ -67,47 +67,47 @@ bool SPTree::Cell::containsPoint(const double* point)
 
 
 // Default constructor for SPTree -- build tree, too!
-SPTree::SPTree(const Vector2D<double> &data) : m_data(data)
+SPTree::SPTree(const Vector2D<double> & data) : m_data(data)
 {
     auto dimensions = data.width();
     auto numberOfPoints = data.height();
     // Compute mean, width, and height of current map (boundaries of SPTree)
-    std::vector<double> mean_Y = std::vector<double>(dimensions);
-    std::vector<double> min_Y = std::vector<double>(dimensions);
-    std::vector<double> max_Y = std::vector<double>(dimensions);
+    std::vector<double> meanY = std::vector<double>(dimensions);
+    std::vector<double> minY = std::vector<double>(dimensions);
+    std::vector<double> maxY = std::vector<double>(dimensions);
     for (auto d = 0u; d < dimensions; ++d)
     {
-        min_Y[d] = std::numeric_limits<double>::max();
-        max_Y[d] = std::numeric_limits<double>::min();
+        minY[d] = std::numeric_limits<double>::max();
+        maxY[d] = std::numeric_limits<double>::min();
     }
     for(auto n = 0u; n < numberOfPoints; ++n) {
         for(auto d = 0u; d < dimensions; ++d) {
             auto value = data[n][d];
-            mean_Y[d] += value;
-            min_Y[d] = std::min(min_Y[d], value);
-            max_Y[d] = std::max(max_Y [d], value);
+            meanY[d] += value;
+            minY[d] = std::min(minY[d], value);
+            maxY[d] = std::max(maxY [d], value);
         }
     }
     for (auto d = 0u; d < dimensions; ++d)
     {
-        mean_Y[d] /= numberOfPoints;
+        meanY[d] /= numberOfPoints;
     }
 
     // Construct SPTree
     auto width = std::vector<double>(dimensions);
     auto delta = 1e-5;
-    for (int d = 0; d < dimensions; d++)
+    for (auto d = 0u; d < dimensions; ++d)
     {
-        width[d] = std::max(max_Y[d] - mean_Y[d], mean_Y[d] - min_Y[d]) + delta;
+        width[d] = std::max(maxY[d] - meanY[d], meanY[d] - minY[d]) + delta;
     }
 
-    init(mean_Y, width);
+    init(meanY, width);
     fill(numberOfPoints);
 }
 
 
 // Constructor for SPTree with particular size (do not fill the tree)
-SPTree::SPTree(const Vector2D<double> &data, std::vector<double> centers, std::vector<double> radii) : m_data(data)
+SPTree::SPTree(const Vector2D<double> & data, std::vector<double> centers, std::vector<double> radii) : m_data(data)
 {
     init(centers, radii);
 }
@@ -161,7 +161,7 @@ bool SPTree::insert(unsigned int new_index)
     auto anyDuplicate = false;
     for(auto otherPoint : m_pointIndices) {
         bool duplicate = true;
-        for(unsigned int d = 0; d < m_dimensions; d++) {
+        for(auto d = 0u; d < m_dimensions; d++) {
             if(point[d] != m_data[otherPoint][d])
             {
                 duplicate = false;
@@ -186,7 +186,7 @@ bool SPTree::insert(unsigned int new_index)
     }
 
     // Find out where the point can be inserted
-    for (auto& child : m_children)
+    for (auto & child : m_children)
     {
         if (child->insert(new_index))
         {
@@ -255,7 +255,7 @@ void SPTree::fill(unsigned int numberOfPoints)
 
 
 // Compute non-edge forces using Barnes-Hut algorithm
-void SPTree::computeNonEdgeForces(unsigned int pointIndex, double theta, double forces[], double& forceSum)
+void SPTree::computeNonEdgeForces(unsigned int pointIndex, double theta, double forces[], double & forceSum)
 {
     // Make sure that we spend no time on empty nodes or self-interactions
     if (m_cumulativeSize == 0 || (m_isLeaf && m_pointIndices.size() == 1 && m_pointIndices[0] == pointIndex))
@@ -292,7 +292,7 @@ void SPTree::computeNonEdgeForces(unsigned int pointIndex, double theta, double 
     else
     {
         // Recursively apply Barnes-Hut to children
-        for (auto& child : m_children)
+        for (auto & child : m_children)
         {
             child->computeNonEdgeForces(pointIndex, theta, forces, forceSum);
         }
@@ -301,7 +301,7 @@ void SPTree::computeNonEdgeForces(unsigned int pointIndex, double theta, double 
 
 
 // Computes edge forces
-void SPTree::computeEdgeForces(const std::vector<unsigned int>& rows, const std::vector<unsigned int>& columns, const std::vector<double>& values, Vector2D<double>& forces)
+void SPTree::computeEdgeForces(const std::vector<unsigned int> & rows, const std::vector<unsigned int> & columns, const std::vector<double> & values, Vector2D<double> & forces)
 {
     // Loop over all edges in the graph
     auto sumOfSquaredDistances = 0.0;
