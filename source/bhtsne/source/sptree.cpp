@@ -43,8 +43,8 @@ SPTree::Cell::Cell() = default;
 
 SPTree::Cell::Cell(unsigned int dimensions, std::vector<double> centers, std::vector<double> radii)
     : m_dimensions(dimensions)
-    , m_centers(centers)
-    , m_radii(radii) 
+    , m_centers(std::move(centers))
+    , m_radii(std::move(radii))
 {
 }
 
@@ -118,7 +118,10 @@ void SPTree::init(std::vector<double> centers, std::vector<double> radii)
 {
     m_dimensions = m_data.width();
     m_numberOfChildren = 2;
-    for(auto d = 1u; d < m_dimensions; ++d) m_numberOfChildren *= 2;
+    for (auto d = 1u; d < m_dimensions; ++d)
+    {
+        m_numberOfChildren *= 2;
+    }
     m_isLeaf = true;
     m_cumulativeSize = 0;
 
@@ -135,7 +138,9 @@ bool SPTree::insert(unsigned int new_index)
     // Ignore objects which do not belong in this quad tree
     const auto point = m_data[new_index];
     if (!m_boundary.containsPoint(point))
+    {
         return false;
+    }
 
     // Online update of cumulative size and center-of-mass
     m_cumulativeSize++;
@@ -153,11 +158,11 @@ bool SPTree::insert(unsigned int new_index)
     }
 
     // Don't add duplicates for now (this is not very nice)
-    auto any_duplicate = false;
-    for(auto it = m_pointIndices.begin(); it != m_pointIndices.end(); it++) {
+    auto anyDuplicate = false;
+    for(auto otherPoint : m_pointIndices) {
         bool duplicate = true;
         for(unsigned int d = 0; d < m_dimensions; d++) {
-            if(point[d] != m_data[*it][d])
+            if(point[d] != m_data[otherPoint][d])
             {
                 duplicate = false;
                 break;
@@ -165,11 +170,14 @@ bool SPTree::insert(unsigned int new_index)
         }
         if (duplicate)
         {
-            any_duplicate = true;
+            anyDuplicate = true;
             break;
         }
     }
-    if(any_duplicate) return true;
+    if (anyDuplicate)
+    {
+        return true;
+    }
 
     // Otherwise, we need to subdivide the current cell
     if (m_isLeaf)
@@ -218,14 +226,14 @@ void SPTree::subdivide() {
     }
 
     // Move existing points to correct children
-    for(auto i = 0u; i < m_pointIndices.size(); ++i)
+    for(auto point : m_pointIndices)
     {
         bool success = false;
         for (auto& child : m_children)
         {
             if (!success)
             {
-                success = child->insert(m_pointIndices[i]);
+                success = child->insert(point);
             }
         }
     }
