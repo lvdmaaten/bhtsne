@@ -56,10 +56,10 @@ namespace bhtsne {
         double* buff;
 
         // Properties of this node in the tree
-        unsigned int dimension;
-        bool is_leaf;
-        unsigned int size;
-        unsigned int cum_size;
+        unsigned int m_dimensions;
+        bool m_isLeaf;
+        unsigned int m_Size;
+        unsigned int m_cumulativeSize;
 
         // Axis-aligned bounding box stored as a center with half-dimensions to represent the boundaries of this quad tree
         Cell boundary;
@@ -70,8 +70,8 @@ namespace bhtsne {
         unsigned int index[QT_NODE_CAPACITY];
 
         // Children
-        std::vector<std::unique_ptr<SPTree>> children;
-        unsigned int no_children;
+        std::vector<std::unique_ptr<SPTree>> m_children;
+        unsigned int m_numberOfChildren;
 
     public:
         SPTree(const Vector2D<double> &data);
