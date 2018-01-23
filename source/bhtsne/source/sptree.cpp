@@ -131,17 +131,7 @@ void SPTree::init(std::vector<double> centers, std::vector<double> radii)
     m_children = std::vector<std::unique_ptr<SPTree>>(m_numberOfChildren);
     m_centerOfMass = std::vector<double>(m_dimensions, .0);
     m_pointIndices = std::vector<double>();
-
-    buff = (double*) malloc(m_dimensions * sizeof(double));
 }
-
-
-// Destructor for SPTree
-SPTree::~SPTree()
-{
-    free(buff);
-}
-
 
 // Insert a point into the SPTree
 bool SPTree::insert(unsigned int new_index)

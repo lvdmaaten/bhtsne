@@ -52,9 +52,6 @@ namespace bhtsne {
         // Fixed constants
         static const auto QT_NODE_CAPACITY = 1u;
 
-        // A buffer we use when doing force computations
-        double* buff;
-
         // Properties of this node in the tree
         unsigned int m_dimensions;
         bool m_isLeaf;
@@ -77,7 +74,6 @@ namespace bhtsne {
         SPTree(const Vector2D<double> &data, std::vector<double> centers, std::vector<double> radii);
         SPTree(const SPTree & other) = delete;
         SPTree(SPTree && other) = default;
-        ~SPTree();
         bool insert(unsigned int new_index);
         void subdivide();
         void computeNonEdgeForces(unsigned int point_index, double theta, double neg_f[], double& sum_Q);
