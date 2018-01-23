@@ -82,7 +82,7 @@ Vector2D<double> TSNE::computeGradient(SparseMatrix & similarities)
     auto neg_f = Vector2D<double>(m_dataSize, m_outputDimensions, 0.0);
     for (unsigned int n = 0; n < m_dataSize; ++n)
     {
-        tree.computeNonEdgeForces(n, m_gradientAccuracy, neg_f[n], &sum_Q);
+        tree.computeNonEdgeForces(n, m_gradientAccuracy, neg_f[n], sum_Q);
     }
 
     auto res = Vector2D<double>(m_dataSize, m_outputDimensions);
@@ -208,7 +208,7 @@ double TSNE::evaluateError(SparseMatrix & similarities)
     double sum_Q = 0.0;
     for (unsigned int i = 0; i < m_dataSize; ++i)
     {
-        tree.computeNonEdgeForces(i, m_gradientAccuracy, buff.data(), &sum_Q);
+        tree.computeNonEdgeForces(i, m_gradientAccuracy, buff.data(), sum_Q);
     }
 
     // Loop over all edges to compute t-SNE error

@@ -192,9 +192,9 @@ bool SPTree::insert(unsigned int new_index)
     }
 
     // Find out where the point can be inserted
-    for(auto it = m_children.begin(); it != m_children.end(); it++)
+    for (auto& child : m_children)
     {
-        if ((*it)->insert(new_index))
+        if (child->insert(new_index))
         {
             return true;
         }
@@ -235,11 +235,11 @@ void SPTree::subdivide() {
     for(auto i = 0u; i < m_pointIndices.size(); ++i)
     {
         bool success = false;
-        for(auto j = 0u; j < m_numberOfChildren; ++j)
+        for (auto& child : m_children)
         {
             if (!success)
             {
-                success = m_children[j]->insert(m_pointIndices[i]);
+                success = child->insert(m_pointIndices[i]);
             }
         }
     }
@@ -261,37 +261,47 @@ void SPTree::fill(unsigned int numberOfPoints)
 
 
 // Compute non-edge forces using Barnes-Hut algorithm
-void SPTree::computeNonEdgeForces(unsigned int point_index, double theta, double neg_f[], double* sum_Q)
+void SPTree::computeNonEdgeForces(unsigned int pointIndex, double theta, double forces[], double& forceSum)
 {
-
     // Make sure that we spend no time on empty nodes or self-interactions
-    if(m_cumulativeSize == 0 || (m_isLeaf && m_pointIndices.size() == 1 && m_pointIndices[0] == point_index)) return;
-
-    // Compute distance between point and center-of-mass
-    double D = .0;
-    for(unsigned int d = 0; d < m_dimensions; d++) buff[d] = data[point_index][d] - m_centerOfMass[d];
-    for(unsigned int d = 0; d < m_dimensions; d++) D += buff[d] * buff[d];
-
-    // Check whether we can use this node as a "summary"
-    double max_width = 0.0;
-    double cur_width;
-    for(unsigned int d = 0; d < m_dimensions; d++) {
-        cur_width = boundary.m_radii[d];
-        max_width = (max_width > cur_width) ? max_width : cur_width;
+    if (m_cumulativeSize == 0 || (m_isLeaf && m_pointIndices.size() == 1 && m_pointIndices[0] == pointIndex))
+    {
+        return;
     }
-    if(m_isLeaf || max_width / sqrt(D) < theta) {
 
+    auto distances = std::vector<double>(m_dimensions);
+    auto sumOfSquaredDistances = 0.0;
+    auto maxRadius = 0.0;
+    auto radius = 0.0;
+    for (auto d = 0u; d < m_dimensions; ++d)
+    {
+        // Compute distance between point and center-of-mass
+        distances[d] = data[pointIndex][d] - m_centerOfMass[d];
+        sumOfSquaredDistances += distances[d] * distances[d];
+        // Check whether we can use this node as a "summary"
+        radius = boundary.m_radii[d];
+        maxRadius = std::max(radius, maxRadius);
+    }
+
+    if(m_isLeaf || maxRadius / std::sqrt(sumOfSquaredDistances) < theta)
+    {
         // Compute and add t-SNE force between point and current node
-        D = 1.0 / (1.0 + D);
-        double mult = m_cumulativeSize * D;
-        *sum_Q += mult;
-        mult *= D;
-        for(unsigned int d = 0; d < m_dimensions; d++) neg_f[d] += mult * buff[d];
+        auto inverseDistSum = 1.0 / (1.0 + sumOfSquaredDistances);
+        auto force = m_cumulativeSize * inverseDistSum;
+        forceSum += force;
+        force *= inverseDistSum;
+        for (auto d = 0u; d < m_dimensions; ++d)
+        {
+            forces[d] += force * distances[d];
+        }
     }
-    else {
-
+    else
+    {
         // Recursively apply Barnes-Hut to children
-        for(unsigned int i = 0; i < m_numberOfChildren; i++) m_children[i]->computeNonEdgeForces(point_index, theta, neg_f, sum_Q);
+        for (auto& child : m_children)
+        {
+            child->computeNonEdgeForces(pointIndex, theta, forces, forceSum);
+        }
     }
 }
 
@@ -299,7 +309,6 @@ void SPTree::computeNonEdgeForces(unsigned int point_index, double theta, double
 // Computes edge forces
 void SPTree::computeEdgeForces(unsigned int* row_P, unsigned int* col_P, double* val_P, int N, double* pos_f)
 {
-
     // Loop over all edges in the graph
     unsigned int ind1 = 0;
     unsigned int ind2 = 0;
