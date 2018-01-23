@@ -58,10 +58,10 @@ namespace bhtsne {
         unsigned int m_cumulativeSize;
 
         // Axis-aligned bounding box stored as a center with half-dimensions to represent the boundaries of this quad tree
-        Cell boundary;
+        Cell m_boundary;
 
         // Indices in this space-partitioning tree node, corresponding center-of-mass, and list of all children
-        const Vector2D<double> &data;
+        const Vector2D<double> &m_data;
         std::vector<double> m_centerOfMass;
         std::vector<double> m_pointIndices;
 
@@ -75,12 +75,12 @@ namespace bhtsne {
         SPTree(const SPTree & other) = delete;
         SPTree(SPTree && other) = default;
         bool insert(unsigned int new_index);
-        void subdivide();
-        void computeNonEdgeForces(unsigned int point_index, double theta, double neg_f[], double& sum_Q);
+        void computeNonEdgeForces(unsigned int pointIndex, double theta, double forces[], double& forceSum);
         void computeEdgeForces(const std::vector<unsigned int>& rows, const std::vector<unsigned int>& columns, const std::vector<double>& values, Vector2D<double>& forces);
 
     private:
         void init(std::vector<double> centers, std::vector<double> radii);
         void fill(unsigned int numberOfPoints);
+        void subdivide();
     };
 }

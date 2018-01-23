@@ -30,10 +30,6 @@
  *
  */
 
-#include <math.h>
-#include <float.h>
-#include <cstdlib>
-#include <stdio.h>
 #include <cmath>
 #include <limits>
 #include <algorithm>
@@ -71,7 +67,7 @@ bool SPTree::Cell::containsPoint(const double* point)
 
 
 // Default constructor for SPTree -- build tree, too!
-SPTree::SPTree(const Vector2D<double> &data) : data(data)
+SPTree::SPTree(const Vector2D<double> &data) : m_data(data)
 {
     auto dimensions = data.width();
     auto numberOfPoints = data.height();
@@ -111,7 +107,7 @@ SPTree::SPTree(const Vector2D<double> &data) : data(data)
 
 
 // Constructor for SPTree with particular size (do not fill the tree)
-SPTree::SPTree(const Vector2D<double> &data, std::vector<double> centers, std::vector<double> radii) : data(data)
+SPTree::SPTree(const Vector2D<double> &data, std::vector<double> centers, std::vector<double> radii) : m_data(data)
 {
     init(centers, radii);
 }
@@ -120,13 +116,13 @@ SPTree::SPTree(const Vector2D<double> &data, std::vector<double> centers, std::v
 // Main initialization function
 void SPTree::init(std::vector<double> centers, std::vector<double> radii)
 {
-    m_dimensions = data.width();
+    m_dimensions = m_data.width();
     m_numberOfChildren = 2;
     for(auto d = 1u; d < m_dimensions; ++d) m_numberOfChildren *= 2;
     m_isLeaf = true;
     m_cumulativeSize = 0;
 
-    boundary = Cell(m_dimensions, centers, radii);
+    m_boundary = Cell(m_dimensions, centers, radii);
 
     m_children = std::vector<std::unique_ptr<SPTree>>(m_numberOfChildren);
     m_centerOfMass = std::vector<double>(m_dimensions, .0);
@@ -137,8 +133,8 @@ void SPTree::init(std::vector<double> centers, std::vector<double> radii)
 bool SPTree::insert(unsigned int new_index)
 {
     // Ignore objects which do not belong in this quad tree
-    const auto point = data[new_index];
-    if (!boundary.containsPoint(point))
+    const auto point = m_data[new_index];
+    if (!m_boundary.containsPoint(point))
         return false;
 
     // Online update of cumulative size and center-of-mass
@@ -161,7 +157,7 @@ bool SPTree::insert(unsigned int new_index)
     for(auto it = m_pointIndices.begin(); it != m_pointIndices.end(); it++) {
         bool duplicate = true;
         for(unsigned int d = 0; d < m_dimensions; d++) {
-            if(point[d] != data[*it][d])
+            if(point[d] != m_data[*it][d])
             {
                 duplicate = false;
                 break;
@@ -206,19 +202,19 @@ void SPTree::subdivide() {
         auto level = 1u;
         for(auto d = 0u; d < m_dimensions; ++d)
         {
-            auto halfRadius = boundary.m_radii[d] / 2;
+            auto halfRadius = m_boundary.m_radii[d] / 2;
             radii[d] = halfRadius;
             if ((i / level) % 2 == 1)
             {
-                centers[d] = boundary.m_centers[d] - halfRadius;
+                centers[d] = m_boundary.m_centers[d] - halfRadius;
             }
             else
             {
-                centers[d] = boundary.m_centers[d] + halfRadius;
+                centers[d] = m_boundary.m_centers[d] + halfRadius;
             }
             level *= 2;
         }
-        m_children[i] = std::make_unique<SPTree>(data, centers, radii);
+        m_children[i] = std::make_unique<SPTree>(m_data, centers, radii);
     }
 
     // Move existing points to correct children
@@ -266,10 +262,10 @@ void SPTree::computeNonEdgeForces(unsigned int pointIndex, double theta, double 
     for (auto d = 0u; d < m_dimensions; ++d)
     {
         // Compute distance between point and center-of-mass
-        distances[d] = data[pointIndex][d] - m_centerOfMass[d];
+        distances[d] = m_data[pointIndex][d] - m_centerOfMass[d];
         sumOfSquaredDistances += distances[d] * distances[d];
         // Check whether we can use this node as a "summary"
-        radius = boundary.m_radii[d];
+        radius = m_boundary.m_radii[d];
         maxRadius = std::max(radius, maxRadius);
     }
 
@@ -311,7 +307,7 @@ void SPTree::computeEdgeForces(const std::vector<unsigned int>& rows, const std:
             sumOfSquaredDistances = 1.0;
             for (auto d = 0u; d < m_dimensions; ++d)
             {
-                distances[d] = data[n][d] - data[columns[i]][d];
+                distances[d] = m_data[n][d] - m_data[columns[i]][d];
                 sumOfSquaredDistances += distances[d] * distances[d];
             }
             force = values[i] / sumOfSquaredDistances;
