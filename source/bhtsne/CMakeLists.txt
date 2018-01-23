@@ -35,7 +35,6 @@ set(source_path  "${CMAKE_CURRENT_SOURCE_DIR}/source")
 set(headers
     ${include_path}/sptree.h
     ${include_path}/tsne.h
-    ${include_path}/vantagepointtree.h
     ${include_path}/vector2d.h
 	${include_path}/vector2d.inl
 	${include_path}/sparsematrix.h
@@ -43,6 +42,7 @@ set(headers
 
 set(sources
     ${source_path}/sptree.cpp
+    ${source_path}/vantagepointtree.h
     ${source_path}/vantagepointtree.cpp
     ${source_path}/tsne.cpp
 )

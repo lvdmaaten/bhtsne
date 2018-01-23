@@ -1,4 +1,4 @@
-#include <bhtsne/vantagepointtree.h>
+#include "vantagepointtree.h"
 
 #include <cassert>
 

@@ -48,7 +48,7 @@
 #include <algorithm>
 
 #include <bhtsne/sptree.h>
-#include <bhtsne/vantagepointtree.h>
+#include "vantagepointtree.h"
 
 #include <bhtsne/bhtsne-version.h> // includes BHTSNE_VERSION macro
 
