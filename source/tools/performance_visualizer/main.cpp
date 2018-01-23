@@ -156,7 +156,7 @@ int main(int argc, char* argv[])
 	iterationsToPlot = atoi(argv[1]);
 	testsizeToPlot = atoi(argv[2]);
 	//load data
-	for (auto i = size_t(3); i < argc; ++i)
+	for (auto i = 3; i < argc; ++i)
 	{
 		auto fileName = std::string( argv[i] );
 

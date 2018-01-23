@@ -61,12 +61,14 @@ int main(int argc, char* argv[])
 
             for (auto k = 0; k < testIterations + warmupIterations; ++k)
             {
-                newCout << "Running " << (k < warmupIterations ? "warmup" : "test") << " iteration " << (k + 1) << "/" << (testIterations + warmupIterations) << " for " << testSize << " samples and " << iterations << " iterations." << std::endl;
+                newCout << "Running " << (k < warmupIterations ? "warmup" : "test") << " iteration "
+                        << (k + 1) << "/" << (testIterations + warmupIterations)
+                        << " for " << testSize << " samples and " << iterations << " iterations." << std::endl;
                 auto start_prepare = std::chrono::high_resolution_clock::now();
 
                 auto tsne = bhtsne::TSNE();
 
-                tsne.loadLegacy("data_s" + std::to_string(testSize) + "_i1000.dat");
+                tsne.loadLegacy("./data/data_s" + std::to_string(testSize) + "_i1000.dat");
 
                 tsne.setOutputDimensions(2);
                 tsne.setPerplexity(50);

@@ -29,13 +29,13 @@ VantagePointTree::VantagePointTree(DistanceFunction distanceFunction)
         , m_root(std::make_unique<Node>())
 {}
 
-void VantagePointTree::create(const std::vector<DataPoint> &items)
+void VantagePointTree::create(const std::vector<DataPoint> & items)
 {
     m_items = items;
     m_root = buildFromPoints(0, static_cast<unsigned int>(items.size()));
 }
 
-void VantagePointTree::search(const DataPoint & target, unsigned int k, std::vector<DataPoint> &results,
+void VantagePointTree::search(const DataPoint & target, unsigned int k, std::vector<DataPoint> & results,
                               std::vector<double> & distances)
 {
 

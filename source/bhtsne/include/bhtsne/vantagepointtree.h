@@ -56,7 +56,7 @@ using DistanceFunction = std::function<double(const DataPoint &, const DataPoint
 class VantagePointTree
 {
 public:
-    explicit VantagePointTree(DistanceFunction distanceFunction);
+    explicit VantagePointTree(DistanceFunction distanceFunction = euclideanDistance);
 
     // possible distance functions
     static double euclideanDistance(const DataPoint & a, const DataPoint & b);
