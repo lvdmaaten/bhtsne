@@ -260,23 +260,6 @@ void SPTree::fill(unsigned int numberOfPoints)
 }
 
 
-// Checks whether the specified tree is correct
-bool SPTree::isCorrect()
-{
-    for(unsigned int n = 0; n < m_pointIndices.size(); n++) {
-        const double* point = data[m_pointIndices[n]];
-        if (!boundary.containsPoint(point)) return false;
-    }
-    if(!m_isLeaf) {
-        bool correct = true;
-        for(int i = 0; i < m_numberOfChildren; i++) correct = correct && m_children[i]->isCorrect();
-        return correct;
-    }
-    else return true;
-}
-
-
-
 // Build a list of all indices in SPTree
 void SPTree::getAllIndices(unsigned int* indices)
 {

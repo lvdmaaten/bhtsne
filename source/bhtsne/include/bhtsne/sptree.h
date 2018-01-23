@@ -80,7 +80,6 @@ namespace bhtsne {
         ~SPTree();
         bool insert(unsigned int new_index);
         void subdivide();
-        bool isCorrect();
         void getAllIndices(unsigned int* indices);
         unsigned int getDepth();
         void computeNonEdgeForces(unsigned int point_index, double theta, double neg_f[], double* sum_Q);
