@@ -45,7 +45,7 @@ namespace bhtsne {
             std::vector<double> m_radii;
 
             Cell();
-            Cell(unsigned int dimensions);
+            Cell(unsigned int dimensions, std::vector<double> centers, std::vector<double> radii);
             bool containsPoint(const double* point);
         };
 
@@ -74,7 +74,7 @@ namespace bhtsne {
 
     public:
         SPTree(const Vector2D<double> &data);
-        SPTree(const Vector2D<double> &data, double* inp_corner, double* inp_width);
+        SPTree(const Vector2D<double> &data, std::vector<double> centers, std::vector<double> radii);
         SPTree(const SPTree & other) = delete;
         SPTree(SPTree && other) = default;
         ~SPTree();
@@ -88,7 +88,7 @@ namespace bhtsne {
         void print();
 
     private:
-        void init(double* inp_corner, double* inp_width);
+        void init(std::vector<double> centers, std::vector<double> radii);
         void fill(unsigned int N);
         unsigned int getAllIndices(unsigned int* indices, unsigned int loc);
     };
