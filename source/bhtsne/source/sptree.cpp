@@ -260,14 +260,6 @@ void SPTree::fill(unsigned int numberOfPoints)
 }
 
 
-unsigned int SPTree::getDepth() {
-    if(m_isLeaf) return 1;
-    int depth = 0;
-    for(unsigned int i = 0; i < m_numberOfChildren; i++) depth = fmax(depth, m_children[i]->getDepth());
-    return 1 + depth;
-}
-
-
 // Compute non-edge forces using Barnes-Hut algorithm
 void SPTree::computeNonEdgeForces(unsigned int point_index, double theta, double neg_f[], double* sum_Q)
 {
