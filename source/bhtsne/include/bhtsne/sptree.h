@@ -66,7 +66,7 @@ namespace bhtsne {
 
         // Indices in this space-partitioning tree node, corresponding center-of-mass, and list of all children
         const Vector2D<double> &data;
-        double* center_of_mass;
+        std::vector<double> m_centerOfMass;
         unsigned int index[QT_NODE_CAPACITY];
 
         // Children

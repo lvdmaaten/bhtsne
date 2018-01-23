@@ -134,8 +134,8 @@ void SPTree::init(double* inp_corner, double* inp_width)
     m_children = std::vector<std::unique_ptr<SPTree>>(m_numberOfChildren);
     for(unsigned int i = 0; i < m_numberOfChildren; i++) m_children[i] = NULL;
 
-    center_of_mass = (double*) malloc(m_dimensions * sizeof(double));
-    for(unsigned int d = 0; d < m_dimensions; d++) center_of_mass[d] = .0;
+    m_centerOfMass = std::vector<double>(m_dimensions);
+    for(unsigned int d = 0; d < m_dimensions; d++) m_centerOfMass[d] = .0;
 
     buff = (double*) malloc(m_dimensions * sizeof(double));
 }
@@ -144,7 +144,6 @@ void SPTree::init(double* inp_corner, double* inp_width)
 // Destructor for SPTree
 SPTree::~SPTree()
 {
-    free(center_of_mass);
     free(buff);
 }
 
@@ -161,8 +160,8 @@ bool SPTree::insert(unsigned int new_index)
     m_cumulativeSize++;
     double mult1 = (double) (m_cumulativeSize - 1) / (double) m_cumulativeSize;
     double mult2 = 1.0 / (double) m_cumulativeSize;
-    for(unsigned int d = 0; d < m_dimensions; d++) center_of_mass[d] *= mult1;
-    for(unsigned int d = 0; d < m_dimensions; d++) center_of_mass[d] += mult2 * point[d];
+    for(unsigned int d = 0; d < m_dimensions; d++) m_centerOfMass[d] *= mult1;
+    for(unsigned int d = 0; d < m_dimensions; d++) m_centerOfMass[d] += mult2 * point[d];
 
     // If there is space in this quad tree and it is a leaf, add the object here
     if(m_isLeaf && m_Size < QT_NODE_CAPACITY) {
@@ -293,7 +292,7 @@ void SPTree::computeNonEdgeForces(unsigned int point_index, double theta, double
 
     // Compute distance between point and center-of-mass
     double D = .0;
-    for(unsigned int d = 0; d < m_dimensions; d++) buff[d] = data[point_index][d] - center_of_mass[d];
+    for(unsigned int d = 0; d < m_dimensions; d++) buff[d] = data[point_index][d] - m_centerOfMass[d];
     for(unsigned int d = 0; d < m_dimensions; d++) D += buff[d] * buff[d];
 
     // Check whether we can use this node as a "summary"
@@ -366,7 +365,7 @@ void SPTree::print()
     }
     else {
         printf("Intersection node with center-of-mass = [");
-        for(int d = 0; d < m_dimensions; d++) printf("%f, ", center_of_mass[d]);
+        for(int d = 0; d < m_dimensions; d++) printf("%f, ", m_centerOfMass[d]);
         printf("]; children are:\n");
         for(int i = 0; i < m_numberOfChildren; i++) m_children[i]->print();
     }
