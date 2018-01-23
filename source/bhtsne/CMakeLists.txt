@@ -43,6 +43,7 @@ set(headers
 
 set(sources
     ${source_path}/sptree.cpp
+    ${source_path}/vantagepointtree.cpp
     ${source_path}/tsne.cpp
 )
 
