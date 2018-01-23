@@ -260,29 +260,6 @@ void SPTree::fill(unsigned int numberOfPoints)
 }
 
 
-// Build a list of all indices in SPTree
-void SPTree::getAllIndices(unsigned int* indices)
-{
-    getAllIndices(indices, 0);
-}
-
-
-// Build a list of all indices in SPTree
-unsigned int SPTree::getAllIndices(unsigned int* indices, unsigned int loc)
-{
-
-    // Gather indices in current quadrant
-    for(unsigned int i = 0; i < m_pointIndices.size(); i++) indices[loc + i] = m_pointIndices[i];
-    loc += m_pointIndices.size();
-
-    // Gather indices in children
-    if(!m_isLeaf) {
-        for(int i = 0; i < m_numberOfChildren; i++) loc = m_children[i]->getAllIndices(indices, loc);
-    }
-    return loc;
-}
-
-
 unsigned int SPTree::getDepth() {
     if(m_isLeaf) return 1;
     int depth = 0;

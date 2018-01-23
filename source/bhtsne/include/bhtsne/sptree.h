@@ -80,7 +80,6 @@ namespace bhtsne {
         ~SPTree();
         bool insert(unsigned int new_index);
         void subdivide();
-        void getAllIndices(unsigned int* indices);
         unsigned int getDepth();
         void computeNonEdgeForces(unsigned int point_index, double theta, double neg_f[], double* sum_Q);
         void computeEdgeForces(unsigned int* row_P, unsigned int* col_P, double* val_P, int N, double* pos_f);
@@ -89,6 +88,5 @@ namespace bhtsne {
     private:
         void init(std::vector<double> centers, std::vector<double> radii);
         void fill(unsigned int numberOfPoints);
-        unsigned int getAllIndices(unsigned int* indices, unsigned int loc);
     };
 }
