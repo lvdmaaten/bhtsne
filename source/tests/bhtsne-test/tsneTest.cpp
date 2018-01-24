@@ -282,47 +282,54 @@ TEST_F(TsneTest, LoadTSNE)
 
 TEST_F(TsneTest, RunExact)
 {
-    //todo: dont use string input output
-    std::string input =
-            R"(0,56,19,80,58
-47,35,89,82,74
-17,85,71,51,30
-1,9,36,14,16
-98,44,11,0,0
-37,53,57,60,60
-16,66,45,35,5
-60,78,80,51,30
-87,72,95,92,53
-14,46,23,86,20)";
-
-    std::string expected =
-            R"(-54.8785,-96.3901
--87.6806,46.6628
-23.7272,19.651
-82.25,-55.6907
-115.188,26.6933
--62.33,15.9121
-60.7718,-6.52401
--2.59574,57.4055
--56.0326,95.6331
--18.4195,-103.353
-)";
+    auto data = std::vector<std::vector<double>>{
+        { 0,56,19,80,58 },
+        { 47,35,89,82,74 },
+        { 17,85,71,51,30 },
+        { 1,9,36,14,16 },
+        { 98,44,11,0,0 },
+        { 37,53,57,60,60 },
+        { 16,66,45,35,5 },
+        { 60,78,80,51,30 },
+        { 87,72,95,92,53 },
+        { 14,46,23,86,20 }
+    };
 
     m_tsne.setGradientAccuracy(0.0); //ensures runExact() is run
     m_tsne.setPerplexity(3.0);
     m_tsne.setIterations(2000);
     m_tsne.setOutputDimensions(2);
     m_tsne.setRandomSeed(1337);
-
-    std::istringstream iss(input);
-    EXPECT_TRUE(m_tsne.loadFromStream(iss));
+    m_tsne.setDataSize(data.size());
+    m_tsne.setInputDimensions(data[0].size());
+    m_tsne.setData(data);
 
     EXPECT_NO_THROW(m_tsne.run());
 
-    std::ostringstream oss;
-    EXPECT_NO_THROW(m_tsne.saveToStream(oss));
+    auto expected = std::vector<std::vector<double>>{
+        { -54.878486163760691,-96.390095121262434 },
+        { -87.68062489824564,46.662779804596894 },
+        { 23.727175350418015,19.651032988650943 },
+        { 82.250003433370608,-55.690729390322041 },
+        { 115.18806779766692,26.693288227414072 },
+        { -62.330030949652866,15.912121303071219 },
+        { 60.771782364930147,-6.524009060270477 },
+        { -2.5957358987395289,57.405530840121131 },
+        { -56.03264138583976,95.633092484600752 },
+        { -18.419509650147212,-103.35301207660007 }
+    };
 
-    EXPECT_EQ(expected, oss.str());
+    auto & result = m_tsne.result();
+
+    for (size_t i = 0; i < m_tsne.dataSize(); i++)
+    {
+        for (size_t j = 0; j < m_tsne.outputDimensions(); j++)
+        {
+            ASSERT_DOUBLE_EQ(expected[i][j], result[i][j])
+                << "expected != result at [" << i << "][" << j <<"]: "
+                << expected[i][j] << " != " << result[i][j] << std::endl;
+        }
+    }
 }
 
 TEST_F(TsneTest, RunApproximation)
