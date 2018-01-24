@@ -30,18 +30,14 @@
  *
  */
 
-#include <cmath>
-#include <limits>
 #include <algorithm>
+#include <cmath>
 
-#include <bhtsne/sptree.h>
+#include "spacepartitioningtree.h"
 
 using namespace bhtsne;
 
-// Constructs cell
-SPTree::Cell::Cell() = default;
-
-SPTree::Cell::Cell(unsigned int dimensions, std::vector<double> centers, std::vector<double> radii)
+SpacePartitioningTree::Cell::Cell(unsigned int dimensions, std::vector<double> centers, std::vector<double> radii)
     : m_dimensions(dimensions)
     , m_centers(std::move(centers))
     , m_radii(std::move(radii))
@@ -49,15 +45,11 @@ SPTree::Cell::Cell(unsigned int dimensions, std::vector<double> centers, std::ve
 }
 
 // Checks whether a point lies in a cell
-bool SPTree::Cell::containsPoint(const double* point)
+bool SpacePartitioningTree::Cell::containsPoint(const double * point)
 {
-    for(auto d = 0; d < m_dimensions; ++d)
+    for(auto d = 0u; d < m_dimensions; ++d)
     {
-        if (m_centers[d] - m_radii[d] > point[d])
-        {
-            return false;
-        }
-        if (m_centers[d] + m_radii[d] < point[d])
+        if (m_centers[d] - m_radii[d] > point[d] || m_centers[d] + m_radii[d] < point[d])
         {
             return false;
         }
@@ -66,16 +58,19 @@ bool SPTree::Cell::containsPoint(const double* point)
 }
 
 
-// Default constructor for SPTree -- build tree, too!
-SPTree::SPTree(const Vector2D<double> & data) : m_data(data)
+// Default constructor for SpacePartitioningTree -- build tree, too!
+SpacePartitioningTree::SpacePartitioningTree(const Vector2D<double> & data)
+    : m_data(data)
+    , m_dimensions(static_cast<unsigned int>(data.width()))
+    , m_numberOfChildren(1u << m_dimensions) // = 2^m_dimensions
 {
     auto dimensions = data.width();
-    auto numberOfPoints = data.height();
-    // Compute mean, width, and height of current map (boundaries of SPTree)
+    auto numberOfPoints = static_cast<unsigned int>(data.height());
+    // Compute mean, width, and height of current map (boundaries of SpacePartitioningTree)
     std::vector<double> meanY = std::vector<double>(dimensions);
     std::vector<double> minY = std::vector<double>(dimensions);
     std::vector<double> maxY = std::vector<double>(dimensions);
-    for (auto d = 0u; d < dimensions; ++d)
+    for (unsigned int d = 0; d < dimensions; ++d)
     {
         minY[d] = std::numeric_limits<double>::max();
         maxY[d] = std::numeric_limits<double>::min();
@@ -88,15 +83,15 @@ SPTree::SPTree(const Vector2D<double> & data) : m_data(data)
             maxY[d] = std::max(maxY [d], value);
         }
     }
-    for (auto d = 0u; d < dimensions; ++d)
+    for (unsigned int d = 0; d < dimensions; ++d)
     {
         meanY[d] /= numberOfPoints;
     }
 
-    // Construct SPTree
+    // Construct SpacePartitioningTree
     auto width = std::vector<double>(dimensions);
     auto delta = 1e-5;
-    for (auto d = 0u; d < dimensions; ++d)
+    for (unsigned int d = 0; d < dimensions; ++d)
     {
         width[d] = std::max(maxY[d] - meanY[d], meanY[d] - minY[d]) + delta;
     }
@@ -106,34 +101,28 @@ SPTree::SPTree(const Vector2D<double> & data) : m_data(data)
 }
 
 
-// Constructor for SPTree with particular size (do not fill the tree)
-SPTree::SPTree(const Vector2D<double> & data, std::vector<double> centers, std::vector<double> radii) : m_data(data)
+// Constructor for SpacePartitioningTree with particular size (do not fill the tree)
+SpacePartitioningTree::SpacePartitioningTree(const Vector2D<double> & data, const std::vector<double> & centers,
+                                             const std::vector<double> & radii)
+    : m_data(data)
+    , m_dimensions(static_cast<unsigned int>(data.width()))
+    , m_numberOfChildren(1u << m_dimensions) // = 2^m_dimensions
 {
     init(centers, radii);
 }
 
 
 // Main initialization function
-void SPTree::init(std::vector<double> centers, std::vector<double> radii)
+void SpacePartitioningTree::init(const std::vector<double> & centers, const std::vector<double> & radii)
 {
-    m_dimensions = m_data.width();
-    m_numberOfChildren = 2;
-    for (auto d = 1u; d < m_dimensions; ++d)
-    {
-        m_numberOfChildren *= 2;
-    }
-    m_isLeaf = true;
-    m_cumulativeSize = 0;
-
     m_boundary = Cell(m_dimensions, centers, radii);
 
-    m_children = std::vector<std::unique_ptr<SPTree>>(m_numberOfChildren);
-    m_centerOfMass = std::vector<double>(m_dimensions, .0);
-    m_pointIndices = std::vector<double>();
+    m_children = std::vector<std::unique_ptr<SpacePartitioningTree>>(m_numberOfChildren);
+    m_centerOfMass.assign(m_dimensions, 0.0);
 }
 
-// Insert a point into the SPTree
-bool SPTree::insert(unsigned int new_index)
+// Insert a point into the SpacePartitioningTree
+bool SpacePartitioningTree::insert(unsigned int new_index)
 {
     // Ignore objects which do not belong in this quad tree
     const auto point = m_data[new_index];
@@ -145,7 +134,7 @@ bool SPTree::insert(unsigned int new_index)
     // Online update of cumulative size and center-of-mass
     m_cumulativeSize++;
     auto avgAdjustment = (m_cumulativeSize - 1.0) / m_cumulativeSize;
-    for (auto d = 0u; d < m_dimensions; ++d)
+    for (unsigned int d = 0; d < m_dimensions; ++d)
     {
         m_centerOfMass[d] *= avgAdjustment;
         m_centerOfMass[d] += point[d] / m_cumulativeSize;
@@ -158,7 +147,6 @@ bool SPTree::insert(unsigned int new_index)
     }
 
     // Don't add duplicates for now (this is not very nice)
-    auto anyDuplicate = false;
     for(auto otherPoint : m_pointIndices) {
         bool duplicate = true;
         for(auto d = 0u; d < m_dimensions; d++) {
@@ -170,13 +158,8 @@ bool SPTree::insert(unsigned int new_index)
         }
         if (duplicate)
         {
-            anyDuplicate = true;
-            break;
+            return true;
         }
-    }
-    if (anyDuplicate)
-    {
-        return true;
     }
 
     // Otherwise, we need to subdivide the current cell
@@ -200,7 +183,7 @@ bool SPTree::insert(unsigned int new_index)
 
 
 // Create four children which fully divide this cell into four quads of equal area
-void SPTree::subdivide() {
+void SpacePartitioningTree::subdivide() {
 
     // Create new children
     auto centers = std::vector<double>(m_dimensions);
@@ -222,7 +205,7 @@ void SPTree::subdivide() {
             }
             level *= 2;
         }
-        m_children[i] = std::make_unique<SPTree>(m_data, centers, radii);
+        m_children[i] = std::make_unique<SpacePartitioningTree>(m_data, centers, radii);
     }
 
     // Move existing points to correct children
@@ -244,8 +227,8 @@ void SPTree::subdivide() {
 }
 
 
-// Build SPTree on dataset
-void SPTree::fill(unsigned int numberOfPoints)
+// Build SpacePartitioningTree on dataset
+void SpacePartitioningTree::fill(unsigned int numberOfPoints)
 {
     for (auto i = 0u; i < numberOfPoints; ++i)
     {
@@ -255,7 +238,8 @@ void SPTree::fill(unsigned int numberOfPoints)
 
 
 // Compute non-edge forces using Barnes-Hut algorithm
-void SPTree::computeNonEdgeForces(unsigned int pointIndex, double theta, double forces[], double & forceSum)
+void SpacePartitioningTree::computeNonEdgeForces(unsigned int pointIndex, double theta, double * forces,
+                                                 double & forceSum)
 {
     // Make sure that we spend no time on empty nodes or self-interactions
     if (m_cumulativeSize == 0 || (m_isLeaf && m_pointIndices.size() == 1 && m_pointIndices[0] == pointIndex))
@@ -264,16 +248,15 @@ void SPTree::computeNonEdgeForces(unsigned int pointIndex, double theta, double 
     }
 
     auto distances = std::vector<double>(m_dimensions);
-    auto sumOfSquaredDistances = 0.0;
-    auto maxRadius = 0.0;
-    auto radius = 0.0;
-    for (auto d = 0u; d < m_dimensions; ++d)
+    double sumOfSquaredDistances = 0.0;
+    double maxRadius = 0.0;
+    for (unsigned int d = 0; d < m_dimensions; ++d)
     {
         // Compute distance between point and center-of-mass
         distances[d] = m_data[pointIndex][d] - m_centerOfMass[d];
         sumOfSquaredDistances += distances[d] * distances[d];
         // Check whether we can use this node as a "summary"
-        radius = m_boundary.m_radii[d];
+        double radius = m_boundary.m_radii[d];
         maxRadius = std::max(radius, maxRadius);
     }
 
@@ -284,7 +267,7 @@ void SPTree::computeNonEdgeForces(unsigned int pointIndex, double theta, double 
         auto force = m_cumulativeSize * inverseDistSum;
         forceSum += force;
         force *= inverseDistSum;
-        for (auto d = 0u; d < m_dimensions; ++d)
+        for (unsigned int d = 0; d < m_dimensions; ++d)
         {
             forces[d] += force * distances[d];
         }
@@ -301,24 +284,23 @@ void SPTree::computeNonEdgeForces(unsigned int pointIndex, double theta, double 
 
 
 // Computes edge forces
-void SPTree::computeEdgeForces(const std::vector<unsigned int> & rows, const std::vector<unsigned int> & columns, const std::vector<double> & values, Vector2D<double> & forces)
+void SpacePartitioningTree::computeEdgeForces(const std::vector<unsigned int> & rows, const std::vector<unsigned int> & columns,
+                               const std::vector<double> & values, Vector2D<double> & forces)
 {
     // Loop over all edges in the graph
-    auto sumOfSquaredDistances = 0.0;
-    auto force = 0.0;
     auto distances = std::vector<double>(m_dimensions);
     for(auto n = 0u; n < forces.height(); ++n)
     {
         for(auto i = rows[n]; i < rows[n + 1]; ++i)
         {
             // Compute pairwise distance and Q-value
-            sumOfSquaredDistances = 1.0;
-            for (auto d = 0u; d < m_dimensions; ++d)
+            double sumOfSquaredDistances = 1.0;
+            for (unsigned int d = 0; d < m_dimensions; ++d)
             {
                 distances[d] = m_data[n][d] - m_data[columns[i]][d];
                 sumOfSquaredDistances += distances[d] * distances[d];
             }
-            force = values[i] / sumOfSquaredDistances;
+            double force = values[i] / sumOfSquaredDistances;
 
             // Sum positive force
             for(auto d = 0u; d < m_dimensions; ++d)

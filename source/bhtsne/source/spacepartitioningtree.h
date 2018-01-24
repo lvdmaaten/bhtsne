@@ -37,14 +37,14 @@
 #include <bhtsne/vector2d.h>
 
 namespace bhtsne {
-    class SPTree
+    class SpacePartitioningTree
     {
         struct Cell {
             unsigned int m_dimensions;
             std::vector<double> m_centers;
             std::vector<double> m_radii;
 
-            Cell();
+            Cell() = default;
             Cell(unsigned int dimensions, std::vector<double> centers, std::vector<double> radii);
             bool containsPoint(const double* point);
         };
@@ -52,10 +52,7 @@ namespace bhtsne {
         // Fixed constants
         static const auto QT_NODE_CAPACITY = 1u;
 
-        // Properties of this node in the tree
-        unsigned int m_dimensions;
-        bool m_isLeaf;
-        unsigned int m_cumulativeSize;
+
 
         // Axis-aligned bounding box stored as a center with half-dimensions to represent the boundaries of this quad tree
         Cell m_boundary;
@@ -63,23 +60,30 @@ namespace bhtsne {
         // Indices in this space-partitioning tree node, corresponding center-of-mass, and list of all children
         const Vector2D<double> & m_data;
         std::vector<double> m_centerOfMass;
-        std::vector<double> m_pointIndices;
+        std::vector<unsigned int> m_pointIndices;
+
+        // Properties of this node in the tree
+        unsigned int m_dimensions;
+        bool m_isLeaf = true;
+        unsigned int m_cumulativeSize = 0;
 
         // Children
-        std::vector<std::unique_ptr<SPTree>> m_children;
+        std::vector<std::unique_ptr<SpacePartitioningTree>> m_children;
         unsigned int m_numberOfChildren;
 
     public:
-        SPTree(const Vector2D<double> & data);
-        SPTree(const Vector2D<double> & data, std::vector<double> centers, std::vector<double> radii);
-        SPTree(const SPTree & other) = delete;
-        SPTree(SPTree && other) = default;
+        explicit SpacePartitioningTree(const Vector2D<double> & data);
+        SpacePartitioningTree(const Vector2D<double> & data, const std::vector<double> & centers,
+                              const std::vector<double> & radii);
+        SpacePartitioningTree(const SpacePartitioningTree & other) = delete;
+        SpacePartitioningTree(SpacePartitioningTree && other) = default;
         bool insert(unsigned int new_index);
-        void computeNonEdgeForces(unsigned int pointIndex, double theta, double forces[], double& forceSum);
-        void computeEdgeForces(const std::vector<unsigned int> & rows, const std::vector<unsigned int> & columns, const std::vector<double> & values, Vector2D<double> & forces);
+        void computeNonEdgeForces(unsigned int pointIndex, double theta, double * forces, double & forceSum);
+        void computeEdgeForces(const std::vector<unsigned int> & rows, const std::vector<unsigned int> & columns,
+                               const std::vector<double> & values, Vector2D<double> & forces);
 
     private:
-        void init(std::vector<double> centers, std::vector<double> radii);
+        void init(const std::vector<double> & centers, const std::vector<double> & radii);
         void fill(unsigned int numberOfPoints);
         void subdivide();
     };

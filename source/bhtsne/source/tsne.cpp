@@ -42,13 +42,12 @@
 #include <chrono>
 #include <fstream>
 #include <iostream>
-#include <numeric>
 #include <sstream>
 #include <string>
 #include <vector>
 
+#include "spacepartitioningtree.h"
 #include "vantagepointtree.h"
-#include <bhtsne/sptree.h>
 
 #include <bhtsne/bhtsne-version.h> // includes BHTSNE_VERSION macro
 
@@ -72,7 +71,7 @@ TSNE::TSNE()
 Vector2D<double> TSNE::computeGradient(SparseMatrix & similarities)
 {
     // Construct space-partitioning tree on current map
-    auto tree = SPTree(m_result);
+    auto tree = SpacePartitioningTree(m_result);
 
     // Compute all terms required for t-SNE gradient
     auto pos_f = Vector2D<double>(m_dataSize, m_outputDimensions, 0.0);
@@ -203,7 +202,7 @@ double TSNE::evaluateErrorExact(const Vector2D<double> & Perplexity)
 double TSNE::evaluateError(SparseMatrix & similarities)
 {
     // Get estimate of normalization term
-    auto tree = SPTree(m_result);
+    auto tree = SpacePartitioningTree(m_result);
     auto buff = std::vector<double>(m_outputDimensions, 0.0);
     double sum_Q = 0.0;
     for (unsigned int i = 0; i < m_dataSize; ++i)
@@ -1014,6 +1013,7 @@ Vector2D<double> TSNE::computeGaussianPerplexityExact()
             {
 				break;
 			}
+
 			if (Hdiff > 0)
             {
                 min_beta = beta;
