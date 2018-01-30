@@ -45,6 +45,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <numeric>
 
 #include "spacepartitioningtree.h"
 #include "vantagepointtree.h"
