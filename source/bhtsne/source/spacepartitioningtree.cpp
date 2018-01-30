@@ -222,7 +222,7 @@ void SpacePartitioningTree::subdivide() {
     }
 
     // Empty parent node
-    m_pointIndices.empty();
+    m_pointIndices.clear();
     m_isLeaf = false;
 }
 
@@ -239,7 +239,7 @@ void SpacePartitioningTree::fill(unsigned int numberOfPoints)
 
 // Compute non-edge forces using Barnes-Hut algorithm
 void SpacePartitioningTree::computeNonEdgeForces(unsigned int pointIndex, double theta, double * forces,
-                                                 double & forceSum)
+                                                 double & forceSum) const
 {
     // Make sure that we spend no time on empty nodes or self-interactions
     if (m_cumulativeSize == 0 || (m_isLeaf && m_pointIndices.size() == 1 && m_pointIndices[0] == pointIndex))
@@ -285,7 +285,7 @@ void SpacePartitioningTree::computeNonEdgeForces(unsigned int pointIndex, double
 
 // Computes edge forces
 void SpacePartitioningTree::computeEdgeForces(const std::vector<unsigned int> & rows, const std::vector<unsigned int> & columns,
-                               const std::vector<double> & values, Vector2D<double> & forces)
+                               const std::vector<double> & values, Vector2D<double> & forces) const
 {
     // Loop over all edges in the graph
     auto distances = std::vector<double>(m_dimensions);

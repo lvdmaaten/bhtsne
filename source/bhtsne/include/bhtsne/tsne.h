@@ -404,18 +404,18 @@ public:
     */
     void saveSVG();
 
-private:
+protected:
     void runApproximation();
     void runExact();
-    Vector2D<double> computeGradient(SparseMatrix & similarities);
+
+    // TODO this is only virtual for testing -> change test!
+    virtual Vector2D<double> computeGradient(SparseMatrix & similarities);
     Vector2D<double> computeGradientExact(const Vector2D<double> & Perplexity);
     double evaluateError(SparseMatrix & similarities);
     double evaluateErrorExact(const Vector2D<double> & Perplexity);
     void computeGaussianPerplexity(SparseMatrix & similarities);
     Vector2D<double> computeGaussianPerplexityExact();
 
-
-protected:
     // params
     double       m_perplexity;         ///< balance local/global data aspects, see documentation of perplexity()
     double       m_gradientAccuracy;   ///< used as the width for the gauss sampling kernel

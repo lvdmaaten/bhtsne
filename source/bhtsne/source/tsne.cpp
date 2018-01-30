@@ -77,23 +77,24 @@ Vector2D<double> TSNE::computeGradient(SparseMatrix & similarities)
     auto pos_f = Vector2D<double>(m_dataSize, m_outputDimensions, 0.0);
     tree.computeEdgeForces(similarities.rows, similarities.columns, similarities.values, pos_f);
 
-    double sum_Q = 0.0;
     auto neg_f = Vector2D<double>(m_dataSize, m_outputDimensions, 0.0);
+    double sum_Q = 0.0;
+    #pragma omp parallel for reduction(+:sum_Q)
     for (unsigned int n = 0; n < m_dataSize; ++n)
     {
         tree.computeNonEdgeForces(n, m_gradientAccuracy, neg_f[n], sum_Q);
     }
 
-    auto res = Vector2D<double>(m_dataSize, m_outputDimensions);
+    auto result = Vector2D<double>(m_dataSize, m_outputDimensions);
     // Compute final t-SNE gradient
     for (unsigned int i = 0; i < m_dataSize; ++i)
     {
         for (unsigned int j = 0; j < m_outputDimensions; ++j)
             {
-                res[i][j] = pos_f[i][j] - (neg_f[i][j] / sum_Q);
+                result[i][j] = pos_f[i][j] - (neg_f[i][j] / sum_Q);
             }
     }
-    return res;
+    return result;
 }
 
 // Compute gradient of the t-SNE cost function (exact)
