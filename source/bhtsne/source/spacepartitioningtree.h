@@ -78,9 +78,9 @@ namespace bhtsne {
         SpacePartitioningTree(const SpacePartitioningTree & other) = delete;
         SpacePartitioningTree(SpacePartitioningTree && other) = default;
         bool insert(unsigned int new_index);
-        void computeNonEdgeForces(unsigned int pointIndex, double theta, double * forces, double & forceSum);
+        void computeNonEdgeForces(unsigned int pointIndex, double theta, double * forces, double & forceSum) const;
         void computeEdgeForces(const std::vector<unsigned int> & rows, const std::vector<unsigned int> & columns,
-                               const std::vector<double> & values, Vector2D<double> & forces);
+                               const std::vector<double> & values, Vector2D<double> & forces) const;
 
     private:
         void init(const std::vector<double> & centers, const std::vector<double> & radii);

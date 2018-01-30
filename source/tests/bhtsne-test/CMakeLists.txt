@@ -65,11 +65,14 @@ target_include_directories(${target}
 # Libraries
 #
 
+find_package(OpenMP)
+
 target_link_libraries(${target}
     PRIVATE
     ${DEFAULT_LIBRARIES}
     ${META_PROJECT_NAME}::bhtsne
     gmock-dev
+    $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:$<$<BOOL:"${OPENMP_FOUND}">:${OpenMP_CXX_FLAGS}>>
 )
 
 
@@ -90,6 +93,7 @@ target_compile_definitions(${target}
 target_compile_options(${target}
     PRIVATE
     ${DEFAULT_COMPILE_OPTIONS}
+    $<$<BOOL:${OPENMP_FOUND}>:${OpenMP_CXX_FLAGS}>
 )
 
 

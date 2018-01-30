@@ -7,7 +7,7 @@
 #include <initializer_list>
 
 #include <bhtsne/tsne.h>
-
+#include "../../bhtsne/source/spacepartitioningtree.cpp"
 
 class PublicTSNE : public bhtsne::TSNE
 {
@@ -50,7 +50,48 @@ public:
     void zeroMean(bhtsne::Vector2D<double>& data) {
         TSNE::zeroMean(data);
     }
+
+    bhtsne::Vector2D<double> computeGradient(bhtsne::SparseMatrix & similarities);
+
 };
+
+bhtsne::Vector2D<double> PublicTSNE::computeGradient(bhtsne::SparseMatrix & similarities)
+{
+    // TODO this is ugly and hacky
+    // this is a modified copy, so whenever TSNE::computeGradient changes this prevents testing it!
+    // Construct space-partitioning tree on current map
+    auto tree = bhtsne::SpacePartitioningTree(m_result);
+
+    // Compute all terms required for t-SNE gradient
+    auto pos_f = Vector2D<double>(m_dataSize, m_outputDimensions, 0.0);
+    tree.computeEdgeForces(similarities.rows, similarities.columns, similarities.values, pos_f);
+
+    auto neg_f2 = bhtsne::Vector2D<double>(m_dataSize, m_outputDimensions, 0.0);
+    double sum_Q2 = 0.0;
+    #pragma omp parallel for reduction(+:sum_Q2)
+    for (unsigned int n = 0; n < m_dataSize; ++n) {
+        tree.computeNonEdgeForces(n, m_gradientAccuracy, neg_f2[n], sum_Q2);
+    }
+    auto neg_f = bhtsne::Vector2D<double>(m_dataSize, m_outputDimensions, 0.0);
+    double sum_Q = 0.0;
+    for (unsigned int n = 0; n < m_dataSize; ++n)
+    {
+        tree.computeNonEdgeForces(n, m_gradientAccuracy, neg_f[n], sum_Q);
+    }
+
+    EXPECT_FLOAT_EQ(sum_Q, sum_Q2);
+
+    auto res = Vector2D<double>(m_dataSize, m_outputDimensions);
+    // Compute final t-SNE gradient
+    for (unsigned int i = 0; i < m_dataSize; ++i)
+    {
+        for (unsigned int j = 0; j < m_outputDimensions; ++j)
+        {
+            res[i][j] = pos_f[i][j] - (neg_f[i][j] / sum_Q);
+        }
+    }
+    return res;
+}
 
 class BinaryWriter
 {

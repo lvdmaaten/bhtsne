@@ -142,6 +142,8 @@ target_include_directories(${target}
 # Libraries
 #
 
+find_package(OpenMP)
+
 target_link_libraries(${target}
     PRIVATE
 
@@ -173,6 +175,7 @@ target_compile_definitions(${target}
 
 target_compile_options(${target}
     PRIVATE
+    $<$<BOOL:${OPENMP_FOUND}>:${OpenMP_CXX_FLAGS}>
 
     PUBLIC
     ${DEFAULT_COMPILE_OPTIONS}
@@ -187,6 +190,7 @@ target_compile_options(${target}
 
 target_link_libraries(${target}
     PRIVATE
+    $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:$<$<BOOL:"${OPENMP_FOUND}">:${OpenMP_CXX_FLAGS}>>
 
     PUBLIC
     ${DEFAULT_LINKER_OPTIONS}
