@@ -43,6 +43,7 @@ add_executable(${META_PROJECT_NAME}::${target} ALIAS ${target})
 set_target_properties(${target}
     PROPERTIES
     ${DEFAULT_PROJECT_OPTIONS}
+    ${TEST_POSTFIX_OPTION}
     FOLDER "${IDE_FOLDER}"
 )
 

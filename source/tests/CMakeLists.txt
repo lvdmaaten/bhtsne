@@ -20,6 +20,19 @@ set_policy(CMP0042 NEW) # ENABLE  CMP0042: MACOSX_RPATH is enabled by default.
 set_policy(CMP0063 NEW) # ENABLE  CMP0063: Honor visibility properties for all target types.
 set_policy(CMP0037 OLD) # DISABLE CMP0037: Target names should not be reserved and should match a validity pattern.
 
+# Allow to disable the d suffix for tests build in debug mode
+
+option(
+    test_use_default_debug_postfix
+    "Use default debug postfix for tests. Disable for use with the Test Adapter for Google Test Plugin for Visual Studio."
+    ON)
+
+if (test_use_default_debug_postfix)
+    set(TEST_POSTFIX_OPTION
+        ${DEFAULT_POSTFIX_OPTION}
+    )
+endif()
+
 # Compiler settings and options
 
 if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../../cmake")

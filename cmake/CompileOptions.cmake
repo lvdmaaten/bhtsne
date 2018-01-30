@@ -18,13 +18,15 @@ endif()
 #
 
 set(DEFAULT_PROJECT_OPTIONS
-    DEBUG_POSTFIX             "d"
     CXX_STANDARD              14
     LINKER_LANGUAGE           "CXX"
     POSITION_INDEPENDENT_CODE ON
     CXX_VISIBILITY_PRESET     "hidden"
 )
 
+set(DEFAULT_POSTFIX_OPTION
+    DEBUG_POSTFIX             "d"
+)
 
 #
 # Include directories
