@@ -69,7 +69,7 @@ bhtsne::Vector2D<double> PublicTSNE::computeGradient(bhtsne::SparseMatrix & simi
     auto neg_f2 = bhtsne::Vector2D<double>(m_dataSize, m_outputDimensions, 0.0);
     double sum_Q2 = 0.0;
     #pragma omp parallel for reduction(+:sum_Q2)
-    for (unsigned int n = 0; n < m_dataSize; ++n) {
+    for (int n = 0; n < m_dataSize; ++n) {
         tree.computeNonEdgeForces(n, m_gradientAccuracy, neg_f2[n], sum_Q2);
     }
     auto neg_f = bhtsne::Vector2D<double>(m_dataSize, m_outputDimensions, 0.0);
