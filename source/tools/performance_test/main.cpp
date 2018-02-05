@@ -17,13 +17,6 @@ struct MeasurementResult
     rep save_time;
 };
 
-
-auto fileIsPresent()
-{
-    std::ifstream file("data.dat");
-    return file.good();
-}
-
 int main(int argc, char* argv[])
 {
     if (argc < 3)

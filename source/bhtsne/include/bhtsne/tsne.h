@@ -40,6 +40,7 @@
 #include <bhtsne/vector2d.h>
 #include <bhtsne/sparsematrix.h>
 #include <bhtsne/bhtsne_api.h> // generated header for export macros
+#include "../../source/spacepartitioningtree.h"
 
 
 static inline double sign(double x) { return (x == .0 ? .0 : (x < .0 ? -1.0 : 1.0)); }
@@ -408,8 +409,9 @@ protected:
     void runApproximation();
     void runExact();
 
-    // TODO this is only virtual for testing -> change test!
-    virtual Vector2D<double> computeGradient(SparseMatrix & similarities);
+    Vector2D<double> computeGradient(SparseMatrix & similarities);
+    virtual void computeNonEdgeForces(const SpacePartitioningTree & tree, Vector2D<double> & neg_f,
+                                             double & sum_Q) const;
     Vector2D<double> computeGradientExact(const Vector2D<double> & Perplexity);
     double evaluateError(SparseMatrix & similarities);
     double evaluateErrorExact(const Vector2D<double> & Perplexity);
