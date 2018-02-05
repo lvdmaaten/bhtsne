@@ -117,18 +117,13 @@ Vector2D<double> TSNE::computeGradientExact(const Vector2D<double> & Perplexity)
     // Q = similarities of low dimensional output data
     auto Q = Vector2D<double>(m_dataSize, m_dataSize);
     double sum_Q = 0.0;
-    //TODO compute only half of matrix
     for (unsigned int n = 0; n < m_dataSize; ++n)
     {
-    	for (unsigned int m = 0; m < m_dataSize; ++m)
+        for (unsigned int m = n + 1; m < m_dataSize; ++m)
         {
-            if (n == m)
-            {
-                continue;
-            }
-
             Q[n][m] = 1.0 / (1.0 + distances[n][m]);
-            sum_Q += Q[n][m];
+            Q[m][n] = Q[n][m];
+            sum_Q += 2 * Q[n][m];
         }
     }
 
@@ -169,18 +164,13 @@ double TSNE::evaluateErrorExact(const Vector2D<double> & Perplexity)
     // Compute Q-matrix and normalization sum
     //TODO init to 0 (or evaluate consequences)
     double sum_Q = std::numeric_limits<double>::min();
-    //TODO only compute half of matrix
     for (unsigned int n = 0; n < m_dataSize; ++n)
     {
-    	for (unsigned int m = 0; m < m_dataSize; ++m)
+        for (unsigned int m = n + 1; m < m_dataSize; ++m)
         {
-            if (n == m)
-            {
-                continue;
-            }
-
             Q[n][m] = 1.0 / (1.0 + distances[n][m]);
-            sum_Q += Q[n][m];
+            Q[m][n] = Q[n][m];
+            sum_Q += 2 * Q[n][m];
         }
     }
 

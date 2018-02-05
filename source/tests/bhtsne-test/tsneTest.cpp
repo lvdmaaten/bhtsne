@@ -58,17 +58,20 @@ public:
 void PublicTSNE::computeNonEdgeForces(const SpacePartitioningTree & tree, Vector2D<double> & neg_f,
                                       double & sum_Q) const
 {
+    for (unsigned int n = 0; n < m_dataSize; ++n)
+    {
+        tree.computeNonEdgeForces(n, m_gradientAccuracy, neg_f[n], sum_Q);
+    }
+
+    // temporarily return here to speed up other tests
+    // return;
+
     auto neg_f2 = bhtsne::Vector2D<double>(m_dataSize, m_outputDimensions, 0.0);
     double sum_Q2 = 0.0;
     #pragma omp parallel for reduction(+:sum_Q2)
     for (int n = 0; n < m_dataSize; ++n)
     {
         tree.computeNonEdgeForces(n, m_gradientAccuracy, neg_f2[n], sum_Q2);
-    }
-
-    for (unsigned int n = 0; n < m_dataSize; ++n)
-    {
-        tree.computeNonEdgeForces(n, m_gradientAccuracy, neg_f[n], sum_Q);
     }
 
     EXPECT_FLOAT_EQ(sum_Q, sum_Q2);
@@ -329,16 +332,16 @@ TEST_F(TsneTest, RunExact)
     EXPECT_NO_THROW(m_tsne.run());
 
     auto expected = std::vector<std::vector<double>>{
-        { -54.878486163760691,-96.390095121262434 },
-        { -87.68062489824564,46.662779804596894 },
-        { 23.727175350418015,19.651032988650943 },
-        { 82.250003433370608,-55.690729390322041 },
-        { 115.18806779766692,26.693288227414072 },
-        { -62.330030949652866,15.912121303071219 },
-        { 60.771782364930147,-6.524009060270477 },
-        { -2.5957358987395289,57.405530840121131 },
-        { -56.03264138583976,95.633092484600752 },
-        { -18.419509650147212,-103.35301207660007 }
+        { 147.58303330247801455, 155.33475863006572126 },
+        { -135.28231234209380318, 136.07358225894836323 },
+        { -23.080666091035631382, -54.850716058937656783 },
+        { 148.94068815210826529, -120.98787851902206114 },
+        { 14.991266006884442774, -227.91658005881376425 },
+        { -64.245304991569923914, 106.37031118429688092 },
+        { 46.020258876018964145, -108.73479166671046414 },
+        { -107.60856170859787539, -27.267666260267517941 },
+        { -208.1528287138201847, 50.186485157117949996 },
+        { 180.83442750962771584, 91.792495333322548845 }
     };
 
     auto & result = m_tsne.result();
@@ -357,16 +360,16 @@ TEST_F(TsneTest, RunExact)
 TEST_F(TsneTest, RunApproximation)
 {
     auto data = std::vector<std::vector<double>>{
-            { 0,56,19,80,58 },
-            { 47,35,89,82,74 },
-            { 17,85,71,51,30 },
-            { 1,9,36,14,16 },
-            { 98,44,11,0,0 },
-            { 37,53,57,60,60 },
-            { 16,66,45,35,5 },
-            { 60,78,80,51,30 },
-            { 87,72,95,92,53 },
-            { 14,46,23,86,20 }
+        { 0,56,19,80,58 },
+        { 47,35,89,82,74 },
+        { 17,85,71,51,30 },
+        { 1,9,36,14,16 },
+        { 98,44,11,0,0 },
+        { 37,53,57,60,60 },
+        { 16,66,45,35,5 },
+        { 60,78,80,51,30 },
+        { 87,72,95,92,53 },
+        { 14,46,23,86,20 }
     };
     m_tsne.setDataSize(data.size());
     m_tsne.setInputDimensions(data[0].size());
