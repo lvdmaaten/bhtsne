@@ -42,6 +42,8 @@ set(headers
 set(sources
     ${source_path}/spacepartitioningtree.h
     ${source_path}/spacepartitioningtree.cpp
+    ${source_path}/SpacePartitioningTreeTemplate.h
+    ${source_path}/SpacePartitioningTreeTemplate.inl
     ${source_path}/vantagepointtree.h
     ${source_path}/vantagepointtree.cpp
     ${source_path}/tsne.cpp
