@@ -34,23 +34,21 @@
 
 #include <array>
 #include <memory>
-#include <bhtsne/vector2d.h>
+#include <bhtsne/Vector2D.h>
 
 namespace bhtsne {
 
     template<unsigned int D>
     class SpacePartitioningTree
     {
-
         // Axis-aligned bounding box stored as a center with half-dimensions to represent the boundaries of this quad tree
         std::array<double, D> m_centers;
         std::array<double, D> m_radii;
 
-        
         // Indices in this space-partitioning tree node, corresponding center-of-mass, and list of all children
         const Vector2D<double> & m_data;
         std::array<double, D> m_centerOfMass;
-        int m_pointIndex;
+        unsigned int m_pointIndex;
 
         // Properties of this node in the tree
         bool m_isLeaf;

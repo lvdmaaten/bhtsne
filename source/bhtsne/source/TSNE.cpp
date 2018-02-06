@@ -81,6 +81,7 @@ Vector2D<double> TSNE::computeGradient(SparseMatrix & similarities)
 
     auto neg_f = Vector2D<double>(m_dataSize, m_outputDimensions, 0.0);
     double sum_Q = 0.0;
+    // omp version on windows (2.0) does only support signed loop variables
     #pragma omp parallel for reduction(+:sum_Q)
     for (int n = 0; n < m_dataSize; ++n)
     {

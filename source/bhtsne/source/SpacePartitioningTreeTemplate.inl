@@ -12,10 +12,10 @@ using namespace bhtsne;
 template<unsigned int D>
 SpacePartitioningTree<D>::SpacePartitioningTree(const Vector2D<double> & data)
     : m_data(data)
-    , m_numberOfChildren(1u << D) // = 2^Dimensions
+    , m_pointIndex(0)
     , m_isLeaf(true)
     , m_cumulativeSize(1)
-    , m_pointIndex(0)
+    , m_numberOfChildren(1u << D) // = 2^Dimensions
 {
     auto numberOfPoints = static_cast<unsigned int>(data.height());
     assert(numberOfPoints > 0);
@@ -27,8 +27,10 @@ SpacePartitioningTree<D>::SpacePartitioningTree(const Vector2D<double> & data)
     minY.fill(std::numeric_limits<double>::max());
     maxY.fill(std::numeric_limits<double>::min());
 
-    for(auto n = 0u; n < numberOfPoints; ++n) {
-        for(auto d = 0u; d < D; ++d) {
+    for(unsigned int n = 0; n < numberOfPoints; ++n)
+    {
+        for(unsigned int d = 0; d < D; ++d)
+        {
             auto value = data[n][d];
             meanY[d] += value;
             minY[d] = std::min(minY[d], value);
@@ -51,7 +53,9 @@ SpacePartitioningTree<D>::SpacePartitioningTree(const Vector2D<double> & data)
 
     // take first point for myself
     for (unsigned int d = 0; d < D; ++d)
+    {
         m_centerOfMass[d] = data[0][d];
+    }
     // insert the rest
     for (auto i = 1u; i < numberOfPoints; ++i)
     {
@@ -63,18 +67,20 @@ SpacePartitioningTree<D>::SpacePartitioningTree(const Vector2D<double> & data)
 // Constructor for SpacePartitioningTree with particular size (do not fill the tree)
 template<unsigned int D>
 SpacePartitioningTree<D>::SpacePartitioningTree(const Vector2D<double> & data, const std::array<double, D> & centers,
-                                             const std::array<double, D> & radii, unsigned int new_index)
-    : m_data(data)
-    , m_numberOfChildren(1u << D) // = 2^Dimensions
-    , m_centers(centers)
+                                                const std::array<double, D> & radii, unsigned int new_index)
+    : m_centers(centers)
     , m_radii(radii)
-    , m_cumulativeSize(1)
-    , m_isLeaf(true)
+    , m_data(data)
     , m_pointIndex(new_index)
+    , m_isLeaf(true)
+    , m_cumulativeSize(1)
+    , m_numberOfChildren(1u << D) // = 2^Dimensions
 {
     auto new_point = m_data[new_index];
     for (unsigned int d = 0; d < D; ++d)
+    {
         m_centerOfMass[d] = new_point[d];
+    }
 }
 
 
@@ -98,20 +104,25 @@ void SpacePartitioningTree<D>::insert(unsigned int new_index)
     {
         // Don't add duplicates for now (this is not very nice)
         bool duplicate = true;
-        for (auto d = 0u; d < D; d++) 
+        for (unsigned int d = 0; d < D; d++)
+        {
             if (new_point[d] != m_data[m_pointIndex][d])
+            {
                 duplicate = false;
+                break;
+            }
+        }
         if (duplicate)
+        {
             return;
+        }
 
         // move my own point to child
         insertIntoChild(m_pointIndex);
-        m_pointIndex = -1;
         m_isLeaf = false;
     }
 
     // insert new point into correct child
-    assert(new_index != -1);
     insertIntoChild(new_index);
 }
 
@@ -123,7 +134,7 @@ void SpacePartitioningTree<D>::insertIntoChild(unsigned int new_index)
     {
         std::array<double, D> child_center;
         std::array<double, D> halved_radius;
-        for (auto d = 0u; d < D; ++d)
+        for (unsigned int d = 0; d < D; ++d)
         {
             halved_radius[d] = m_radii[d] / 2.0;
             child_center[d] = (childIndex & (1 << d)) ? m_centers[d] - halved_radius[d] : m_centers[d] + halved_radius[d];
@@ -141,15 +152,19 @@ unsigned int SpacePartitioningTree<D>::childIndexForPoint(const double * point)
 {
     unsigned int childIndex = 0;
     for (unsigned int d = 0; d < D; ++d)
+    {
         if (point[d] < m_centers[d])
+        {
             childIndex |= (1 << d);
+        }
+    }
     return childIndex;
 }
 
 // Compute non-edge forces using Barnes-Hut algorithm
 template<unsigned int D>
 void SpacePartitioningTree<D>::computeNonEdgeForces(unsigned int pointIndex, double theta, double * forces,
-                                                 double & forceSum)
+                                                    double & forceSum)
 {
     // Make sure that we spend no time on empty nodes or self-interactions
     if (m_isLeaf && m_pointIndex == pointIndex)
@@ -186,8 +201,11 @@ void SpacePartitioningTree<D>::computeNonEdgeForces(unsigned int pointIndex, dou
         // Recursively apply Barnes-Hut to children
         for (auto & child : m_children)
         {
+            // TODO: prevent invalid children in m_children
             if(child)
+            {
                 child->computeNonEdgeForces(pointIndex, theta, forces, forceSum);
+            }
         }
     }
 }
@@ -195,12 +213,14 @@ void SpacePartitioningTree<D>::computeNonEdgeForces(unsigned int pointIndex, dou
 
 // Computes edge forces
 template<unsigned int D>
-void SpacePartitioningTree<D>::computeEdgeForces(const std::vector<unsigned int> & rows, const std::vector<unsigned int> & columns,
-                               const std::vector<double> & values, Vector2D<double> & forces)
+void SpacePartitioningTree<D>::computeEdgeForces(const std::vector<unsigned int> & rows,
+                                                 const std::vector<unsigned int> & columns,
+                                                 const std::vector<double> & values,
+                                                 Vector2D<double> & forces)
 {
     // Loop over all edges in the graph
     std::array<double, D> distances;
-    for(auto n = 0u; n < forces.height(); ++n)
+    for(unsigned int n = 0; n < forces.height(); ++n)
     {
         for(auto i = rows[n]; i < rows[n + 1]; ++i)
         {
@@ -214,7 +234,7 @@ void SpacePartitioningTree<D>::computeEdgeForces(const std::vector<unsigned int>
             double force = values[i] / sumOfSquaredDistances;
 
             // Sum positive force
-            for(auto d = 0u; d < D; ++d)
+            for(unsigned int d = 0; d < D; ++d)
             {
                 forces[n][d] += force * distances[d];
             }

@@ -4,7 +4,7 @@
 #include <gmock/gmock.h>
 
 
-class RandomTest: public testing::Test
+class RandomTest : public testing::Test
 {
 public:
 };
