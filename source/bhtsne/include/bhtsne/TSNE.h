@@ -47,13 +47,6 @@ static inline double sign(double x) { return (x == .0 ? .0 : (x < .0 ? -1.0 : 1.
 
 namespace bhtsne
 {
-
-    class AbstractTSNE
-    {
-    protected:
-        virtual bool TESTING() const = 0;
-    };
-
 /**
 *  @brief
 *    Representation of the Barnes-Hut approximation for
@@ -69,7 +62,7 @@ namespace bhtsne
 *
 *    This class follows the method object pattern (SmalltalkBestPracticePatterns, page 34-37).
 */
-class BHTSNE_API TSNE : public AbstractTSNE
+class BHTSNE_API TSNE
 {
 public:
     /**
@@ -440,7 +433,7 @@ protected:
 	Vector2D<double> m_result;         ///< computation results
 
     // only for testing
-    bool TESTING() const override
+    virtual bool TESTING() const
     {
         return false;
     }
