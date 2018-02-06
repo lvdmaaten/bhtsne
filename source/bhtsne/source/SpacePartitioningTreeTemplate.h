@@ -78,4 +78,4 @@ namespace bhtsne {
     };
 }
 
-#include "spacepartitioningtree.inl"
+#include "SpacePartitioningTreeTemplate.inl"
