@@ -51,7 +51,7 @@ public:
         TSNE::zeroMean(data);
     }
 
-    constexpr bool TESTING() const override
+    bool TESTING() const override
     {
         return true;
     }

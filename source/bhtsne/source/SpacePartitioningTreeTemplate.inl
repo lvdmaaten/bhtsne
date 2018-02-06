@@ -21,9 +21,9 @@ SpacePartitioningTree<D>::SpacePartitioningTree(const Vector2D<double> & data)
     auto numberOfPoints = static_cast<unsigned int>(data.height());
     assert(numberOfPoints > 0);
     // Compute mean, width, and height of current map (boundaries of SpacePartitioningTree)
-    std::array<double, D> meanY;
-    std::array<double, D> minY;
-    std::array<double, D> maxY;
+    auto meanY = std::array<double, D>();
+    auto minY = std::array<double, D>();
+    auto maxY = std::array<double, D>();
     meanY.fill(0);
     minY.fill(std::numeric_limits<double>::max());
     maxY.fill(std::numeric_limits<double>::min());
@@ -133,8 +133,8 @@ void SpacePartitioningTree<D>::insertIntoChild(unsigned int new_index)
     auto childIndex = childIndexForPoint(m_data[new_index]);
     if (!m_children[childIndex])
     {
-        std::array<double, D> child_center;
-        std::array<double, D> halved_radius;
+        auto child_center = std::array<double, D>();
+        auto halved_radius = std::array<double, D>();
         for (unsigned int d = 0; d < D; ++d)
         {
             halved_radius[d] = m_radii[d] / 2.0;
@@ -175,7 +175,7 @@ void SpacePartitioningTree<D>::computeNonEdgeForces(unsigned int pointIndex, dou
         return;
     }
 
-    std::array<double, D> distances;
+    auto distances = std::array<double, D>();
     double sumOfSquaredDistances = 0.0;
     double maxRadius = 0.0;
     for (unsigned int d = 0; d < D; ++d)
@@ -225,7 +225,7 @@ void SpacePartitioningTree<D>::computeEdgeForces(const std::vector<unsigned int>
                                                  Vector2D<double> & forces)
 {
     // Loop over all edges in the graph
-    std::array<double, D> distances;
+    auto distances = std::array<double, D>();
     for(unsigned int n = 0; n < forces.height(); ++n)
     {
         for(auto i = rows[n]; i < rows[n + 1]; ++i)
@@ -291,8 +291,12 @@ void SpacePartitioningTree<2>::computeNonEdgeForces(unsigned int pointIndex, dou
         // Recursively apply Barnes-Hut to children
         for (unsigned int i = 0; i < 4; ++i)
         {
-            if (m_children[i])
-                m_children[i]->computeNonEdgeForces(pointIndex, theta, forces, forceSum);
+            if (!m_children[i])
+            {
+                continue;
+            }
+
+            m_children[i]->computeNonEdgeForces(pointIndex, theta, forces, forceSum);
         }
     }
 }

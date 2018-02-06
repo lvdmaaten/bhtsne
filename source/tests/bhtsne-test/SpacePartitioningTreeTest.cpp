@@ -50,8 +50,6 @@ TEST_F(SpacePartitioningTreeTest, OpenMPComputeNonEdgeForces)
     {
         for (unsigned int j = 0; j < neg_f.width(); ++j)
         {
-            auto nf = neg_f[i][j];
-            auto of = omp_neg_f[i][j];
             ASSERT_FLOAT_EQ(neg_f[i][j], omp_neg_f[i][j]);
         }
     }

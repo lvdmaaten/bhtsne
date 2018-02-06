@@ -440,7 +440,7 @@ protected:
 	Vector2D<double> m_result;         ///< computation results
 
     // only for testing
-    constexpr bool TESTING() const override
+    bool TESTING() const override
     {
         return false;
     }
