@@ -36,7 +36,7 @@ TEST_F(SpacePartitioningTreeTest, OpenMPComputeNonEdgeForces)
     auto omp_neg_f = Vector2D<double>(dataSize, outputDimensions, 0.0);
     double omp_sum_Q = 0.0;
     // omp version on windows (2.0) does only support signed loop variables, should be unsigned
-    #pragma omp parallel for reduction(+:sum_Q)
+    #pragma omp parallel for reduction(+:omp_sum_Q)
     for (int n = 0; n < dataSize; ++n)
     {
         tree.computeNonEdgeForces(n, gradientAccuracy, omp_neg_f[n], omp_sum_Q);
@@ -48,7 +48,10 @@ TEST_F(SpacePartitioningTreeTest, OpenMPComputeNonEdgeForces)
     {
         for (unsigned int j = 0; j < neg_f.width(); ++j)
         {
+            auto nf = neg_f[i][j];
+            auto of = omp_neg_f[i][j];
             ASSERT_FLOAT_EQ(neg_f[i][j], omp_neg_f[i][j]);
         }
     }
+    // TODO this still sometimes (5% of the time max) fails...
 }

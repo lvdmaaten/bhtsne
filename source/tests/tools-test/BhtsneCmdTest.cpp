@@ -1,7 +1,7 @@
 #include <bhtsne/TSNE.h>
 #include <gtest/gtest.h>
 #include <cstring>
-#include "../../tools/bhtsne_cmd/ArgumentParser.cpp" //needed because we are not linking to a ArgumentParser definition
+#include "../../tools/bhtsne_cmd/ArgumentParser.cpp" //needed because we are not linking to an ArgumentParser definition
 #include "../../tools/bhtsne_cmd/CommandlineOptions.cpp"
 
 void parseArguments(cppassist::ArgumentParser & parsedArguments, std::string argString) {

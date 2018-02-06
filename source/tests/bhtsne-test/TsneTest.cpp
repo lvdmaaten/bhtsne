@@ -50,6 +50,11 @@ public:
     void zeroMean(bhtsne::Vector2D<double>& data) {
         TSNE::zeroMean(data);
     }
+
+    constexpr bool TESTING() const override
+    {
+        return true;
+    }
 };
 
 class BinaryWriter
@@ -361,7 +366,7 @@ TEST_F(TsneTest, RunApproximation)
         FAIL() << "run method exception: " << e.what();
     }
 
-    auto& result = m_tsne.result();
+    auto & result = m_tsne.result();
 
     auto expected = std::vector<std::vector<double>>{
         { -37.969682880670781, 13.53176098293458 },

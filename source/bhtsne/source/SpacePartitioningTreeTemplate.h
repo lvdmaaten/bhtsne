@@ -70,7 +70,7 @@ namespace bhtsne {
         unsigned int childIndexForPoint(const double * point);
 
         // TODO make forces return value
-        void computeNonEdgeForces(unsigned int pointIndex, double theta, double * forces, double & forceSum);
+        void computeNonEdgeForces(unsigned int pointIndex, double theta, double * forces, double & forceSum) const;
         void computeEdgeForces(const std::vector<unsigned int> & rows, const std::vector<unsigned int> & columns,
                                const std::vector<double> & values, Vector2D<double> & forces);
     };

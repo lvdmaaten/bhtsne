@@ -166,7 +166,7 @@ unsigned int SpacePartitioningTree<D>::childIndexForPoint(const double * point)
 // Compute non-edge forces using Barnes-Hut algorithm
 template<unsigned int D>
 void SpacePartitioningTree<D>::computeNonEdgeForces(unsigned int pointIndex, double theta, double * forces,
-                                                    double & forceSum)
+                                                    double & forceSum) const
 {
     // Make sure that we spend no time on empty nodes or self-interactions
     if (m_isLeaf && m_pointIndex == pointIndex)
@@ -193,6 +193,7 @@ void SpacePartitioningTree<D>::computeNonEdgeForces(unsigned int pointIndex, dou
         auto force = m_cumulativeSize * inverseDistSum;
         forceSum += force;
         force *= inverseDistSum;
+        // TODO vectorize
         for (unsigned int d = 0; d < D; ++d)
         {
             forces[d] += force * distances[d];
@@ -204,10 +205,12 @@ void SpacePartitioningTree<D>::computeNonEdgeForces(unsigned int pointIndex, dou
         for (auto & child : m_children)
         {
             // TODO: prevent invalid children in m_children
-            if(child)
+            if(!child)
             {
-                child->computeNonEdgeForces(pointIndex, theta, forces, forceSum);
+                continue;
             }
+
+            child->computeNonEdgeForces(pointIndex, theta, forces, forceSum);
         }
     }
 }
