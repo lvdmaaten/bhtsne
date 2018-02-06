@@ -31,7 +31,7 @@
  */
 
 
-#include <bhtsne/tsne.h>
+#include <bhtsne/TSNE.h>
 
 
 #include <cassert>
@@ -48,7 +48,7 @@
 #include <numeric>
 
 #include "SpacePartitioningTreeTemplate.h"
-#include "vantagepointtree.h"
+#include "VantagePointTree.h"
 
 #include <bhtsne/bhtsne-version.h> // includes BHTSNE_VERSION macro
 
@@ -81,7 +81,7 @@ Vector2D<double> TSNE::computeGradient(SparseMatrix & similarities)
 
     auto neg_f = Vector2D<double>(m_dataSize, m_outputDimensions, 0.0);
     double sum_Q = 0.0;
-    //#pragma omp parallel for reduction(+:sum_Q)
+    #pragma omp parallel for reduction(+:sum_Q)
     for (int n = 0; n < m_dataSize; ++n)
     {
         tree.computeNonEdgeForces(n, m_gradientAccuracy, neg_f[n], sum_Q);

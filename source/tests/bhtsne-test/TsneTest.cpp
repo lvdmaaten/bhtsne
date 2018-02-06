@@ -6,8 +6,8 @@
 #include <fstream>
 #include <initializer_list>
 
-#include <bhtsne/tsne.h>
-#include "../../bhtsne/source/spacepartitioningtree.cpp"
+#include <bhtsne/TSNE.h>
+#include "../../bhtsne/source/SpacePartitioningTree.cpp"
 
 class PublicTSNE : public bhtsne::TSNE
 {

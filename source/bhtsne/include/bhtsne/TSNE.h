@@ -37,8 +37,8 @@
 #include <vector>
 #include <random>
 
-#include <bhtsne/vector2d.h>
-#include <bhtsne/sparsematrix.h>
+#include <bhtsne/Vector2D.h>
+#include <bhtsne/SparseMatrix.h>
 #include <bhtsne/bhtsne_api.h> // generated header for export macros
 
 

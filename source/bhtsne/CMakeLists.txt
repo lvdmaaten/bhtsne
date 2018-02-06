@@ -33,20 +33,20 @@ set(include_path "${CMAKE_CURRENT_SOURCE_DIR}/include/${target}")
 set(source_path  "${CMAKE_CURRENT_SOURCE_DIR}/source")
 
 set(headers
-    ${include_path}/tsne.h
-    ${include_path}/vector2d.h
-	${include_path}/vector2d.inl
-	${include_path}/sparsematrix.h
+    ${include_path}/TSNE.h
+    ${include_path}/Vector2D.h
+	${include_path}/Vector2D.inl
+	${include_path}/SparseMatrix.h
 )
 
 set(sources
-    ${source_path}/spacepartitioningtree.h
-    ${source_path}/spacepartitioningtree.cpp
+    ${source_path}/SpacePartitioningTree.h
+    ${source_path}/SpacePartitioningTree.cpp
     ${source_path}/SpacePartitioningTreeTemplate.h
     ${source_path}/SpacePartitioningTreeTemplate.inl
-    ${source_path}/vantagepointtree.h
-    ${source_path}/vantagepointtree.cpp
-    ${source_path}/tsne.cpp
+    ${source_path}/VantagePointTree.h
+    ${source_path}/VantagePointTree.cpp
+    ${source_path}/TSNE.cpp
 )
 
 # Group source files

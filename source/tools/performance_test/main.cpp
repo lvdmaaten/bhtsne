@@ -5,7 +5,7 @@
 #include <fstream>
 #include <ctime>
 
-#include <bhtsne/tsne.h>
+#include <bhtsne/TSNE.h>
 
 
 struct MeasurementResult

@@ -1,4 +1,4 @@
-#include <bhtsne/tsne.h>
+#include <bhtsne/TSNE.h>
 #include <gtest/gtest.h>
 #include <cstring>
 #include "../../tools/bhtsne_cmd/ArgumentParser.cpp" //needed because we are not linking to a ArgumentParser definition
@@ -14,10 +14,10 @@ void parseArguments(cppassist::ArgumentParser & parsedArguments, std::string arg
     parsedArguments.parse(static_cast<int>(argv.size()), argv.data());
 }
 
-class bhtsneCmdTest : public testing::Test
+class BhtsneCmdTest : public testing::Test
 {
 protected:
-    bhtsneCmdTest()
+    BhtsneCmdTest()
     {
         m_tsne = bhtsne::TSNE();
     }
@@ -35,7 +35,7 @@ TEST(SanityChecks, Equality)
     EXPECT_EQ((unsigned int) 1, 1);
 }
 
-TEST_F(bhtsneCmdTest, SettingCommandLineParameters)
+TEST_F(BhtsneCmdTest, SettingCommandLineParameters)
 {
     m_tsne.setPerplexity(30.123);
     m_tsne.setGradientAccuracy(1.123);
@@ -65,7 +65,7 @@ TEST_F(bhtsneCmdTest, SettingCommandLineParameters)
     EXPECT_EQ("another_result.dat", m_tsne.outputFile()) << "output-file was not set correctly via commandline option";
 }
 
-TEST_F(bhtsneCmdTest, SettingCommandLineOptions)
+TEST_F(BhtsneCmdTest, SettingCommandLineOptions)
 {
     auto parsedArguments = cppassist::ArgumentParser();
     parseArguments(parsedArguments, "./bhtsne_cmd");

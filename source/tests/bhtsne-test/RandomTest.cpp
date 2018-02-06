@@ -4,12 +4,12 @@
 #include <gmock/gmock.h>
 
 
-class random_test: public testing::Test
+class RandomTest: public testing::Test
 {
 public:
 };
 
-TEST_F(random_test, crossPlattformDeterministicRandom)
+TEST_F(RandomTest, crossPlattformDeterministicRandom)
 {
     auto expected = std::vector<unsigned long>{ 1125387415,2407456957,681542492,913057000,1194544295 };
 
