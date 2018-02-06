@@ -1,11 +1,12 @@
 
 #include <algorithm>
 #include <cmath>
+#include <emmintrin.h>
 
 #include "SpacePartitioningTreeTemplate.h"
 
 
-using namespace bhtsne;
+namespace bhtsne {
 
 
 // Default constructor for SpacePartitioningTree -- build tree, too!
@@ -246,3 +247,55 @@ void SpacePartitioningTree<D>::computeEdgeForces(const std::vector<unsigned int>
         }
     }
 }
+
+
+// more efficient versions for dimension 2
+template<>
+void SpacePartitioningTree<2>::computeNonEdgeForces(unsigned int pointIndex, double theta, double * forces,
+                                                    double & forceSum) const
+{
+    // Make sure that we spend no time on empty nodes or self-interactions
+    if (m_isLeaf && m_pointIndex == pointIndex)
+    {
+        return;
+    }
+
+    double buff[2];
+    double sumOfSquaredDistances;
+    double maxRadius = std::max(m_radii[0], m_radii[1]);
+    auto packedData = _mm_loadu_pd(m_data[pointIndex]);
+    auto packedCenter = _mm_loadu_pd(m_centerOfMass.data());
+    auto distance = _mm_sub_pd(packedData, packedCenter);
+    auto square = _mm_mul_pd(distance, distance);
+    _mm_storeu_pd(buff, square);
+    sumOfSquaredDistances = buff[0] + buff[1];
+
+    // Check whether we can use this node as a "summary"
+    if (m_isLeaf || maxRadius * maxRadius < theta * theta * sumOfSquaredDistances)
+    {
+        // Compute and add t-SNE force between point and current node
+        auto inverseDistSum = 1.0 / (1.0 + sumOfSquaredDistances);
+        auto force = m_cumulativeSize * inverseDistSum;
+        forceSum += force;
+        force *= inverseDistSum;
+
+        //load modify and store forces
+        auto oldForce = _mm_loadu_pd(forces);
+        auto forceModifier = _mm_set_pd(force, force);
+        auto forceChange = _mm_mul_pd(forceModifier, distance);
+        auto newForce = _mm_add_pd(oldForce, forceChange);
+        _mm_storeu_pd(forces, newForce);
+    }
+    else
+    {
+        // Recursively apply Barnes-Hut to children
+        for (unsigned int i = 0; i < 4; ++i)
+        {
+            if (m_children[i])
+                m_children[i]->computeNonEdgeForces(pointIndex, theta, forces, forceSum);
+        }
+    }
+}
+
+
+} // namespace bhtsne

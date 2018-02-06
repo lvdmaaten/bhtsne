@@ -1,6 +1,8 @@
 #include <gmock/gmock.h>
 #include "../../bhtsne/source/SpacePartitioningTreeTemplate.h"
 
+using namespace bhtsne;
+
 class SpacePartitioningTreeTest : public testing::Test
 {
 public:
