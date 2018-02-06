@@ -88,18 +88,23 @@ typename std::vector<T>::iterator Vector2D<T>::end()
 }
 
 template<typename T>
-T * Vector2D<T>::operator[](size_t i) {
+T * Vector2D<T>::operator[](size_t i)
+{
+    assert(i < height());
     return m_vector.data() + (i * m_width);
 }
 
 template<typename T>
 const T * Vector2D<T>::operator[](size_t i) const
 {
+    assert(i < height());
     return m_vector.data() + (i * m_width);
 }
 
 template<typename T>
-T & Vector2D<T>::at(size_t i, size_t j) {
+T & Vector2D<T>::at(size_t i, size_t j)
+{
+    assert(i < height());
     return m_vector.at(i * m_width + j);
 }
 

@@ -81,7 +81,7 @@ Vector2D<double> TSNE::computeGradient(SparseMatrix & similarities)
 
     auto neg_f = Vector2D<double>(m_dataSize, m_outputDimensions, 0.0);
     double sum_Q = 0.0;
-    // omp version on windows (2.0) does only support signed loop variables
+    // omp version on windows (2.0) does only support signed loop variables, should be unsigned
     #pragma omp parallel for reduction(+:sum_Q)
     for (int n = 0; n < m_dataSize; ++n)
     {
@@ -616,8 +616,8 @@ void TSNE::runApproximation()
 	for (unsigned int iteration = 1; iteration <= m_iterations; ++iteration)
     {
 		// Compute approximate gradient
-        auto gradients = 
-            (m_outputDimensions == 2) ? computeGradient<2>(inputSimilarities) : 
+        auto gradients =
+            (m_outputDimensions == 2) ? computeGradient<2>(inputSimilarities) :
             (m_outputDimensions == 3) ? computeGradient<3>(inputSimilarities) :
             computeGradient<0>(inputSimilarities);
 
@@ -669,7 +669,7 @@ void TSNE::runApproximation()
 		if (iteration % 50 == 0 || iteration == m_iterations)
         {
 			// doing approximate computation here!
-			double error = 
+			double error =
                 (m_outputDimensions == 2) ? evaluateError<2>(inputSimilarities) :
                 (m_outputDimensions == 3) ? evaluateError<3>(inputSimilarities) :
                 evaluateError<0>(inputSimilarities); // assert(false)
