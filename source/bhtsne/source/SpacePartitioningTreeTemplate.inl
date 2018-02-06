@@ -137,6 +137,7 @@ void SpacePartitioningTree<D>::insertIntoChild(unsigned int new_index)
         for (unsigned int d = 0; d < D; ++d)
         {
             halved_radius[d] = m_radii[d] / 2.0;
+            // if the d-th bit is set in the index, the child is below the center in the dimension d
             child_center[d] = (childIndex & (1 << d)) ? m_centers[d] - halved_radius[d] : m_centers[d] + halved_radius[d];
         }
         m_children[childIndex] = std::make_unique<SpacePartitioningTree>(m_data, child_center, halved_radius, new_index);
@@ -150,6 +151,7 @@ void SpacePartitioningTree<D>::insertIntoChild(unsigned int new_index)
 template<unsigned int D>
 unsigned int SpacePartitioningTree<D>::childIndexForPoint(const double * point)
 {
+    // if the child is below the center in the dimension d, the d-th bit is set in the index
     unsigned int childIndex = 0;
     for (unsigned int d = 0; d < D; ++d)
     {
