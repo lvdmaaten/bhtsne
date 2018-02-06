@@ -31,7 +31,7 @@
  */
 
 
-#include <bhtsne/tsne.h>
+#include <bhtsne/TSNE.h>
 
 
 #include <cassert>
@@ -47,8 +47,8 @@
 #include <vector>
 #include <numeric>
 
-#include "spacepartitioningtree.h"
-#include "vantagepointtree.h"
+#include "SpacePartitioningTree.h"
+#include "VantagePointTree.h"
 
 #include <bhtsne/bhtsne-version.h> // includes BHTSNE_VERSION macro
 

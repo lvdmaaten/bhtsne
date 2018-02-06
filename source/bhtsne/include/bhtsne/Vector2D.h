@@ -37,4 +37,4 @@ protected:
 
 }
 
-#include <bhtsne/vector2d.inl>
+#include <bhtsne/Vector2D.inl>

@@ -33,7 +33,7 @@
 #include <algorithm>
 #include <cmath>
 
-#include "spacepartitioningtree.h"
+#include "SpacePartitioningTree.h"
 
 using namespace bhtsne;
 

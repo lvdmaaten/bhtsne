@@ -1,4 +1,4 @@
-#include "vantagepointtree.h"
+#include "VantagePointTree.h"
 
 #include <cassert>
 

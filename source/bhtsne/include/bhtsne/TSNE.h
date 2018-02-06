@@ -37,10 +37,10 @@
 #include <vector>
 #include <random>
 
-#include <bhtsne/vector2d.h>
-#include <bhtsne/sparsematrix.h>
+#include <bhtsne/Vector2D.h>
+#include <bhtsne/SparseMatrix.h>
 #include <bhtsne/bhtsne_api.h> // generated header for export macros
-#include "../../source/spacepartitioningtree.h"
+#include "../../source/SpacePartitioningTree.h"
 
 
 static inline double sign(double x) { return (x == .0 ? .0 : (x < .0 ? -1.0 : 1.0)); }

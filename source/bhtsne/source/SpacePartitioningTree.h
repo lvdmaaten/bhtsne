@@ -34,7 +34,7 @@
 
 #include <vector>
 #include <memory>
-#include <bhtsne/vector2d.h>
+#include <bhtsne/Vector2D.h>
 
 namespace bhtsne {
     class SpacePartitioningTree

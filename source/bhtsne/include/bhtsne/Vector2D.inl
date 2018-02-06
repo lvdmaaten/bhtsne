@@ -1,5 +1,5 @@
 
-#include <bhtsne/vector2d.h>
+#include <bhtsne/Vector2D.h>
 
 #include <cassert>
 
