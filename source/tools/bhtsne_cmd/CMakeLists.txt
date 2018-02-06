@@ -29,7 +29,7 @@ set(headers
 set(sources
     ArgumentParser.cpp
     CommandlineOptions.cpp
-    tsne_main.cpp
+    main.cpp
 )
 
 

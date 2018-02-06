@@ -2,7 +2,7 @@
 
 #include "ArgumentParser.h"
 #include "CommandlineOptions.h"
-#include <bhtsne/tsne.h>
+#include <bhtsne/TSNE.h>
 
 
 // Function that runs the Barnes-Hut implementation of t-SNE

@@ -20,8 +20,8 @@ message(STATUS "Test ${target}")
 
 set(sources
     main.cpp
-    tsneTest.cpp
-    randomTest.cpp
+    TsneTest.cpp
+    RandomTest.cpp
 )
 
 

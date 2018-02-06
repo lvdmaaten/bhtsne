@@ -1,6 +1,6 @@
 #pragma once
 
-#include <bhtsne/tsne.h>
+#include <bhtsne/TSNE.h>
 #include <map>
 
 namespace bhtsne
