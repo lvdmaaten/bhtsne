@@ -410,8 +410,6 @@ protected:
     void runExact();
 
     Vector2D<double> computeGradient(SparseMatrix & similarities);
-    virtual void computeNonEdgeForces(const SpacePartitioningTree & tree, Vector2D<double> & neg_f,
-                                             double & sum_Q) const;
     Vector2D<double> computeGradientExact(const Vector2D<double> & Perplexity);
     double evaluateError(SparseMatrix & similarities);
     double evaluateErrorExact(const Vector2D<double> & Perplexity);

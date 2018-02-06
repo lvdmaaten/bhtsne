@@ -50,32 +50,7 @@ public:
     void zeroMean(bhtsne::Vector2D<double>& data) {
         TSNE::zeroMean(data);
     }
-
-    void computeNonEdgeForces(const SpacePartitioningTree & tree, Vector2D<double> & neg_f,
-                              double & sum_Q) const override;
 };
-
-void PublicTSNE::computeNonEdgeForces(const SpacePartitioningTree & tree, Vector2D<double> & neg_f,
-                                      double & sum_Q) const
-{
-    for (unsigned int n = 0; n < m_dataSize; ++n)
-    {
-        tree.computeNonEdgeForces(n, m_gradientAccuracy, neg_f[n], sum_Q);
-    }
-
-    // temporarily return here to speed up other tests
-    // return;
-
-    auto neg_f2 = bhtsne::Vector2D<double>(m_dataSize, m_outputDimensions, 0.0);
-    double sum_Q2 = 0.0;
-    #pragma omp parallel for reduction(+:sum_Q2)
-    for (int n = 0; n < m_dataSize; ++n)
-    {
-        tree.computeNonEdgeForces(n, m_gradientAccuracy, neg_f2[n], sum_Q2);
-    }
-
-    EXPECT_FLOAT_EQ(sum_Q, sum_Q2);
-}
 
 class BinaryWriter
 {

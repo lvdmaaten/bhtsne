@@ -68,15 +68,6 @@ TSNE::TSNE()
 {
 }
 
-void TSNE::computeNonEdgeForces(const SpacePartitioningTree & tree, Vector2D<double> & neg_f, double & sum_Q) const
-{
-    #pragma omp parallel for reduction(+:sum_Q)
-    for (int n = 0; n < m_dataSize; ++n)
-    {
-        tree.computeNonEdgeForces(n, m_gradientAccuracy, neg_f[n], sum_Q);
-    }
-}
-
 // Compute gradient of the t-SNE cost function (using Barnes-Hut algorithm) (approximately)
 Vector2D<double> TSNE::computeGradient(SparseMatrix & similarities)
 {
@@ -89,7 +80,11 @@ Vector2D<double> TSNE::computeGradient(SparseMatrix & similarities)
 
     auto neg_f = Vector2D<double>(m_dataSize, m_outputDimensions, 0.0);
     double sum_Q = 0.0;
-    computeNonEdgeForces(tree, neg_f, sum_Q);
+    #pragma omp parallel for reduction(+:sum_Q)
+    for (int n = 0; n < m_dataSize; ++n)
+    {
+        tree.computeNonEdgeForces(n, m_gradientAccuracy, neg_f[n], sum_Q);
+    }
 
     auto result = Vector2D<double>(m_dataSize, m_outputDimensions);
     // Compute final t-SNE gradient
