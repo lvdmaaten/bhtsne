@@ -197,6 +197,7 @@ void SpacePartitioningTree<D>::computeNonEdgeForces(unsigned int pointIndex, dou
         // TODO vectorize
         for (unsigned int d = 0; d < D; ++d)
         {
+            #pragma omp atomic update
             forces[d] += force * distances[d];
         }
     }
