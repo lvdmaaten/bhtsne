@@ -96,6 +96,7 @@ void TSNE::run(double* X, int N, int D, double* Y, int no_dims, double perplexit
         P = (double*) malloc(N * N * sizeof(double));
         if(P == NULL) { printf("Memory allocation failed!\n"); exit(1); }
         computeGaussianPerplexity(X, N, D, P, perplexity);
+        printf("perplexity: %f\n", perplexity);
 
         // Symmetrize input similarities
         printf("Symmetrizing...\n");
@@ -701,4 +702,16 @@ void TSNE::save_data(double* data, int* landmarks, double* costs, int n, int d) 
     fwrite(costs, sizeof(double), n, h);
     fclose(h);
 	printf("Wrote the %i x %i data matrix successfully!\n", n, d);
+}
+
+extern "C" {
+  void tsne_run(double* X, int N, int D, double* Y,
+      int no_dims, double perplexity, double theta,
+      int rand_seed, int skip_random_init,
+      int max_iter, int stop_lying_iter, int mom_switch_iter) {
+
+        TSNE::run(X, N, D, Y, no_dims, perplexity,
+          theta, rand_seed, (bool) skip_random_init,
+          max_iter, stop_lying_iter, mom_switch_iter);
+      }
 }
