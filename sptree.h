@@ -75,7 +75,9 @@ class SPTree
         
     // Axis-aligned bounding box stored as a center with half-dimensions to represent the boundaries of this quad tree
     Cell* boundary;
-    
+    // The maximum width squared of the boundary along any axis
+    double max_width_sq;
+
     // Indices in this space-partitioning tree node, corresponding center-of-mass, and list of all children
     double* data;
     double* center_of_mass;

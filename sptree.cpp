@@ -172,6 +172,13 @@ void SPTree::init(SPTree* inp_parent, unsigned int D, double* inp_data, double* 
     for(unsigned int d = 0; d < D; d++) center_of_mass[d] = .0;
     
     buff = (double*) malloc(D * sizeof(double));
+
+    double max_width = 0.0;
+    for(unsigned int d = 0; d < D; d++) {
+        double cur_width = boundary->getWidth(d);
+        max_width = (max_width > cur_width) ? max_width : cur_width;
+    }
+    max_width_sq = max_width * max_width;
 }
 
 
@@ -349,16 +356,9 @@ void SPTree::computeNonEdgeForces(unsigned int point_index, double theta, double
     unsigned int ind = point_index * dimension;
     for(unsigned int d = 0; d < dimension; d++) buff[d] = data[ind + d] - center_of_mass[d];
     for(unsigned int d = 0; d < dimension; d++) D += buff[d] * buff[d];
-    
-    // Check whether we can use this node as a "summary"
-    double max_width = 0.0;
-    double cur_width;
-    for(unsigned int d = 0; d < dimension; d++) {
-        cur_width = boundary->getWidth(d);
-        max_width = (max_width > cur_width) ? max_width : cur_width;
-    }
+
     // Optimize (max_width / sqrt(D) < theta) by squaring and multiplying through by D
-    if(is_leaf || max_width * max_width < theta * theta * D) {
+    if(is_leaf || max_width_sq < theta * theta * D) {
     
         // Compute and add t-SNE force between point and current node
         D = 1.0 / (1.0 + D);
