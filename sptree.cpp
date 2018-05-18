@@ -34,30 +34,25 @@
 #include <float.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <algorithm>
 #include <cmath>
 #include "sptree.h"
 
 
 
 // Constructs cell
-Cell::Cell(unsigned int inp_dimension) {
-    dimension = inp_dimension;
-    corner = (double*) malloc(dimension * sizeof(double));
-    width  = (double*) malloc(dimension * sizeof(double));
+Cell::Cell(unsigned int inp_dimension)
+    : corner(inp_dimension),
+      width(inp_dimension)
+{
 }
 
-Cell::Cell(unsigned int inp_dimension, double* inp_corner, double* inp_width) {
-    dimension = inp_dimension;
-    corner = (double*) malloc(dimension * sizeof(double));
-    width  = (double*) malloc(dimension * sizeof(double));
-    for(int d = 0; d < dimension; d++) setCorner(d, inp_corner[d]);
-    for(int d = 0; d < dimension; d++) setWidth( d,  inp_width[d]);
-}
-
-// Destructs cell
-Cell::~Cell() {
-    free(corner);
-    free(width);
+Cell::Cell(unsigned int inp_dimension, double* inp_corner, double* inp_width)
+    : corner(inp_dimension),
+      width(inp_dimension)
+{
+    std::copy_n(inp_corner, inp_dimension, corner.begin());
+    std::copy_n(inp_width, inp_dimension, width.begin());
 }
 
 double Cell::getCorner(unsigned int d) {
@@ -79,7 +74,7 @@ void Cell::setWidth(unsigned int d, double val) {
 // Checks whether a point lies in a cell
 bool Cell::containsPoint(double point[])
 {
-    for(int d = 0; d < dimension; d++) {
+    for(unsigned int d = 0; d < corner.size(); d++) {
         if(corner[d] - width[d] > point[d]) return false;
         if(corner[d] + width[d] < point[d]) return false;
     }
@@ -90,33 +85,28 @@ bool Cell::containsPoint(double point[])
 // Default constructor for SPTree -- build tree, too!
 SPTree::SPTree(unsigned int D, double* inp_data, unsigned int N)
 {
-    
+
     // Compute mean, width, and height of current map (boundaries of SPTree)
     int nD = 0;
-    double* mean_Y = (double*) calloc(D,  sizeof(double));
-    double*  min_Y = (double*) malloc(D * sizeof(double)); for(unsigned int d = 0; d < D; d++)  min_Y[d] =  DBL_MAX;
-    double*  max_Y = (double*) malloc(D * sizeof(double)); for(unsigned int d = 0; d < D; d++)  max_Y[d] = -DBL_MAX;
+    std::vector<double> mean_Y(D, 0.0);
+    std::vector<double> min_Y(D, DBL_MAX);
+    std::vector<double> max_Y(D, -DBL_MAX);
     for(unsigned int n = 0; n < N; n++) {
         for(unsigned int d = 0; d < D; d++) {
-            mean_Y[d] += inp_data[n * D + d];
-            if(inp_data[nD + d] < min_Y[d]) min_Y[d] = inp_data[nD + d];
-            if(inp_data[nD + d] > max_Y[d]) max_Y[d] = inp_data[nD + d];
+            double value = inp_data[nD + d];
+            mean_Y[d] += value;
+            min_Y[d] = std::min(min_Y[d], value);
+            max_Y[d] = std::max(max_Y[d], value);
         }
         nD += D;
     }
     for(int d = 0; d < D; d++) mean_Y[d] /= (double) N;
-    
+
     // Construct SPTree
-    double* width = (double*) malloc(D * sizeof(double));
-    for(int d = 0; d < D; d++) width[d] = fmax(max_Y[d] - mean_Y[d], mean_Y[d] - min_Y[d]) + 1e-5;
-    init(NULL, D, inp_data, mean_Y, width);
+    std::vector<double> width(D);
+    for(int d = 0; d < D; d++) width[d] = std::max(max_Y[d] - mean_Y[d], mean_Y[d] - min_Y[d]) + 1e-5;
+    init(NULL, D, inp_data, mean_Y.data(), width.data());
     fill(N);
-    
-    // Clean up memory
-    free(mean_Y);
-    free(max_Y);
-    free(min_Y);
-    free(width);
 }
 
 
@@ -154,44 +144,36 @@ void SPTree::init(SPTree* inp_parent, unsigned int D, double* inp_data, double* 
 {
     parent = inp_parent;
     dimension = D;
-    no_children = 2;
-    for(unsigned int d = 1; d < D; d++) no_children *= 2;
     data = inp_data;
     is_leaf = true;
     size = 0;
     cum_size = 0;
-    
-    boundary = new Cell(dimension);
-    for(unsigned int d = 0; d < D; d++) boundary->setCorner(d, inp_corner[d]);
-    for(unsigned int d = 0; d < D; d++) boundary->setWidth( d, inp_width[d]);
-    
-    children = (SPTree**) malloc(no_children * sizeof(SPTree*));
-    for(unsigned int i = 0; i < no_children; i++) children[i] = NULL;
 
-    center_of_mass = (double*) malloc(D * sizeof(double));
-    for(unsigned int d = 0; d < D; d++) center_of_mass[d] = .0;
-    
-    buff = (double*) malloc(D * sizeof(double));
+    boundary = Cell(dimension);
+    for(unsigned int d = 0; d < D; d++) boundary.setCorner(d, inp_corner[d]);
+    for(unsigned int d = 0; d < D; d++) boundary.setWidth( d, inp_width[d]);
 
     double max_width = 0.0;
     for(unsigned int d = 0; d < D; d++) {
-        double cur_width = boundary->getWidth(d);
-        max_width = (max_width > cur_width) ? max_width : cur_width;
+        max_width = std::max(max_width, boundary.getWidth(d));
     }
     max_width_sq = max_width * max_width;
+
+    unsigned int no_children = 1 << D;
+    children.resize(no_children, nullptr);
+
+    center_of_mass.resize(D, 0.0);
+
+    buff.resize(D);
 }
 
 
 // Destructor for SPTree
 SPTree::~SPTree()
 {
-    for(unsigned int i = 0; i < no_children; i++) {
-        if(children[i] != NULL) delete children[i];
+    for(SPTree* child : children) {
+        delete child;
     }
-    free(children);
-    free(center_of_mass);
-    free(buff);
-    delete boundary;
 }
 
 
@@ -214,7 +196,7 @@ bool SPTree::insert(unsigned int new_index)
 {
     // Ignore objects which do not belong in this quad tree
     double* point = data + new_index * dimension;
-    if(!boundary->containsPoint(point))
+    if(!boundary.containsPoint(point))
         return false;
     
     // Online update of cumulative size and center-of-mass
@@ -246,8 +228,8 @@ bool SPTree::insert(unsigned int new_index)
     if(is_leaf) subdivide();
     
     // Find out where the point can be inserted
-    for(unsigned int i = 0; i < no_children; i++) {
-        if(children[i]->insert(new_index)) return true;
+    for(SPTree* child : children) {
+        if(child->insert(new_index)) return true;
     }
     
     // Otherwise, the point cannot be inserted (this should never happen)
@@ -257,32 +239,30 @@ bool SPTree::insert(unsigned int new_index)
     
 // Create four children which fully divide this cell into four quads of equal area
 void SPTree::subdivide() {
-    
+
     // Create new children
-    double* new_corner = (double*) malloc(dimension * sizeof(double));
-    double* new_width  = (double*) malloc(dimension * sizeof(double));
-    for(unsigned int i = 0; i < no_children; i++) {
+    std::vector<double> new_corner(dimension);
+    std::vector<double> new_width(dimension);
+    for(unsigned int i = 0; i < children.size(); i++) {
         unsigned int div = 1;
         for(unsigned int d = 0; d < dimension; d++) {
-            new_width[d] = .5 * boundary->getWidth(d);
-            if((i / div) % 2 == 1) new_corner[d] = boundary->getCorner(d) - .5 * boundary->getWidth(d);
-            else                   new_corner[d] = boundary->getCorner(d) + .5 * boundary->getWidth(d);
+            new_width[d] = .5 * boundary.getWidth(d);
+            if((i / div) % 2 == 1) new_corner[d] = boundary.getCorner(d) - new_width[d];
+            else                   new_corner[d] = boundary.getCorner(d) + new_width[d];
             div *= 2;
         }
-        children[i] = new SPTree(this, dimension, data, new_corner, new_width);
+        children[i] = new SPTree(this, dimension, data, new_corner.data(), new_width.data());
     }
-    free(new_corner);
-    free(new_width);
-    
+
     // Move existing points to correct children
     for(unsigned int i = 0; i < size; i++) {
         bool success = false;
-        for(unsigned int j = 0; j < no_children; j++) {
-            if(!success) success = children[j]->insert(index[i]);
+        for(SPTree* child : children) {
+            if(!success) success = child->insert(index[i]);
         }
         index[i] = -1;
     }
-    
+
     // Empty parent node
     size = 0;
     is_leaf = false;
@@ -301,11 +281,11 @@ bool SPTree::isCorrect()
 {
     for(unsigned int n = 0; n < size; n++) {
         double* point = data + index[n] * dimension;
-        if(!boundary->containsPoint(point)) return false;
+        if(!boundary.containsPoint(point)) return false;
     }
     if(!is_leaf) {
         bool correct = true;
-        for(int i = 0; i < no_children; i++) correct = correct && children[i]->isCorrect();
+        for(SPTree* child : children) correct = correct && child->isCorrect();
         return correct;
     }
     else return true;
@@ -330,7 +310,7 @@ unsigned int SPTree::getAllIndices(unsigned int* indices, unsigned int loc)
     
     // Gather indices in children
     if(!is_leaf) {
-        for(int i = 0; i < no_children; i++) loc = children[i]->getAllIndices(indices, loc);
+        for(SPTree* child : children) loc = child->getAllIndices(indices, loc);
     }
     return loc;
 }
@@ -338,8 +318,8 @@ unsigned int SPTree::getAllIndices(unsigned int* indices, unsigned int loc)
 
 unsigned int SPTree::getDepth() {
     if(is_leaf) return 1;
-    int depth = 0;
-    for(unsigned int i = 0; i < no_children; i++) depth = fmax(depth, children[i]->getDepth());
+    unsigned int depth = 0;
+    for(SPTree* child : children) depth = std::max(depth, child->getDepth());
     return 1 + depth;
 }
 
@@ -370,7 +350,7 @@ void SPTree::computeNonEdgeForces(unsigned int point_index, double theta, double
     else {
 
         // Recursively apply Barnes-Hut to children
-        for(unsigned int i = 0; i < no_children; i++) children[i]->computeNonEdgeForces(point_index, theta, neg_f, sum_Q);
+        for(SPTree* child : children) child->computeNonEdgeForces(point_index, theta, neg_f, sum_Q);
     }
 }
 
@@ -423,7 +403,7 @@ void SPTree::print()
         printf("Intersection node with center-of-mass = [");
         for(int d = 0; d < dimension; d++) printf("%f, ", center_of_mass[d]);
         printf("]; children are:\n");
-        for(int i = 0; i < no_children; i++) children[i]->print();
+        for(SPTree* child : children) child->print();
     }
 }
 

@@ -34,21 +34,18 @@
 #ifndef SPTREE_H
 #define SPTREE_H
 
-using namespace std;
-
+#include <vector>
 
 class Cell {
 
-    unsigned int dimension;
-    double* corner;
-    double* width;
-    
-    
+    std::vector<double> corner;
+    std::vector<double> width;
+
 public:
+    Cell() = default;
     Cell(unsigned int inp_dimension);
     Cell(unsigned int inp_dimension, double* inp_corner, double* inp_width);
-    ~Cell();
-    
+
     double getCorner(unsigned int d);
     double getWidth(unsigned int d);
     void setCorner(unsigned int d, double val);
@@ -59,34 +56,33 @@ public:
 
 class SPTree
 {
-    
+
     // Fixed constants
     static const unsigned int QT_NODE_CAPACITY = 1;
 
     // A buffer we use when doing force computations
-    double* buff;
-    
+    std::vector<double> buff;
+
     // Properties of this node in the tree
     SPTree* parent;
     unsigned int dimension;
     bool is_leaf;
     unsigned int size;
     unsigned int cum_size;
-        
+
     // Axis-aligned bounding box stored as a center with half-dimensions to represent the boundaries of this quad tree
-    Cell* boundary;
+    Cell boundary;
     // The maximum width squared of the boundary along any axis
     double max_width_sq;
 
     // Indices in this space-partitioning tree node, corresponding center-of-mass, and list of all children
     double* data;
-    double* center_of_mass;
+    std::vector<double> center_of_mass;
     unsigned int index[QT_NODE_CAPACITY];
-    
+
     // Children
-    SPTree** children;
-    unsigned int no_children;
-    
+    std::vector<SPTree*> children;
+
 public:
     SPTree(unsigned int D, double* inp_data, unsigned int N);
     SPTree(unsigned int D, double* inp_data, double* inp_corner, double* inp_width);
@@ -106,7 +102,7 @@ public:
     void computeNonEdgeForces(unsigned int point_index, double theta, double neg_f[], double* sum_Q);
     void computeEdgeForces(unsigned int* row_P, unsigned int* col_P, double* val_P, int N, double* pos_f);
     void print();
-    
+
 private:
     void init(SPTree* inp_parent, unsigned int D, double* inp_data, double* inp_corner, double* inp_width);
     void fill(unsigned int N);
