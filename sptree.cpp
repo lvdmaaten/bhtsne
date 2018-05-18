@@ -357,7 +357,8 @@ void SPTree::computeNonEdgeForces(unsigned int point_index, double theta, double
         cur_width = boundary->getWidth(d);
         max_width = (max_width > cur_width) ? max_width : cur_width;
     }
-    if(is_leaf || max_width / sqrt(D) < theta) {
+    // Optimize (max_width / sqrt(D) < theta) by squaring and multiplying through by D
+    if(is_leaf || max_width * max_width < theta * theta * D) {
     
         // Compute and add t-SNE force between point and current node
         D = 1.0 / (1.0 + D);
