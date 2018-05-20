@@ -38,319 +38,180 @@
 #include <cmath>
 #include "sptree.h"
 
-
-
-// Constructs cell
-Cell::Cell(unsigned int inp_dimension)
-    : corner(inp_dimension),
-      width(inp_dimension)
+struct SPTree::Node
 {
-}
+    // For leaf nodes, the single data point it contains
+    const double* point;
 
-Cell::Cell(unsigned int inp_dimension, double* inp_corner, double* inp_width)
-    : corner(inp_dimension),
-      width(inp_dimension)
-{
-    std::copy_n(inp_corner, inp_dimension, corner.begin());
-    std::copy_n(inp_width, inp_dimension, width.begin());
-}
+    // The total number of points in this subtree
+    std::size_t size;
 
-double Cell::getCorner(unsigned int d) {
-    return corner[d];
-}
+    // Axis-aligned bounding box stored as a center with half-dimension widths
+    std::vector<double> center;
+    std::vector<double> width;
+    // The maximum width squared of the boundary along any axis
+    double max_width_sq;
 
-double Cell::getWidth(unsigned int d) {
-    return width[d];
-}
+    // The center of mass of the points in this subtree
+    std::vector<double> center_of_mass;
 
-void Cell::setCorner(unsigned int d, double val) {
-    corner[d] = val;
-}
-
-void Cell::setWidth(unsigned int d, double val) {
-    width[d] = val;
-}
-
-// Checks whether a point lies in a cell
-bool Cell::containsPoint(double point[])
-{
-    for(unsigned int d = 0; d < corner.size(); d++) {
-        if(corner[d] - width[d] > point[d]) return false;
-        if(corner[d] + width[d] < point[d]) return false;
-    }
-    return true;
-}
-
+    // For internal nodes, this node's children
+    std::vector<Node*> children;
+};
 
 // Default constructor for SPTree -- build tree, too!
 SPTree::SPTree(unsigned int D, double* inp_data, unsigned int N)
+    : dimension(D),
+      data(inp_data),
+      buff(D)
 {
-
     // Compute mean, width, and height of current map (boundaries of SPTree)
-    int nD = 0;
+    double* point = data;
     std::vector<double> mean_Y(D, 0.0);
     std::vector<double> min_Y(D, DBL_MAX);
     std::vector<double> max_Y(D, -DBL_MAX);
     for(unsigned int n = 0; n < N; n++) {
         for(unsigned int d = 0; d < D; d++) {
-            double value = inp_data[nD + d];
+            double value = point[d];
             mean_Y[d] += value;
             min_Y[d] = std::min(min_Y[d], value);
             max_Y[d] = std::max(max_Y[d], value);
         }
-        nD += D;
+        point += D;
     }
-    for(int d = 0; d < D; d++) mean_Y[d] /= (double) N;
+    for(int d = 0; d < D; d++) mean_Y[d] /= N;
 
-    // Construct SPTree
+    // Construct the tree
     std::vector<double> width(D);
-    for(int d = 0; d < D; d++) width[d] = std::max(max_Y[d] - mean_Y[d], mean_Y[d] - min_Y[d]) + 1e-5;
-    init(NULL, D, inp_data, mean_Y.data(), width.data());
-    fill(N);
-}
-
-
-// Constructor for SPTree with particular size and parent -- build the tree, too!
-SPTree::SPTree(unsigned int D, double* inp_data, unsigned int N, double* inp_corner, double* inp_width)
-{
-    init(NULL, D, inp_data, inp_corner, inp_width);
-    fill(N);
-}
-
-
-// Constructor for SPTree with particular size (do not fill the tree)
-SPTree::SPTree(unsigned int D, double* inp_data, double* inp_corner, double* inp_width)
-{
-    init(NULL, D, inp_data, inp_corner, inp_width);
-}
-
-
-// Constructor for SPTree with particular size and parent (do not fill tree)
-SPTree::SPTree(SPTree* inp_parent, unsigned int D, double* inp_data, double* inp_corner, double* inp_width) {
-    init(inp_parent, D, inp_data, inp_corner, inp_width);
-}
-
-
-// Constructor for SPTree with particular size and parent -- build the tree, too!
-SPTree::SPTree(SPTree* inp_parent, unsigned int D, double* inp_data, unsigned int N, double* inp_corner, double* inp_width)
-{
-    init(inp_parent, D, inp_data, inp_corner, inp_width);
-    fill(N);
-}
-
-
-// Main initialization function
-void SPTree::init(SPTree* inp_parent, unsigned int D, double* inp_data, double* inp_corner, double* inp_width)
-{
-    parent = inp_parent;
-    dimension = D;
-    data = inp_data;
-    is_leaf = true;
-    size = 0;
-    cum_size = 0;
-
-    boundary = Cell(dimension);
-    for(unsigned int d = 0; d < D; d++) boundary.setCorner(d, inp_corner[d]);
-    for(unsigned int d = 0; d < D; d++) boundary.setWidth( d, inp_width[d]);
-
     double max_width = 0.0;
-    for(unsigned int d = 0; d < D; d++) {
-        max_width = std::max(max_width, boundary.getWidth(d));
+    for(int d = 0; d < D; d++) {
+        width[d] = std::max(max_Y[d] - mean_Y[d], mean_Y[d] - min_Y[d]) + 1e-5;
+        max_width = std::max(max_width, width[d]);
     }
-    max_width_sq = max_width * max_width;
 
-    unsigned int no_children = 1 << D;
-    children.resize(no_children, nullptr);
+    point = data;
+    root = new_node(point, std::move(mean_Y), std::move(width), max_width * max_width);
 
-    center_of_mass.resize(D, 0.0);
+    for(unsigned int i = 1; i < N; i++) {
+        point += D;
+        insert(root, point);
+    }
 
-    buff.resize(D);
+    for(Node& node : nodes) {
+        double scale = 1.0 / node.size;
+        for(unsigned int d = 0; d < D; ++d) {
+            node.center_of_mass[d] *= scale;
+        }
+    }
 }
-
 
 // Destructor for SPTree
-SPTree::~SPTree()
+SPTree::~SPTree() = default;
+
+// Create a new leaf node
+SPTree::Node* SPTree::new_node(const double* point, std::vector<double> center, std::vector<double> width, double max_width_sq)
 {
-    for(SPTree* child : children) {
-        delete child;
-    }
+    nodes.emplace_back();
+    Node* node = &nodes.back();
+    node->point = point;
+    node->size = 1;
+    node->center = std::move(center);
+    node->width = std::move(width);
+    node->max_width_sq = max_width_sq;
+    node->center_of_mass.assign(point, point + dimension);
+    return node;
 }
-
-
-// Update the data underlying this tree
-void SPTree::setData(double* inp_data)
-{
-    data = inp_data;
-}
-
-
-// Get the parent of the current tree
-SPTree* SPTree::getParent()
-{
-    return parent;
-}
-
 
 // Insert a point into the SPTree
-bool SPTree::insert(unsigned int new_index)
+void SPTree::insert(Node* node, const double* point)
 {
-    // Ignore objects which do not belong in this quad tree
-    double* point = data + new_index * dimension;
-    if(!boundary.containsPoint(point))
-        return false;
-    
-    // Online update of cumulative size and center-of-mass
-    cum_size++;
-    double mult1 = (double) (cum_size - 1) / (double) cum_size;
-    double mult2 = 1.0 / (double) cum_size;
-    for(unsigned int d = 0; d < dimension; d++) center_of_mass[d] *= mult1;
-    for(unsigned int d = 0; d < dimension; d++) center_of_mass[d] += mult2 * point[d];
-    
-    // If there is space in this quad tree and it is a leaf, add the object here
-    if(is_leaf && size < QT_NODE_CAPACITY) {
-        index[size] = new_index;
-        size++;
-        return true;
-    }
-    
-    // Don't add duplicates for now (this is not very nice)
-    bool any_duplicate = false;
-    for(unsigned int n = 0; n < size; n++) {
-        bool duplicate = true;
-        for(unsigned int d = 0; d < dimension; d++) {
-            if(point[d] != data[index[n] * dimension + d]) { duplicate = false; break; }
+    while(node->point != point) {
+        ++node->size;
+
+        for(unsigned int d = 0; d < dimension; ++d) {
+            node->center_of_mass[d] += point[d];
         }
-        any_duplicate = any_duplicate | duplicate;
-    }
-    if(any_duplicate) return true;
-    
-    // Otherwise, we need to subdivide the current cell
-    if(is_leaf) subdivide();
-    
-    // Find out where the point can be inserted
-    for(SPTree* child : children) {
-        if(child->insert(new_index)) return true;
-    }
-    
-    // Otherwise, the point cannot be inserted (this should never happen)
-    return false;
-}
 
-    
-// Create four children which fully divide this cell into four quads of equal area
-void SPTree::subdivide() {
-
-    // Create new children
-    std::vector<double> new_corner(dimension);
-    std::vector<double> new_width(dimension);
-    for(unsigned int i = 0; i < children.size(); i++) {
-        unsigned int div = 1;
-        for(unsigned int d = 0; d < dimension; d++) {
-            new_width[d] = .5 * boundary.getWidth(d);
-            if((i / div) % 2 == 1) new_corner[d] = boundary.getCorner(d) - new_width[d];
-            else                   new_corner[d] = boundary.getCorner(d) + new_width[d];
-            div *= 2;
+        if(node->point) {
+            // If this is a leaf note, split it into an internal node
+            insertChild(node, node->point);
+            node->point = nullptr;
         }
-        children[i] = new SPTree(this, dimension, data, new_corner.data(), new_width.data());
-    }
 
-    // Move existing points to correct children
-    for(unsigned int i = 0; i < size; i++) {
-        bool success = false;
-        for(SPTree* child : children) {
-            if(!success) success = child->insert(index[i]);
+        node = insertChild(node, point);
+    }
+}
+
+// Find the right child node for a point, creating it if necessary
+SPTree::Node* SPTree::insertChild(Node* node, const double* point) {
+    // Find which child to insert into
+    unsigned int i = 0;
+    for(unsigned int d = 0; d < dimension; ++d) {
+        if(point[d] > node->center[d]) {
+            i |= 1 << d;
         }
-        index[i] = -1;
     }
 
-    // Empty parent node
-    size = 0;
-    is_leaf = false;
-}
-
-
-// Build SPTree on dataset
-void SPTree::fill(unsigned int N)
-{
-    for(unsigned int i = 0; i < N; i++) insert(i);
-}
-
-
-// Checks whether the specified tree is correct
-bool SPTree::isCorrect()
-{
-    for(unsigned int n = 0; n < size; n++) {
-        double* point = data + index[n] * dimension;
-        if(!boundary.containsPoint(point)) return false;
+    if(i >= node->children.size()) {
+        node->children.resize(1 << dimension, nullptr);
     }
-    if(!is_leaf) {
-        bool correct = true;
-        for(SPTree* child : children) correct = correct && child->isCorrect();
-        return correct;
+
+    Node* child = node->children[i];
+
+    if(!child) {
+        std::vector<double> center(dimension), width(dimension);
+        for(unsigned int d = 0; d < dimension; ++d) {
+            width[d] = 0.5 * node->width[d];
+
+            if(i & (1 << d)) {
+                center[d] = node->center[d] + width[d];
+            }
+            else {
+                center[d] = node->center[d] - width[d];
+            }
+        }
+
+        child = new_node(point, std::move(center), std::move(width), node->max_width_sq / 4.0);
+        node->children[i] = child;
     }
-    else return true;
+
+    return child;
 }
-
-
-
-// Build a list of all indices in SPTree
-void SPTree::getAllIndices(unsigned int* indices)
-{
-    getAllIndices(indices, 0);
-}
-
-
-// Build a list of all indices in SPTree
-unsigned int SPTree::getAllIndices(unsigned int* indices, unsigned int loc)
-{
-    
-    // Gather indices in current quadrant
-    for(unsigned int i = 0; i < size; i++) indices[loc + i] = index[i];
-    loc += size;
-    
-    // Gather indices in children
-    if(!is_leaf) {
-        for(SPTree* child : children) loc = child->getAllIndices(indices, loc);
-    }
-    return loc;
-}
-
-
-unsigned int SPTree::getDepth() {
-    if(is_leaf) return 1;
-    unsigned int depth = 0;
-    for(SPTree* child : children) depth = std::max(depth, child->getDepth());
-    return 1 + depth;
-}
-
 
 // Compute non-edge forces using Barnes-Hut algorithm
 void SPTree::computeNonEdgeForces(unsigned int point_index, double theta, double neg_f[], double* sum_Q)
 {
-    
-    // Make sure that we spend no time on empty nodes or self-interactions
-    if(cum_size == 0 || (is_leaf && size == 1 && index[0] == point_index)) return;
-    
+    double* point = data + point_index * dimension;
+    computeNonEdgeForces(root, point, theta * theta, neg_f, sum_Q);
+}
+
+// Compute non-edge forces using Barnes-Hut algorithm
+void SPTree::computeNonEdgeForces(Node* node, double* point, double theta_sq, double neg_f[], double* sum_Q)
+{
+    // Make sure that we spend no time on self-interactions
+    if(node->point == point) return;
+
     // Compute distance between point and center-of-mass
-    double D = .0;
-    unsigned int ind = point_index * dimension;
-    for(unsigned int d = 0; d < dimension; d++) buff[d] = data[ind + d] - center_of_mass[d];
+    double D = 0.0;
+    for(unsigned int d = 0; d < dimension; d++) buff[d] = point[d] - node->center_of_mass[d];
     for(unsigned int d = 0; d < dimension; d++) D += buff[d] * buff[d];
 
     // Optimize (max_width / sqrt(D) < theta) by squaring and multiplying through by D
-    if(is_leaf || max_width_sq < theta * theta * D) {
-    
+    if(node->point || node->max_width_sq < theta_sq * D) {
         // Compute and add t-SNE force between point and current node
         D = 1.0 / (1.0 + D);
-        double mult = cum_size * D;
+        double mult = node->size * D;
         *sum_Q += mult;
         mult *= D;
         for(unsigned int d = 0; d < dimension; d++) neg_f[d] += mult * buff[d];
     }
     else {
-
         // Recursively apply Barnes-Hut to children
-        for(SPTree* child : children) child->computeNonEdgeForces(point_index, theta, neg_f, sum_Q);
+        for(Node* child : node->children) {
+            if(child) {
+                computeNonEdgeForces(child, point, theta_sq, neg_f, sum_Q);
+            }
+        }
     }
 }
 
@@ -380,30 +241,37 @@ void SPTree::computeEdgeForces(unsigned int* row_P, unsigned int* col_P, double*
     }
 }
 
-
-// Print out tree
-void SPTree::print() 
+// Print out the tree
+void SPTree::print()
 {
-    if(cum_size == 0) {
-        printf("Empty node\n");
-        return;
-    }
+    print(root);
+}
 
-    if(is_leaf) {
+void SPTree::print(Node* node)
+{
+    if(node->point) {
         printf("Leaf node; data = [");
-        for(int i = 0; i < size; i++) {
-            double* point = data + index[i] * dimension;
-            for(int d = 0; d < dimension; d++) printf("%f, ", point[d]);
-            printf(" (index = %d)", index[i]);
-            if(i < size - 1) printf("\n");
-            else printf("]\n");
-        }        
+        for(int d = 0; d < dimension; d++) {
+            if(d > 0) {
+                printf(", ");
+            }
+            printf("%f", node->point[d]);
+        }
+        printf("]\n");
     }
     else {
         printf("Intersection node with center-of-mass = [");
-        for(int d = 0; d < dimension; d++) printf("%f, ", center_of_mass[d]);
+        for(int d = 0; d < dimension; d++) {
+            if(d > 0) {
+                printf(", ");
+            }
+            printf("%f", node->center_of_mass[d]);
+        }
         printf("]; children are:\n");
-        for(SPTree* child : children) child->print();
+        for(Node* child : node->children) {
+            if(child) {
+                print(child);
+            }
+        }
     }
 }
-

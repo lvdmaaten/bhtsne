@@ -34,80 +34,42 @@
 #ifndef SPTREE_H
 #define SPTREE_H
 
+#include <deque>
 #include <vector>
-
-class Cell {
-
-    std::vector<double> corner;
-    std::vector<double> width;
-
-public:
-    Cell() = default;
-    Cell(unsigned int inp_dimension);
-    Cell(unsigned int inp_dimension, double* inp_corner, double* inp_width);
-
-    double getCorner(unsigned int d);
-    double getWidth(unsigned int d);
-    void setCorner(unsigned int d, double val);
-    void setWidth(unsigned int d, double val);
-    bool containsPoint(double point[]);
-};
-
 
 class SPTree
 {
+    // Internal node type
+    struct Node;
 
-    // Fixed constants
-    static const unsigned int QT_NODE_CAPACITY = 1;
+    // The number of dimensions
+    unsigned int dimension;
+
+    // The actual points stored in the tree
+    double* data;
+
+    // Holds all the child nodes (std::deque so that pointers are never invalidated)
+    std::deque<Node> nodes;
+    // Pointer to the root node
+    Node* root;
 
     // A buffer we use when doing force computations
     std::vector<double> buff;
 
-    // Properties of this node in the tree
-    SPTree* parent;
-    unsigned int dimension;
-    bool is_leaf;
-    unsigned int size;
-    unsigned int cum_size;
-
-    // Axis-aligned bounding box stored as a center with half-dimensions to represent the boundaries of this quad tree
-    Cell boundary;
-    // The maximum width squared of the boundary along any axis
-    double max_width_sq;
-
-    // Indices in this space-partitioning tree node, corresponding center-of-mass, and list of all children
-    double* data;
-    std::vector<double> center_of_mass;
-    unsigned int index[QT_NODE_CAPACITY];
-
-    // Children
-    std::vector<SPTree*> children;
-
 public:
     SPTree(unsigned int D, double* inp_data, unsigned int N);
-    SPTree(unsigned int D, double* inp_data, double* inp_corner, double* inp_width);
-    SPTree(unsigned int D, double* inp_data, unsigned int N, double* inp_corner, double* inp_width);
-    SPTree(SPTree* inp_parent, unsigned int D, double* inp_data, unsigned int N, double* inp_corner, double* inp_width);
-    SPTree(SPTree* inp_parent, unsigned int D, double* inp_data, double* inp_corner, double* inp_width);
     ~SPTree();
-    void setData(double* inp_data);
-    SPTree* getParent();
-    void construct(Cell boundary);
-    bool insert(unsigned int new_index);
-    void subdivide();
-    bool isCorrect();
-    void rebuildTree();
-    void getAllIndices(unsigned int* indices);
-    unsigned int getDepth();
+
     void computeNonEdgeForces(unsigned int point_index, double theta, double neg_f[], double* sum_Q);
     void computeEdgeForces(unsigned int* row_P, unsigned int* col_P, double* val_P, int N, double* pos_f);
     void print();
 
 private:
-    void init(SPTree* inp_parent, unsigned int D, double* inp_data, double* inp_corner, double* inp_width);
-    void fill(unsigned int N);
-    unsigned int getAllIndices(unsigned int* indices, unsigned int loc);
-    bool isChild(unsigned int test_index, unsigned int start, unsigned int end);
+    Node* new_node(const double* point, std::vector<double> center, std::vector<double> width, double max_width_sq);
+    void insert(Node* node, const double* point);
+    Node* insertChild(Node* node, const double* point);
+    void computeNonEdgeForces(Node* node, double* point, double theta_sq, double neg_f[], double* sum_Q);
+    void print(Node* node);
 };
 
 #endif
