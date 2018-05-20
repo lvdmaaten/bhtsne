@@ -48,6 +48,11 @@ class SPTree
     // The actual points stored in the tree
     double* data;
 
+    // The widths of the nodes at every level
+    std::vector<std::vector<double>> widths;
+    // The maximum width along any axis at the root level
+    double max_width;
+
     // Holds all the child nodes (std::deque so that pointers are never invalidated)
     std::deque<Node> nodes;
     // Pointer to the root node
@@ -65,10 +70,10 @@ public:
     void print();
 
 private:
-    Node* new_node(const double* point, std::vector<double> center, std::vector<double> width, double max_width_sq);
+    Node* new_node(const double* point, std::vector<double> center, const double* width);
     void insert(Node* node, const double* point);
-    Node* insertChild(Node* node, const double* point);
-    void computeNonEdgeForces(Node* node, double* point, double theta_sq, double neg_f[], double* sum_Q);
+    Node* insertChild(Node* node, const double* point, unsigned int depth);
+    void computeNonEdgeForces(Node* node, double max_width_sq, double* point, double theta_sq, double neg_f[], double* sum_Q);
     void print(Node* node);
 };
 

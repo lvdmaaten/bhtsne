@@ -48,9 +48,7 @@ struct SPTree::Node
 
     // Axis-aligned bounding box stored as a center with half-dimension widths
     std::vector<double> center;
-    std::vector<double> width;
-    // The maximum width squared of the boundary along any axis
-    double max_width_sq;
+    const double* width;
 
     // The center of mass of the points in this subtree
     std::vector<double> center_of_mass;
@@ -83,14 +81,15 @@ SPTree::SPTree(unsigned int D, double* inp_data, unsigned int N)
 
     // Construct the tree
     std::vector<double> width(D);
-    double max_width = 0.0;
+    max_width = 0.0;
     for(int d = 0; d < D; d++) {
         width[d] = std::max(max_Y[d] - mean_Y[d], mean_Y[d] - min_Y[d]) + 1e-5;
         max_width = std::max(max_width, width[d]);
     }
+    widths.push_back(std::move(width));
 
     point = data;
-    root = new_node(point, std::move(mean_Y), std::move(width), max_width * max_width);
+    root = new_node(point, std::move(mean_Y), widths[0].data());
 
     for(unsigned int i = 1; i < N; i++) {
         point += D;
@@ -109,15 +108,14 @@ SPTree::SPTree(unsigned int D, double* inp_data, unsigned int N)
 SPTree::~SPTree() = default;
 
 // Create a new leaf node
-SPTree::Node* SPTree::new_node(const double* point, std::vector<double> center, std::vector<double> width, double max_width_sq)
+SPTree::Node* SPTree::new_node(const double* point, std::vector<double> center, const double* width)
 {
     nodes.emplace_back();
     Node* node = &nodes.back();
     node->point = point;
     node->size = 1;
     node->center = std::move(center);
-    node->width = std::move(width);
-    node->max_width_sq = max_width_sq;
+    node->width = width;
     node->center_of_mass.assign(point, point + dimension);
     return node;
 }
@@ -125,6 +123,8 @@ SPTree::Node* SPTree::new_node(const double* point, std::vector<double> center, 
 // Insert a point into the SPTree
 void SPTree::insert(Node* node, const double* point)
 {
+    unsigned int depth = 0;
+
     while(node->point != point) {
         ++node->size;
 
@@ -132,18 +132,20 @@ void SPTree::insert(Node* node, const double* point)
             node->center_of_mass[d] += point[d];
         }
 
+        ++depth;
+
         if(node->point) {
             // If this is a leaf note, split it into an internal node
-            insertChild(node, node->point);
+            insertChild(node, node->point, depth);
             node->point = nullptr;
         }
 
-        node = insertChild(node, point);
+        node = insertChild(node, point, depth);
     }
 }
 
 // Find the right child node for a point, creating it if necessary
-SPTree::Node* SPTree::insertChild(Node* node, const double* point) {
+SPTree::Node* SPTree::insertChild(Node* node, const double* point, unsigned int depth) {
     // Find which child to insert into
     unsigned int i = 0;
     for(unsigned int d = 0; d < dimension; ++d) {
@@ -159,10 +161,17 @@ SPTree::Node* SPTree::insertChild(Node* node, const double* point) {
     Node* child = node->children[i];
 
     if(!child) {
-        std::vector<double> center(dimension), width(dimension);
-        for(unsigned int d = 0; d < dimension; ++d) {
-            width[d] = 0.5 * node->width[d];
+        if(depth >= widths.size()) {
+            std::vector<double> width(dimension);
+            for(unsigned int d = 0; d < dimension; ++d) {
+                width[d] = 0.5 * node->width[d];
+            }
+            widths.push_back(std::move(width));
+        }
+        const double* width = widths[depth].data();
 
+        std::vector<double> center(dimension);
+        for(unsigned int d = 0; d < dimension; ++d) {
             if(i & (1 << d)) {
                 center[d] = node->center[d] + width[d];
             }
@@ -171,7 +180,7 @@ SPTree::Node* SPTree::insertChild(Node* node, const double* point) {
             }
         }
 
-        child = new_node(point, std::move(center), std::move(width), node->max_width_sq / 4.0);
+        child = new_node(point, std::move(center), width);
         node->children[i] = child;
     }
 
@@ -182,11 +191,11 @@ SPTree::Node* SPTree::insertChild(Node* node, const double* point) {
 void SPTree::computeNonEdgeForces(unsigned int point_index, double theta, double neg_f[], double* sum_Q)
 {
     double* point = data + point_index * dimension;
-    computeNonEdgeForces(root, point, theta * theta, neg_f, sum_Q);
+    computeNonEdgeForces(root, max_width * max_width, point, theta * theta, neg_f, sum_Q);
 }
 
 // Compute non-edge forces using Barnes-Hut algorithm
-void SPTree::computeNonEdgeForces(Node* node, double* point, double theta_sq, double neg_f[], double* sum_Q)
+void SPTree::computeNonEdgeForces(Node* node, double max_width_sq, double* point, double theta_sq, double neg_f[], double* sum_Q)
 {
     // Make sure that we spend no time on self-interactions
     if(node->point == point) return;
@@ -197,7 +206,7 @@ void SPTree::computeNonEdgeForces(Node* node, double* point, double theta_sq, do
     for(unsigned int d = 0; d < dimension; d++) D += buff[d] * buff[d];
 
     // Optimize (max_width / sqrt(D) < theta) by squaring and multiplying through by D
-    if(node->point || node->max_width_sq < theta_sq * D) {
+    if(node->point || max_width_sq < theta_sq * D) {
         // Compute and add t-SNE force between point and current node
         D = 1.0 / (1.0 + D);
         double mult = node->size * D;
@@ -209,7 +218,7 @@ void SPTree::computeNonEdgeForces(Node* node, double* point, double theta_sq, do
         // Recursively apply Barnes-Hut to children
         for(Node* child : node->children) {
             if(child) {
-                computeNonEdgeForces(child, point, theta_sq, neg_f, sum_Q);
+                computeNonEdgeForces(child, max_width_sq / 4.0, point, theta_sq, neg_f, sum_Q);
             }
         }
     }
