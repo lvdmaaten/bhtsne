@@ -58,9 +58,6 @@ class SPTree
     // Pointer to the root node
     Node* root;
 
-    // A buffer we use when doing force computations
-    std::vector<double> buff;
-
 public:
     SPTree(unsigned int D, double* inp_data, unsigned int N);
     ~SPTree();

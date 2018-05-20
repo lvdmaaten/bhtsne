@@ -60,8 +60,7 @@ struct SPTree::Node
 // Default constructor for SPTree -- build tree, too!
 SPTree::SPTree(unsigned int D, double* inp_data, unsigned int N)
     : dimension(D),
-      data(inp_data),
-      buff(D)
+      data(inp_data)
 {
     // Compute mean, width, and height of current map (boundaries of SPTree)
     double* point = data;
@@ -202,8 +201,10 @@ void SPTree::computeNonEdgeForces(Node* node, double max_width_sq, double* point
 
     // Compute distance between point and center-of-mass
     double D = 0.0;
-    for(unsigned int d = 0; d < dimension; d++) buff[d] = point[d] - node->center_of_mass[d];
-    for(unsigned int d = 0; d < dimension; d++) D += buff[d] * buff[d];
+    for(unsigned int d = 0; d < dimension; d++) {
+        double diff = point[d] - node->center_of_mass[d];
+        D += diff * diff;
+    }
 
     // Optimize (max_width / sqrt(D) < theta) by squaring and multiplying through by D
     if(node->point || max_width_sq < theta_sq * D) {
@@ -212,7 +213,10 @@ void SPTree::computeNonEdgeForces(Node* node, double max_width_sq, double* point
         double mult = node->size * D;
         *sum_Q += mult;
         mult *= D;
-        for(unsigned int d = 0; d < dimension; d++) neg_f[d] += mult * buff[d];
+        for(unsigned int d = 0; d < dimension; d++) {
+            double diff = point[d] - node->center_of_mass[d];
+            neg_f[d] += mult * diff;
+        }
     }
     else {
         // Recursively apply Barnes-Hut to children
@@ -224,27 +228,31 @@ void SPTree::computeNonEdgeForces(Node* node, double max_width_sq, double* point
     }
 }
 
-
 // Computes edge forces
 void SPTree::computeEdgeForces(unsigned int* row_P, unsigned int* col_P, double* val_P, int N, double* pos_f)
 {
-    
+
     // Loop over all edges in the graph
     unsigned int ind1 = 0;
     unsigned int ind2 = 0;
     double D;
     for(unsigned int n = 0; n < N; n++) {
         for(unsigned int i = row_P[n]; i < row_P[n + 1]; i++) {
-        
+
             // Compute pairwise distance and Q-value
             D = 1.0;
             ind2 = col_P[i] * dimension;
-            for(unsigned int d = 0; d < dimension; d++) buff[d] = data[ind1 + d] - data[ind2 + d];
-            for(unsigned int d = 0; d < dimension; d++) D += buff[d] * buff[d];
+            for(unsigned int d = 0; d < dimension; d++) {
+                double diff = data[ind1 + d] - data[ind2 + d];
+                D += diff * diff;
+            }
             D = val_P[i] / D;
-            
+
             // Sum positive force
-            for(unsigned int d = 0; d < dimension; d++) pos_f[ind1 + d] += D * buff[d];
+            for(unsigned int d = 0; d < dimension; d++) {
+                double diff = data[ind1 + d] - data[ind2 + d];
+                pos_f[ind1 + d] += D * diff;
+            }
         }
         ind1 += dimension;
     }
