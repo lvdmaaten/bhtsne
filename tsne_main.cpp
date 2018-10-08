@@ -10,8 +10,7 @@
 int main() {
 
     // Define some variables
-	int origN, N, D, no_dims, max_iter, *landmarks;
-	double perc_landmarks;
+	int origN, N, D, no_dims, max_iter;
 	double perplexity, theta, *data;
     int rand_seed = -1;
     TSNE* tsne = new TSNE();

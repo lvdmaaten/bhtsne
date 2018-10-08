@@ -146,7 +146,7 @@ void TSNE::run(double* X, int N, int D, double* Y, int no_dims, double perplexit
 
         // Compute (approximate) gradient
         if(exact) computeExactGradient(P, Y, N, no_dims, dY);
-        else computeGradient(P, row_P, col_P, val_P, Y, N, no_dims, dY, theta);
+        else computeGradient(row_P, col_P, val_P, Y, N, no_dims, dY, theta);
 
         // Update gains
         for(int i = 0; i < N * no_dims; i++) gains[i] = (sign(dY[i]) != sign(uY[i])) ? (gains[i] + .2) : (gains[i] * .8);
@@ -198,7 +198,7 @@ void TSNE::run(double* X, int N, int D, double* Y, int no_dims, double perplexit
 
 
 // Compute gradient of the t-SNE cost function (using Barnes-Hut algorithm)
-void TSNE::computeGradient(double* P, unsigned int* inp_row_P, unsigned int* inp_col_P, double* inp_val_P, double* Y, int N, int D, double* dC, double theta)
+void TSNE::computeGradient(unsigned int* inp_row_P, unsigned int* inp_col_P, double* inp_val_P, double* Y, int N, int D, double* dC, double theta)
 {
 
     // Construct space-partitioning tree on current map
