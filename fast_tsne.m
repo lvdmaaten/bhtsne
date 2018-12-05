@@ -1,12 +1,15 @@
-function mappedX = fast_tsne(X, no_dims, initial_dims, perplexity, theta, alg, max_iter)
+function mappedX = fast_tsne(X, no_dims, initial_dims, perplexity, theta, alg, max_iter, rand_seed, stop_lying_iter, mom_switch_iter)
 %FAST_TSNE Runs the C++ implementation of Barnes-Hut t-SNE
 %
 %   mappedX = fast_tsne(X, no_dims, initial_dims, perplexity, theta, alg)
+%   mappedX = fast_tsne(X, [], initial_solution, perplexity, theta, alg)
 %
 % Runs the C++ implementation of Barnes-Hut-SNE. The high-dimensional 
 % datapoints are specified in the NxD matrix X. The dimensionality of the 
 % datapoints is reduced to initial_dims dimensions using PCA (default = 50)
-% before t-SNE is performed. Next, t-SNE reduces the points to no_dims
+% before t-SNE is performed. Alternatively, an initial solution obtained 
+% from an other dimensionality reduction technique may be specified in 
+% initial_solution (no_dims inferrred). Next, t-SNE reduces the points to no_dims
 % dimensions. The perplexity of the input similarities may be specified
 % through the perplexity variable (default = 30). The variable theta sets
 % the trade-off parameter between speed and accuracy: theta = 0 corresponds
@@ -53,8 +56,14 @@ function mappedX = fast_tsne(X, no_dims, initial_dims, perplexity, theta, alg, m
     if ~exist('no_dims', 'var') || isempty(no_dims)
         no_dims = 2;
     end
+    have_initial_coords=false;
+    init_Y=[];
     if ~exist('initial_dims', 'var') || isempty(initial_dims)
-        initial_dims = 50;
+        initial_dims = min(50, size(X, 2));
+    elseif ~isscalar(initial_dims) %initial mapped coordinates
+        have_initial_coords=true;
+        init_Y=initial_dims;
+        no_dims=size(init_Y,2);
     end
     if ~exist('perplexity', 'var') || isempty(perplexity)
         perplexity = 30;
@@ -68,62 +77,38 @@ function mappedX = fast_tsne(X, no_dims, initial_dims, perplexity, theta, alg, m
     if ~exist('max_iter', 'var') || isempty(max_iter)
        max_iter=1000; 
     end
+    if ~exist('rand_seed', 'var') || isempty(rand_seed)
+       rand_seed=-1; %use current time
+    end
+    if ~exist('stop_lying_iter', 'var') || isempty(stop_lying_iter)
+       stop_lying_iter=250; 
+    end
+    if ~exist('mom_switch_iter', 'var') || isempty(mom_switch_iter)
+       mom_switch_iter=250; 
+    end
     
     % Perform the initial dimensionality reduction using PCA
-    X = double(X);
-    X = bsxfun(@minus, X, mean(X, 1));
-    M = pca(X,'NumComponents',initial_dims,'Algorithm',alg);
-    X = X * M;
+    if ~have_initial_coords
+        X = double(X);
+        X = bsxfun(@minus, X, mean(X, 1));
+        M = pca(X,'NumComponents',initial_dims,'Algorithm',alg);
+        X = X * M;
+    end
     
     tsne_path = which('fast_tsne');
     tsne_path = fileparts(tsne_path);
     
-    % Compile t-SNE C code
-    if(~exist(fullfile(tsne_path,'./bh_tsne'),'file') && isunix)
-        system(sprintf('g++ %s %s -o %s -O2',...
+    %  Compile the mex file (including tSNE C code) if needed 
+    mexfile = fullfile(tsne_path,'./bh_tsne');
+    if exist(mexfile,'file') ~= 3 %check if mex file exists on path
+        mex(fullfile(tsne_path,'./tsne_mex.cpp'),...
             fullfile(tsne_path,'./sptree.cpp'),...
             fullfile(tsne_path,'./tsne.cpp'),...
-            fullfile(tsne_path,'./bh_tsne')));
+            '-output',mexfile);
     end
 
     % Run the fast diffusion SNE implementation
-    write_data(X, no_dims, theta, perplexity, max_iter);
-    tic
-    [flag, cmdout] = system(['"' fullfile(tsne_path,'./bh_tsne') '"']);
-    if(flag~=0)
-        error(cmdout);
-    end
-    toc
-    [mappedX, landmarks, costs] = read_data;   
-    landmarks = landmarks + 1;              % correct for Matlab indexing
-    delete('data.dat');
-    delete('result.dat');
-end
-
-
-% Writes the datafile for the fast t-SNE implementation
-function write_data(X, no_dims, theta, perplexity, max_iter)
-    [n, d] = size(X);
-    h = fopen('data.dat', 'wb');
-	fwrite(h, n, 'integer*4');
-	fwrite(h, d, 'integer*4');
-    fwrite(h, theta, 'double');
-    fwrite(h, perplexity, 'double');
-	fwrite(h, no_dims, 'integer*4');
-    fwrite(h, max_iter, 'integer*4');
-    fwrite(h, X', 'double');
-	fclose(h);
-end
-
-
-% Reads the result file from the fast t-SNE implementation
-function [X, landmarks, costs] = read_data
-    h = fopen('result.dat', 'rb');
-	n = fread(h, 1, 'integer*4');
-	d = fread(h, 1, 'integer*4');
-	X = fread(h, n * d, 'double');
-    landmarks = fread(h, n, 'integer*4');
-    costs = fread(h, n, 'double');      % this vector contains only zeros
-    X = reshape(X, [d n])';
-	fclose(h);
+    X = X'; init_Y=init_Y'; %transpose to convert from column major (Matlab) to row major (C) order
+    mappedX = bh_tsne(X, no_dims, theta, perplexity, max_iter, rand_seed, init_Y, stop_lying_iter, mom_switch_iter);
+    mappedX = mappedX';
 end
