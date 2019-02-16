@@ -13,10 +13,9 @@ int main() {
 	int origN, N, D, no_dims, max_iter;
 	double perplexity, theta, *data;
     int rand_seed = -1;
-    TSNE* tsne = new TSNE();
 
     // Read the parameters and the dataset
-	if(tsne->load_data(&data, &origN, &D, &no_dims, &theta, &perplexity, &rand_seed, &max_iter)) {
+	if(TSNE::load_data(&data, &origN, &D, &no_dims, &theta, &perplexity, &rand_seed, &max_iter)) {
 
 		// Make dummy landmarks
         N = origN;
@@ -28,10 +27,10 @@ int main() {
 		double* Y = (double*) malloc(N * no_dims * sizeof(double));
 		double* costs = (double*) calloc(N, sizeof(double));
         if(Y == NULL || costs == NULL) { printf("Memory allocation failed!\n"); exit(1); }
-		tsne->run(data, N, D, Y, no_dims, perplexity, theta, rand_seed, false, max_iter);
+		TSNE::run(data, N, D, Y, no_dims, perplexity, theta, rand_seed, false, max_iter, 250, 250);
 
 		// Save the results
-		tsne->save_data(Y, landmarks, costs, N, no_dims);
+		TSNE::save_data(Y, landmarks, costs, N, no_dims);
 
         // Clean up the memory
 		free(data); data = NULL;
@@ -39,5 +38,4 @@ int main() {
 		free(costs); costs = NULL;
 		free(landmarks); landmarks = NULL;
     }
-    delete(tsne);
 }
