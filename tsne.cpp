@@ -403,10 +403,15 @@ static void computeGaussianPerplexity(double* X, int N, int D, double* P, double
 				}
 				else {
 					max_beta = beta;
-					if(min_beta == -DBL_MAX || min_beta == DBL_MAX)
-						beta = fabs(beta) <= 1.0 ? -2.0 : beta / 2.0;
-					else
+					if(min_beta == -DBL_MAX || min_beta == DBL_MAX){
+						if (beta < 0) {
+              						beta *= 2;
+						} else {
+						      	beta = beta <= 1.0 ? -0.5 : beta / 2.0;
+						} 
+					} else {
 						beta = (beta + min_beta) / 2.0;
+					}
 				}
 			}
 
