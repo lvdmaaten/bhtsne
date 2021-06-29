@@ -5,6 +5,13 @@
 # ignore the C++ binary
 bh_tsne
 
+#MatLab#
+########
+*.asv
+*.mexa64
+*.mexw64
+*.mexw64.pdb
+
 # ignore data files
 *.txt
 *.tsv

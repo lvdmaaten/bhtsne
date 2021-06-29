@@ -40,6 +40,11 @@
 #include "sptree.h"
 #include "tsne.h"
 
+//if we are compiling from matlab MEX, redefine printf to mexPrintf so it prints to matlab command window.
+#ifdef MATLAB_MEX_FILE
+	#include "mex.h"
+    #define printf mexPrintf
+#endif
 
 using namespace std;
 
