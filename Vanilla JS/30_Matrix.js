@@ -3,12 +3,6 @@
 // http://codingtra.in
 // Javascript transcription: Chuck England
 
-// Coding Challenge #112: 3D Rendering with Rotation and Projection
-// https://youtu.be/p4Iz0XJY-Qk
-
-// Matrix Multiplication
-// https://youtu.be/tzsgS19RRc8
-
 function vecToMatrix(v) {
     let m = [];
     for (let i = 0; i < 3; i++) {
