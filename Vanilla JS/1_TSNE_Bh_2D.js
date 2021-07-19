@@ -193,9 +193,6 @@ function YUpload(p, y, oldy, numberOfSamplesInX, numberOfIterations, Momentum, L
                 }
             }
         }
-        //F rep
-        //Tengo que hacer otro CalculateZQij pero con i y j reales.
-        //Debo convertir este loop en uno cuadrado salvo la diagonal, sin ahorrar las simetrias.
         for(let i = 0; i <= numberOfSamplesInX - 2; i++){
             QuadTree.ListOfEquivalentBodiesOfI(y, i, TradeOff, ResultQT);
             for(let z = 0; z <= ResultQT.ResultOfTheQueryQT1.length - 1; z++){
